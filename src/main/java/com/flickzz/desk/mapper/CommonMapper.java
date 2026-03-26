@@ -1,5 +1,8 @@
 package com.flickzz.desk.mapper;
 
+import java.util.Date;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -10,6 +13,7 @@ import com.flickzz.desk.model.CalendarMaster;
 import com.flickzz.desk.model.CalendarWorkday;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.User;
+import com.flickzz.desk.security.CustomUserDetails;
 import com.flickzz.desk.vo.CalendarHolidayVO;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
@@ -55,16 +59,16 @@ public class CommonMapper {
 				.calendarType(calendar.getCalendarType())
 				.validFrom(calendar.getValidFrom())
 				.validTo(calendar.getValidTo())
-				.workdays(calendar.getWorkdays() == null ? null : calendar.getWorkdays().stream().map(this::toCalendarWorkdayVO).toList())
+				.isActive(calendar.getIsActive())
+				.isSupport(calendar.getIsSupport())
+				.isRequestor(calendar.getIsRequestor())
+				.workdays(calendar.getWorkdays() == null ? null : calendar.getWorkdays().stream()
+						.filter(CalendarWorkday::isActive).map(this::toCalendarWorkdayVO).toList())
 				.workFrom(calendar.getWorkFrom())
 				.workTo(calendar.getWorkTo())
 				.timezone(calendar.getTimezone())
-				.isActive(calendar.getIsActive())
-				.createdBy(calendar.getCreatedBy())
-				.updatedBy(calendar.getUpdatedBy())
-				.createdAt(calendar.getCreatedAt())
-				.updatedAt(calendar.getUpdatedAt())
-				.holidays(calendar.getHolidays() == null ? null : calendar.getHolidays().stream().map(this::toCalendarHolidayVO).toList())
+				.holidays(calendar.getHolidays() == null ? null : calendar.getHolidays().stream()
+						.filter(CalendarHoliday::isActive).map(this::toCalendarHolidayVO).toList())
 				.build();
 	}
 
@@ -76,10 +80,6 @@ public class CommonMapper {
 				.workdayId(workday.getWorkdayId())
 				.workday(workday.getWorkday())
 				.isActive(workday.getIsActive())
-				.createdBy(workday.getCreatedBy())
-				.updatedBy(workday.getUpdatedBy())
-				.createdAt(workday.getCreatedAt())
-				.updatedAt(workday.getUpdatedAt())
 				.build();
 	}
 
@@ -90,10 +90,11 @@ public class CommonMapper {
 		return CalendarHolidayVO.builder()
 				.holidayDate(holiday.getHolidayDate())
 				.description(holiday.getDescription())
+				.isActive(holiday.getIsActive())
 				.build();
 	}
 
-	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request) {
+	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request, CustomUserDetails user) {
 		if (request == null) {
 			return null;
 		}
@@ -105,7 +106,42 @@ public class CommonMapper {
 				.workFrom(request.getWorkFrom())
 				.workTo(request.getWorkTo())
 				.timezone(request.getTimezone())
+				.isRequestor(request.isRequestor())
+				.isSupport(request.isSupport())
+				.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+				.createdAt(new Date())
+				.updatedAt(new Date())
+				.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
 				.build();
+	}
+	
+	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, CustomUserDetails user, CalendarMaster entity) {
+		return calendarHolidayList.stream().map(h -> {
+			CalendarHoliday holiday = CalendarHoliday.builder()
+			.holidayDate(h.getHolidayDate())
+			.description(h.getDescription())
+			.calendarMaster(entity)
+			.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+			.createdAt(new Date())
+			.updatedAt(new Date())
+			.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+			.build();
+		return holiday;
+		}).toList();
+	}
+	
+	public List<CalendarWorkday> toCalendarWorkDay (List<String> workDayList, CustomUserDetails user, CalendarMaster entity) {
+		return workDayList.stream().map(workingDay -> {
+			CalendarWorkday workday = CalendarWorkday.builder()
+					.workday(workingDay)
+					.calendarMaster(entity)
+					.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+					.createdAt(new Date())
+					.updatedAt(new Date())
+					.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM"	)
+					.build();
+			return workday;
+		}).toList();
 	}
 }
 

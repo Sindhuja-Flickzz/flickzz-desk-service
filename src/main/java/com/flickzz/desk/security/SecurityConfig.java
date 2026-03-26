@@ -75,7 +75,8 @@ public class SecurityConfig {
               ORIGIN,
               CONTENT_TYPE,
               ACCEPT,
-              AUTHORIZATION
+              AUTHORIZATION,
+              "x-user-id"
       ));
       config.setAllowedMethods(Arrays.asList(
               GET.name(),

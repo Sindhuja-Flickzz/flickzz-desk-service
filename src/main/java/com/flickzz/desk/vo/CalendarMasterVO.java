@@ -1,6 +1,5 @@
 package com.flickzz.desk.vo;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -22,12 +21,10 @@ public class CalendarMasterVO {
     private Date validTo;
     private List<CalendarWorkdayVO> workdays;
     private List<CalendarHolidayVO> holidays;
-    private LocalDateTime workFrom;
-    private LocalDateTime workTo;
+    private String workFrom;
+    private String workTo;
     private String timezone;
     private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
-    private Date createdAt;
-    private Date updatedAt;
+    private Boolean isSupport;
+    private Boolean isRequestor;
 }

@@ -27,9 +27,6 @@ public class UserService {
                 .withUsername(user.getUserName())
                 .password(user.getPassword()) // must be encoded
                 .authorities(user.getRole())
-//                		.stream()
-//                        .map(role -> new SimpleGrantedAuthority(role.getName()))
-//                        .toList())
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)

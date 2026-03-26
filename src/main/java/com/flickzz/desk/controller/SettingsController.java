@@ -52,6 +52,16 @@ public class SettingsController {
         log.debug(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(CALENDAR_CREATE_SUCCESS, CALENDAR_CREATE_SUCCESS.getDescription(), response);
     }
+    
+    @GetMapping("/calendar/{calendarCode}")
+    public ResponseEntity<GeneralRespVO> getCalendarInfo(@PathVariable String calendarCode) {
+        log.debug(generateLog(ENTRY, this.getClass().getName()));
+        
+        CalendarMasterVO response = settingsService.getCalendarInfo(calendarCode);
+        
+        log.debug(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Calendar"), response);
+    }
 
     @PostMapping("/calendar/update/{calendarCode}")
     public ResponseEntity<GeneralRespVO> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
@@ -63,7 +73,7 @@ public class SettingsController {
         return handleSuccessResponse(CALENDAR_UPDATE_SUCCESS, CALENDAR_UPDATE_SUCCESS.getDescription(), response);
     }
 
-    @DeleteMapping("/calendar/{calendarCode}")
+    @DeleteMapping("/calendar/delete/{calendarCode}")
     public ResponseEntity<GeneralRespVO> deleteCalendar(@PathVariable String calendarCode) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         

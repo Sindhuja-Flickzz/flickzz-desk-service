@@ -14,4 +14,5 @@ import lombok.NoArgsConstructor;
 public class CalendarHolidayVO {
     private Date holidayDate;
     private String description;
+    private Boolean isActive;
 }
