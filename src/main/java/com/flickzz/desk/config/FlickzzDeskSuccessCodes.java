@@ -10,9 +10,9 @@ public enum FlickzzDeskSuccessCodes {
 	LOGOUT_SUCCESS("GM-203", "Logout Successful", "Logged out successfully. Refresh token revoked."),
 	LOGOUT_ALL_SUCCESS("GM-204", "Logout Successful", "All refresh tokens revoked for user %s"),
 	FETCH_SUCCESS("GM-205", "Fetch Successful", "%s fetch successful!"),
-	CALENDAR_CREATE_SUCCESS("GM-206", "Calendar Created", "Calendar created successfully!"),
-	CALENDAR_UPDATE_SUCCESS("GM-207", "Calendar Updated", "Calendar updated successfully!"),
-	CALENDAR_DELETE_SUCCESS("GM-208", "Calendar Deleted", "Calendar deleted successfully!");
+	CREATE_SUCCESS("GM-206", "Create Successful", "%s created successfully!"),
+	UPDATE_SUCCESS("GM-207", "Update Successful", "%s updated successfully!"),
+	DELETE_SUCCESS("GM-208", "Delete Successful", "%s deleted successfully!");
 
 	private String code;
 	private String title;

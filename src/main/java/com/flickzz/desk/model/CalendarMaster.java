@@ -1,6 +1,5 @@
 package com.flickzz.desk.model;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class CalendarMaster {
     private String calendarCode;
     
     @Column(name = "CALENDAR_TYPE", nullable = false, length = 20, unique = true)
-    private String calendarType;  // Support/Custom
+    private String calendarType;
 
     @Column(name = "VALID_FROM", nullable = false)
     private Date validFrom; 
@@ -50,12 +49,20 @@ public class CalendarMaster {
 
     @OneToMany(mappedBy = "calendarMaster", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalendarHoliday> holidays;
+    
+    @Builder.Default
+    @Column(name = "IS_SUPPORT", nullable = false)
+    private Boolean isSupport = false;
+    
+    @Builder.Default
+    @Column(name = "IS_REQUESTOR", nullable = false)
+    private Boolean isRequestor = false;
 
     @Column(name = "WORK_FROM")
-    private LocalDateTime workFrom; // HH:mm
+    private String workFrom; // HH:mm
 
     @Column(name = "WORK_TO")
-    private LocalDateTime workTo; // HH:mm
+    private String workTo; // HH:mm
 
     @Column(name = "TIMEZONE", length = 50)
     private String timezone;

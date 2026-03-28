@@ -1,8 +1,10 @@
 package com.flickzz.desk.vo;
 
-import java.time.LocalDateTime;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,15 +15,20 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CalendarMasterRequestVO {
-
+public class CalendarMasterRequestVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String calendarCode;
     private String calendarType;
+    @JsonFormat(pattern = "dd.MM.yyyy")
     private Date validFrom;
+    @JsonFormat(pattern = "dd.MM.yyyy")
     private Date validTo;
     private List<String> workingDays;
     private List<CalendarHolidayVO> holidays;
-    private LocalDateTime workFrom;
-    private LocalDateTime workTo;
+    private String workFrom;
+    private String workTo;
     private String timezone;
+    private boolean isSupport;
+    private boolean isRequestor;
+    private String createBy;
 }

@@ -25,8 +25,6 @@ public class TwoFactorAuthenticationService {
 
 	public GoogleAuthenticatorKey generateNewSecret() {
 		return googleAuthenticator.createCredentials();
-//		GoogleAuthenticatorKey key = googleAuthenticator.createCredentials();
-//		return key.getKey();
 	}
 
 	public String generateQrCodeImageUri(GoogleAuthenticatorKey key, String username) {
