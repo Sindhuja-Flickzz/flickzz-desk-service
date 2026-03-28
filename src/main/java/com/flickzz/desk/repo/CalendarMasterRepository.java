@@ -11,4 +11,6 @@ import com.flickzz.desk.model.CalendarMaster;
 public interface CalendarMasterRepository extends JpaRepository<CalendarMaster, Long> {
     Optional<CalendarMaster> findByCalendarCode(String calendarCode);
     void deleteByCalendarCode(String calendarCode);
+    
+    Optional<CalendarMaster> findByCalendarCodeAndIsActive(String calendarCode, Boolean isActive);
 }

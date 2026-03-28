@@ -12,7 +12,7 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 	ALREADY_EXISTS("FD-104", "Already exists", "%s alreary exists. Please try again!"),
 //	NOT_UNIQUE("FD-105", "Not Unique", "Not unique field. Please verify!"),
 	INCORRECT_CODE("FD-106", "Incorrect Code", "Code is not correct. Please retry!"),
-	INVALID_FIELD("FD-107", "Invalid valid", "Value for %s is not valid. Please verify!");
+	INVALID_FIELD("FD-107", "Not a valid value", "Value for %s is not valid. Please verify!");
 
 	private String code;
 	private String title;

@@ -44,4 +44,9 @@ public class CalendarHoliday {
 
     @Column(name = "UPDATED_AT")
     private Date updatedAt;
+    
+ // or follow JavaBean convention for booleans:
+    public boolean isActive() {
+        return Boolean.TRUE.equals(isActive);
+    }    
 }

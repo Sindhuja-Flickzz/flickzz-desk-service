@@ -1,10 +1,9 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CALENDAR_CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CALENDAR_DELETE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CALENDAR_UPDATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
@@ -23,7 +22,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.service.SettingsService;
@@ -31,9 +29,10 @@ import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
 import com.flickzz.desk.vo.GeneralRespVO;
 
-@CrossOrigin(origins = "http://localhost:4200",
-	allowedHeaders = {"Content-Type", "Authorization", "X-Requested-With"},
-	methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
+//@CrossOrigin(origins = "http://localhost:4200",
+//	allowedHeaders = {"Content-Type", "Authorization", "X-Requested-With"},
+//	methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
+@CrossOrigin
 @RestController
 @RequestMapping("/settings")
 public class SettingsController {
@@ -50,7 +49,17 @@ public class SettingsController {
         CalendarMasterVO response = settingsService.createCalendar(request);
         
         log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(CALENDAR_CREATE_SUCCESS, CALENDAR_CREATE_SUCCESS.getDescription(), response);
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), CALENDAR), response);
+    }
+    
+    @GetMapping("/calendar/{calendarCode}")
+    public ResponseEntity<GeneralRespVO> getCalendarInfo(@PathVariable String calendarCode) {
+        log.debug(generateLog(ENTRY, this.getClass().getName()));
+        
+        CalendarMasterVO response = settingsService.getCalendarInfo(calendarCode);
+        
+        log.debug(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
     }
 
     @PostMapping("/calendar/update/{calendarCode}")
@@ -60,17 +69,17 @@ public class SettingsController {
         CalendarMasterVO response = settingsService.updateCalendar(request);
         
         log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(CALENDAR_UPDATE_SUCCESS, CALENDAR_UPDATE_SUCCESS.getDescription(), response);
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), CALENDAR), response);
     }
 
-    @DeleteMapping("/calendar/{calendarCode}")
+    @DeleteMapping("/calendar/delete/{calendarCode}")
     public ResponseEntity<GeneralRespVO> deleteCalendar(@PathVariable String calendarCode) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         settingsService.deleteCalendar(calendarCode);
         
         log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(CALENDAR_DELETE_SUCCESS, CALENDAR_DELETE_SUCCESS.getDescription());
+        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR));
     }
 
     @GetMapping("/calendar/list")
@@ -80,6 +89,6 @@ public class SettingsController {
         List<CalendarMasterVO> response = settingsService.listCalendars();
         
         log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Calendar"), response);
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
     }
 }

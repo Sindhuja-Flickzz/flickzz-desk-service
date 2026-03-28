@@ -15,6 +15,6 @@ public class FlickzzDeskExceptionHandler {
                 ex.getErrorCode().getTitle(),
                 ex.getDescription().isBlank() ? ex.getErrorCode().getDescription() : ex.getDescription()
         );
-        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
