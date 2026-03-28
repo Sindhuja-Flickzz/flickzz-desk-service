@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_CODE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_TYPE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import com.flickzz.desk.config.FlickzzDeskUtility;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
@@ -24,7 +23,6 @@ import com.flickzz.desk.model.CalendarHoliday;
 import com.flickzz.desk.model.CalendarMaster;
 import com.flickzz.desk.model.CalendarWorkday;
 import com.flickzz.desk.repo.CalendarMasterRepository;
-import com.flickzz.desk.security.CustomUserDetails;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
 
@@ -53,16 +51,13 @@ public class SettingsService {
 			calendarMasterRepository.findByCalendarCode(request.getCalendarCode()).ifPresent(c -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), CALENDAR_CODE));
 			});
-
-			//Get user details from context
-			CustomUserDetails user = FlickzzDeskUtility.getUserDetails();
 			
-			CalendarMaster entity = mapper.toCalendarMasterEntity(request, user);
+			CalendarMaster entity = mapper.toCalendarMasterEntity(request);
 			if (request.getHolidays() != null) {
-				entity.setHolidays(mapper.toCalendarHolidayEntity(request.getHolidays(), user, entity));
+				entity.setHolidays(mapper.toCalendarHolidayEntity(request.getHolidays(), request.getCreateBy(), entity));
 			}
 			if (request.getWorkingDays() != null) {
-				entity.setWorkdays(mapper.toCalendarWorkDay(request.getWorkingDays(), user, entity));
+				entity.setWorkdays(mapper.toCalendarWorkDay(request.getWorkingDays(), request.getCreateBy(), entity));
 			}
 
 			CalendarMaster saved = calendarMasterRepository.save(entity);
@@ -107,17 +102,13 @@ public class SettingsService {
 			CalendarMaster existing = calendarMasterRepository.findByCalendarCodeAndIsActive(request.getCalendarCode(), true)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE)));
 
-			
-			//Get user details from context
-			CustomUserDetails user = FlickzzDeskUtility.getUserDetails();
-
 			existing.setCalendarType(request.getCalendarType());
 			existing.setValidFrom(request.getValidFrom());
 			existing.setValidTo(request.getValidTo());
 			existing.setWorkFrom(request.getWorkFrom());
 			existing.setWorkTo(request.getWorkTo());
 			existing.setTimezone(request.getTimezone());
-			existing.setUpdatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM");
+			existing.setUpdatedBy(request.getCreateBy());
 			existing.setUpdatedAt(new Date());
 
 			existing.getHolidays().clear();
@@ -128,7 +119,7 @@ public class SettingsService {
 						.description(h.getDescription())
 						.calendarMaster(existing)
 						.updatedAt(new Date())
-						.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+						.updatedBy(request.getCreateBy())
 						.build()
 				).toList());
 			}
@@ -139,10 +130,10 @@ public class SettingsService {
 					CalendarWorkday workday = CalendarWorkday.builder()
 						.workday(workingDay)
 						.calendarMaster(existing)
-						.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+						.createdBy(request.getCreateBy())
 						.createdAt(new Date())
 						.updatedAt(new Date())
-						.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM"	)
+						.updatedBy(request.getCreateBy())
 						.build();
 					return workday;
 				}).toList());

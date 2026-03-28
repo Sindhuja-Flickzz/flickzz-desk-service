@@ -1,5 +1,6 @@
 package com.flickzz.desk.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -14,8 +15,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CalendarMasterRequestVO {
-
+public class CalendarMasterRequestVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String calendarCode;
     private String calendarType;
     @JsonFormat(pattern = "dd.MM.yyyy")
@@ -29,4 +30,5 @@ public class CalendarMasterRequestVO {
     private String timezone;
     private boolean isSupport;
     private boolean isRequestor;
+    private String createBy;
 }

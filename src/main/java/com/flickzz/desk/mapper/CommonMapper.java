@@ -94,7 +94,7 @@ public class CommonMapper {
 				.build();
 	}
 
-	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request, CustomUserDetails user) {
+	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request) {
 		if (request == null) {
 			return null;
 		}
@@ -108,37 +108,37 @@ public class CommonMapper {
 				.timezone(request.getTimezone())
 				.isRequestor(request.isRequestor())
 				.isSupport(request.isSupport())
-				.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+				.createdBy(request.getCreateBy())
 				.createdAt(new Date())
 				.updatedAt(new Date())
-				.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+				.updatedBy(request.getCreateBy())
 				.build();
 	}
 	
-	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, CustomUserDetails user, CalendarMaster entity) {
+	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, String createdBy, CalendarMaster entity) {
 		return calendarHolidayList.stream().map(h -> {
 			CalendarHoliday holiday = CalendarHoliday.builder()
 			.holidayDate(h.getHolidayDate())
 			.description(h.getDescription())
 			.calendarMaster(entity)
-			.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+			.createdBy(createdBy)
 			.createdAt(new Date())
 			.updatedAt(new Date())
-			.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+			.updatedBy(createdBy)
 			.build();
 		return holiday;
 		}).toList();
 	}
 	
-	public List<CalendarWorkday> toCalendarWorkDay (List<String> workDayList, CustomUserDetails user, CalendarMaster entity) {
+	public List<CalendarWorkday> toCalendarWorkDay (List<String> workDayList, String createdBy, CalendarMaster entity) {
 		return workDayList.stream().map(workingDay -> {
 			CalendarWorkday workday = CalendarWorkday.builder()
 					.workday(workingDay)
 					.calendarMaster(entity)
-					.createdBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM")
+					.createdBy(createdBy)
 					.createdAt(new Date())
 					.updatedAt(new Date())
-					.updatedBy(user != null && user.getRole() != null?user.getRole().toUpperCase() : "SYSTEM"	)
+					.updatedBy(createdBy)
 					.build();
 			return workday;
 		}).toList();

@@ -1,5 +1,6 @@
 package com.flickzz.desk.vo;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -12,8 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CalendarMasterVO {
-
+public class CalendarMasterVO implements Serializable {
+    private static final long serialVersionUID = 1L;
     private Long calendarId;
     private String calendarCode;
     private String calendarType;

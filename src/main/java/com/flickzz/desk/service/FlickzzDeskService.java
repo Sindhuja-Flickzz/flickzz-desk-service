@@ -76,6 +76,7 @@ public class FlickzzDeskService {
 		                .accessToken(jwtToken)
 		                .refreshToken(refreshToken)
 		                .mfaEnabled(user.isMfaEnabled())
+						.userRole(user.getRole())
 		                .build();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -101,6 +102,7 @@ public class FlickzzDeskService {
 	                .accessToken(jwtToken)
 	                .refreshToken(refreshToken)
 	                .mfaEnabled(user.isMfaEnabled())
+					.userRole(user.getRole())
 	                .build();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -126,6 +128,7 @@ public class FlickzzDeskService {
 	                    .accessToken("")
 	                    .refreshToken("")
 	                    .mfaEnabled(true)
+						.userRole(user.getRole())
 	                    .build();
 	        }
 	        var jwtToken = jwtUtil.generateToken(user.getUserName());
