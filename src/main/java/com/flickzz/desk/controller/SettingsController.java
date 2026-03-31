@@ -1,14 +1,5 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.*;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -24,10 +15,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
+import com.flickzz.desk.config.FlickzzDeskResponse;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import com.flickzz.desk.service.SettingsService;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
-import com.flickzz.desk.vo.GeneralRespVO;
 
 //@CrossOrigin(origins = "http://localhost:4200",
 //	allowedHeaders = {"Content-Type", "Authorization", "X-Requested-With"},
@@ -43,7 +44,7 @@ public class SettingsController {
 	private SettingsService settingsService;
 	
     @PostMapping("/calendar/create")
-    public ResponseEntity<GeneralRespVO> createCalendar(@RequestBody CalendarMasterRequestVO request) {
+    public ResponseEntity<FlickzzDeskResponse> createCalendar(@RequestBody CalendarMasterRequestVO request) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         CalendarMasterVO response = settingsService.createCalendar(request);
@@ -53,7 +54,7 @@ public class SettingsController {
     }
     
     @GetMapping("/calendar/{calendarCode}")
-    public ResponseEntity<GeneralRespVO> getCalendarInfo(@PathVariable String calendarCode) {
+    public ResponseEntity<FlickzzDeskResponse> getCalendarInfo(@PathVariable String calendarCode) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         CalendarMasterVO response = settingsService.getCalendarInfo(calendarCode);
@@ -63,7 +64,7 @@ public class SettingsController {
     }
 
     @PostMapping("/calendar/update/{calendarCode}")
-    public ResponseEntity<GeneralRespVO> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
+    public ResponseEntity<FlickzzDeskResponse> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         CalendarMasterVO response = settingsService.updateCalendar(request);
@@ -73,7 +74,7 @@ public class SettingsController {
     }
 
     @DeleteMapping("/calendar/delete/{calendarCode}")
-    public ResponseEntity<GeneralRespVO> deleteCalendar(@PathVariable String calendarCode) {
+    public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode) {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         settingsService.deleteCalendar(calendarCode);
@@ -83,7 +84,7 @@ public class SettingsController {
     }
 
     @GetMapping("/calendar/list")
-    public ResponseEntity<GeneralRespVO> listCalendars() {
+    public ResponseEntity<FlickzzDeskResponse> listCalendars() {
         log.debug(generateLog(ENTRY, this.getClass().getName()));
         
         List<CalendarMasterVO> response = settingsService.listCalendars();

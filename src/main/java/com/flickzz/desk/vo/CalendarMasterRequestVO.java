@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CalendarMasterRequestVO implements Serializable {
     private static final long serialVersionUID = 1L;
+    private Long companyId;
     private String calendarCode;
     private String calendarType;
     @JsonFormat(pattern = "dd.MM.yyyy")
@@ -31,4 +32,5 @@ public class CalendarMasterRequestVO implements Serializable {
     private boolean isSupport;
     private boolean isRequestor;
     private String createBy;
+    private String updatedBy;
 }

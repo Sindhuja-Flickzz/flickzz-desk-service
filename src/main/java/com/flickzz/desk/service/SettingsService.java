@@ -108,7 +108,7 @@ public class SettingsService {
 			existing.setWorkFrom(request.getWorkFrom());
 			existing.setWorkTo(request.getWorkTo());
 			existing.setTimezone(request.getTimezone());
-			existing.setUpdatedBy(request.getCreateBy());
+			existing.setUpdatedBy(request.getUpdatedBy());
 			existing.setUpdatedAt(new Date());
 
 			existing.getHolidays().clear();

@@ -28,4 +28,6 @@ public class CalendarMasterVO implements Serializable {
     private Boolean isActive;
     private Boolean isSupport;
     private Boolean isRequestor;
+    private String createdBy;
+    private String updatedBy;
 }

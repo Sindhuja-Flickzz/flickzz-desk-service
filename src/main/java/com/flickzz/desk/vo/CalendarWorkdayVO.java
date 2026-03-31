@@ -16,4 +16,6 @@ public class CalendarWorkdayVO implements Serializable {
     private Long workdayId;
     private String workday;   // e.g., "Monday"
     private Boolean isActive;
+    private String createdBy;
+    private String updatedBy;
 }

@@ -1,7 +1,7 @@
 package com.flickzz.desk.vo;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,13 +10,17 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class CalendarHolidayVO implements Serializable {
+@AllArgsConstructor
+public class CountryMasterVO implements Serializable{
+
 	private static final long serialVersionUID = 1L;
-	private Date holidayDate;
-    private String description;
+	private Long countryId;
+    private String countryName;
+    private String isoCode;
     private Boolean isActive;
     private String createdBy;
     private String updatedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

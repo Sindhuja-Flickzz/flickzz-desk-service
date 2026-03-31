@@ -6,7 +6,7 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.LOGIN;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.LOGOUT_ALL_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.REGISTRATION_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.TOKEN_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessResponseHandler.handleSuccessResponse;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.FlickzzDeskService;
 import com.flickzz.desk.vo.CommonRequestVO;
-import com.flickzz.desk.vo.GeneralRespVO;
 import com.flickzz.desk.vo.LoginResponseVO;
 import com.flickzz.desk.vo.RegisterLoginRequestVO;
 import com.flickzz.desk.vo.RegisterLoginResponseVO;
@@ -40,7 +40,7 @@ public class FlickzzDeskController {
 	
 
 	@PostMapping("register")
-	public ResponseEntity<GeneralRespVO> register(@RequestBody RegisterLoginRequestVO request) throws Exception {
+	public ResponseEntity<FlickzzDeskResponse> register(@RequestBody RegisterLoginRequestVO request) throws Exception {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		
 		RegisterLoginResponseVO respVO = flickzzDeskService.register(request);
@@ -50,7 +50,7 @@ public class FlickzzDeskController {
 	}
 	
 	@PostMapping("verify")
-	public ResponseEntity<GeneralRespVO> verifyCode(@RequestBody VerificationRequestVO request) {
+	public ResponseEntity<FlickzzDeskResponse> verifyCode(@RequestBody VerificationRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		
 		RegisterLoginResponseVO respVO = flickzzDeskService.verifyCode(request);
@@ -60,7 +60,7 @@ public class FlickzzDeskController {
 	}
 	
 	@PostMapping("login")
-	public ResponseEntity<GeneralRespVO> userLogin(@RequestBody RegisterLoginRequestVO request) {
+	public ResponseEntity<FlickzzDeskResponse> userLogin(@RequestBody RegisterLoginRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		
 		RegisterLoginResponseVO respVO = flickzzDeskService.userLogin(request);
@@ -70,7 +70,7 @@ public class FlickzzDeskController {
 	}
 	
 	@PostMapping("refresh")
-	public ResponseEntity<GeneralRespVO> authRefresh(@RequestBody CommonRequestVO request) {
+	public ResponseEntity<FlickzzDeskResponse> authRefresh(@RequestBody CommonRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 	    
 		LoginResponseVO respVO = flickzzDeskService.authRefresh(request);
@@ -80,7 +80,7 @@ public class FlickzzDeskController {
 	}
 	
     @PostMapping("/logoutAll")
-    public ResponseEntity<GeneralRespVO> logoutAll(@RequestBody CommonRequestVO request) {
+    public ResponseEntity<FlickzzDeskResponse> logoutAll(@RequestBody CommonRequestVO request) {
     	log.debug(generateLog(ENTRY, this.getClass().getName()));
 	    
     	flickzzDeskService.logoutAllUsers(request);
