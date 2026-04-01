@@ -1,12 +1,14 @@
 package com.flickzz.desk.model;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -31,6 +33,12 @@ public class SkillMaster {
     @Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
     private String skillName;
 
+    @Column(name = "EXPERIENCE_YEARS", nullable = false)
+    private Integer experienceYears;
+
+    @Column(name = "EXPERIENCE_MONTHS", nullable = false)
+    private Integer experienceMonths;
+    
     @Builder.Default
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
@@ -41,9 +49,20 @@ public class SkillMaster {
     @Column(name = "UPDATED_BY", length = 50)
     private String updatedBy;
 
-    @Column(name = "CREATED_AT", updatable = false)
-    private Date createdAt;
+    @Column(name = "CREATED_AT")
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "UPDATED_AT")
-    private Date updatedAt;
+    private LocalDateTime updatedAt = LocalDateTime.now();
+    
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }    
 }

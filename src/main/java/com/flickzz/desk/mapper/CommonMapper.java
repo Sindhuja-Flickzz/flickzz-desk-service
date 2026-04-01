@@ -125,8 +125,6 @@ public class CommonMapper {
 				.isRequestor(request.isRequestor())
 				.isSupport(request.isSupport())
 				.createdBy(request.getCreateBy())
-				.createdAt(new Date())
-				.updatedAt(new Date())
 				.updatedBy(request.getCreateBy())
 				.build();
 	}
@@ -138,8 +136,6 @@ public class CommonMapper {
 			.description(h.getDescription())
 			.calendarMaster(entity)
 			.createdBy(createdBy)
-			.createdAt(new Date())
-			.updatedAt(new Date())
 			.updatedBy(createdBy)
 			.build();
 		return holiday;
@@ -152,8 +148,6 @@ public class CommonMapper {
 					.workday(workingDay)
 					.calendarMaster(entity)
 					.createdBy(createdBy)
-					.createdAt(new Date())
-					.updatedAt(new Date())
 					.updatedBy(createdBy)
 					.build();
 			return workday;
@@ -174,8 +168,6 @@ public class CommonMapper {
 				.isServiceProvider(request.getMarkAsServiceProvider() ? false : request.getIsServiceProvider())
 				.isRequestor(request.getMarkAsServiceProvider() ? false : request.getIsRequestor())
 				.createdBy(request.getCreatedBy())
-				.createdAt(new Date())
-				.updatedAt(new Date())
 				.updatedBy(request.getCreatedBy()).build();
 	}
 
@@ -231,6 +223,8 @@ public class CommonMapper {
 		return SkillMasterVO.builder()
 				.skillId(save.getSkillId())
 				.skillName(save.getSkillName())
+				.experienceYears(save.getExperienceYears())
+				.experienceMonths(save.getExperienceMonths())
 				.isActive(save.getIsActive())
 				.createdBy(save.getCreatedBy())
 				.updatedBy(save.getUpdatedBy())

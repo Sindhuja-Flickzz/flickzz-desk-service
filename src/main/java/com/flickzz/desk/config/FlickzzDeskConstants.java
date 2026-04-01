@@ -25,4 +25,6 @@ public class FlickzzDeskConstants {
 	public static final String MAIL_ID = "Mail Id";
 	public static final String ACCESS_ID = "Access Id";
 	public static final String PHONE = "Phone";
+	public static final String YEAR = "Year";
+	public static final String MONTH = "Month";
 }

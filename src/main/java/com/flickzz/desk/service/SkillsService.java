@@ -1,8 +1,6 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL_NAME;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
@@ -48,6 +46,16 @@ public class SkillsService {
 							getDescription(INVALID_FIELD.getDescription(), SKILL_NAME));
 				}
 				
+				if (skill.getExperienceYears() == null || skill.getExperienceYears() < 0 || skill.getExperienceYears() > 100) {
+					throw new FlickzzDeskException(INVALID_FIELD,
+							getDescription(INVALID_FIELD.getDescription(), YEAR));
+				}
+				
+				if (skill.getExperienceMonths() == null || skill.getExperienceMonths() < 0 || skill.getExperienceMonths() > 11) {
+					throw new FlickzzDeskException(INVALID_FIELD,
+							getDescription(INVALID_FIELD.getDescription(), MONTH));
+				}
+				
 				skillMasterRepository.findBySkillName(skill.getSkillName()).ifPresent(s -> {
 					throw new FlickzzDeskException(ALREADY_EXISTS,
 							getDescription(ALREADY_EXISTS.getDescription(), skill.getSkillName()));
@@ -55,6 +63,8 @@ public class SkillsService {
 				
 				SkillMaster skillMaster = SkillMaster.builder()
 						.skillName(skill.getSkillName())
+						.experienceYears(skill.getExperienceYears())
+						.experienceMonths(skill.getExperienceMonths())
 						.createdBy(skill.getCreatedBy())
 						.build();
 				skillMasterVOs.add(mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster)));
@@ -89,7 +99,8 @@ public class SkillsService {
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(request.getSkillId()).orElseThrow(
 					() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
-			skillMaster.setSkillName(request.getSkillName());
+			skillMaster.setExperienceYears(request.getExperienceYears());
+			skillMaster.setExperienceMonths(request.getExperienceMonths());
 			skillMaster.setUpdatedBy(request.getUpdatedBy());
 			return mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster));			
 		} catch (FlickzzDeskException e) {

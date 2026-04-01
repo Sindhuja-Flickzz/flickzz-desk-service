@@ -19,6 +19,10 @@ public class SkillRequestVO implements Serializable{
 	
 	private String skillName;
 	
+	private Integer experienceYears;
+    
+	private Integer experienceMonths;
+	
 	private String createdBy;
 	
 	private String updatedBy;
