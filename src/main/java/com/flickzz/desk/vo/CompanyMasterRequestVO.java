@@ -16,7 +16,7 @@ public class CompanyMasterRequestVO implements Serializable {
     private Long companyId;
     private String companyName;
     private String registeredNumber;
-    private String currency;
+    private Long countryId;    // reference to CountryMaster;
     private String address;
     private String mail;
     private Boolean markAsServiceProvider;

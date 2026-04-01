@@ -18,6 +18,7 @@ public class CountryMasterVO implements Serializable{
 	private Long countryId;
     private String countryName;
     private String isoCode;
+    private String currency;
     private Boolean isActive;
     private String createdBy;
     private String updatedBy;

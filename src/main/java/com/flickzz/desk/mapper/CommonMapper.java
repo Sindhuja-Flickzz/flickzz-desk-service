@@ -160,19 +160,19 @@ public class CommonMapper {
 		}).toList();
 	}
 
-	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request) {
+	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request, CountryMaster country) {
 		if (request == null) {
 			return null;
 		}
 		return CompanyMaster.builder()
 				.companyName(request.getCompanyName())
 				.registeredNumber(request.getRegisteredNumber())
-				.currency(request.getCurrency())
+				.country(country)
 				.address(request.getAddress())
 				.mail(request.getMail())
-				.markAsServiceProvider(request.getMarkAsServiceProvider())
-				.isServiceProvider(request.getIsServiceProvider())
-				.isRequestor(request.getIsRequestor())
+				.isBoth(request.getMarkAsServiceProvider() ? true : false)
+				.isServiceProvider(request.getMarkAsServiceProvider() ? false : request.getIsServiceProvider())
+				.isRequestor(request.getMarkAsServiceProvider() ? false : request.getIsRequestor())
 				.createdBy(request.getCreatedBy())
 				.createdAt(new Date())
 				.updatedAt(new Date())
@@ -187,17 +187,15 @@ public class CommonMapper {
 				.companyId(entity.getCompanyId())
 				.companyName(entity.getCompanyName())
 				.registeredNumber(entity.getRegisteredNumber())
-				.currency(entity.getCurrency())
+				.country(toCountryMasterVO(entity.getCountry()))
 				.address(entity.getAddress())
 				.mail(entity.getMail())
-				.markAsServiceProvider(entity.getMarkAsServiceProvider())
+				.isBoth(entity.getIsBoth())
 				.isServiceProvider(entity.getIsServiceProvider())
 				.isRequestor(entity.getIsRequestor())
 				.isActive(entity.getIsActive())
 				.createdBy(entity.getCreatedBy())
-				.createdAt(entity.getCreatedAt())
-				.updatedBy(entity.getUpdatedBy())
-				.updatedAt(entity.getUpdatedAt()).build();
+				.updatedBy(entity.getUpdatedBy()).build();
 	}
 
 	public PlantMasterVO toPlantMasterVO(PlantMaster entity) {
@@ -222,8 +220,7 @@ public class CommonMapper {
                 .countryId(country.getCountryId())
                 .countryName(country.getCountryName())
                 .isoCode(country.getIsoCode())
-                .createdBy(country.getCreatedBy())
-                .updatedBy(country.getUpdatedBy())
+                .currency(country.getCurrency())
                 .build();
 	}
 

@@ -1,7 +1,6 @@
 package com.flickzz.desk.vo;
 
 import java.io.Serializable;
-import java.util.Date;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,15 +17,13 @@ public class CompanyMasterVO implements Serializable {
     private Long companyId;
     private String companyName;
     private String registeredNumber;
-    private String currency;
+    private CountryMasterVO country;
     private String address;
     private String mail;
-    private Boolean markAsServiceProvider;
     private Boolean isServiceProvider;
     private Boolean isRequestor;
+    private Boolean isBoth;
     private Boolean isActive;
     private String createdBy;
     private String updatedBy;
-    private Date createdAt;
-    private Date updatedAt;
 }

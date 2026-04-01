@@ -8,4 +8,6 @@ import com.flickzz.desk.model.CompanyMaster;
 
 public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, Long> {
     Optional<CompanyMaster> findByCompanyName(String companyName);
+
+	Optional<CompanyMaster> findByCompanyNameOrRegisteredNumber(String companyName, String registeredNumber);
 }

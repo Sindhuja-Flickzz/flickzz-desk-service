@@ -33,6 +33,9 @@ public class CountryMaster {
 
     @Column(name = "ISO_CODE", nullable = false, unique = true, length = 2)
     private String isoCode;
+    
+    @Column(name = "CURRENCY", nullable = false, length = 2)
+    private String currency;
 
     @Column(name = "IS_ACTIVE")
     private Boolean isActive = true;

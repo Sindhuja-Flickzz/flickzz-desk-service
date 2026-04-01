@@ -13,6 +13,7 @@ import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,9 @@ import org.springframework.stereotype.Service;
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.model.CountryMaster;
 import com.flickzz.desk.repo.CompanyMasterRepository;
+import com.flickzz.desk.repo.CountryMasterRepository;
 import com.flickzz.desk.vo.CompanyMasterRequestVO;
 import com.flickzz.desk.vo.CompanyMasterVO;
 
@@ -30,6 +33,9 @@ import com.flickzz.desk.vo.CompanyMasterVO;
 public class CompanyService {
 	
 	private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
+	
+	@Autowired
+	private CountryMasterRepository countryMasterRepository;
 	
 	@Autowired
 	CompanyMasterRepository companyMasterRepository;
@@ -47,16 +53,22 @@ public class CompanyService {
 		 	if (request == null || request.getRegisteredNumber() == null) {
 		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), REGISTERED_NUMBER));
 		 	}
-						
-		 	if (request == null || request.getCurrency() == null) {
+		 	
+		 	if (request == null || request.getCountryId() == null) {
 		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), CURRENCY));
 		 	}
-			
+		 	
+		 	Optional<CountryMaster> country = countryMasterRepository.findById(request.getCountryId());
+			if (country.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CURRENCY));
+			}
+		 	
 		 	companyMasterRepository.findByCompanyName(request.getCompanyName()).ifPresent(c -> {
 		 		throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), COMPANY_NAME));
 		 	});
 			
-		 	CompanyMaster entity = mapper.toCompanyMasterEntity(request);
+		 	CompanyMaster entity = mapper.toCompanyMasterEntity(request, country.get());
 		 	return mapper.toCompanyMasterVO(companyMasterRepository.save(entity));
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -86,15 +98,20 @@ public class CompanyService {
 			if (request == null || request.getCompanyId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
+			
+		 	Optional<CountryMaster> country = countryMasterRepository.findById(request.getCountryId());
+			if (country.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CURRENCY));
+			}
 
 			CompanyMaster existing = companyMasterRepository.findById(request.getCompanyId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
 
-			CompanyMaster entity = mapper.toCompanyMasterEntity(request);
-			entity.setCompanyId(existing.getCompanyId());
-			entity.setCompanyName(existing.getCompanyName());
-			entity.setUpdatedBy(request.getUpdatedBy());
-			return mapper.toCompanyMasterVO(companyMasterRepository.save(entity));
+			existing.setCountry(country.get());
+			existing.setAddress(request.getAddress());
+			existing.setMail(request.getMail());
+			return mapper.toCompanyMasterVO(companyMasterRepository.save(existing));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

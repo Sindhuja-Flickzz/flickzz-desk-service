@@ -50,7 +50,7 @@ public class SkillsService {
 				
 				skillMasterRepository.findBySkillName(skill.getSkillName()).ifPresent(s -> {
 					throw new FlickzzDeskException(ALREADY_EXISTS,
-							getDescription(ALREADY_EXISTS.getDescription(), SKILL));
+							getDescription(ALREADY_EXISTS.getDescription(), skill.getSkillName()));
 				});
 				
 				SkillMaster skillMaster = SkillMaster.builder()

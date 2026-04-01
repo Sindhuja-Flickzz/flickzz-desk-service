@@ -4,9 +4,13 @@ import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 
@@ -35,18 +39,16 @@ public class CompanyMaster {
     @Column(name = "REGISTERED_NUMBER", nullable = false, length = 100)
     private String registeredNumber;
 
-    @Column(name = "CURRENCY", nullable = false, length = 10)
-    private String currency;
-
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "COUNTRY_ID",
+                foreignKey = @ForeignKey(name = "FK_PLANT_REGION"), nullable = false)
+    private CountryMaster country;
+    
     @Column(name = "ADDRESS", length = 255)
     private String address;
 
     @Column(name = "MAIL", length = 100)
     private String mail;
-
-    @Builder.Default
-    @Column(name = "MARK_AS_SERVICE_PROVIDER", nullable = false)
-    private Boolean markAsServiceProvider = false;
 
     @Builder.Default
     @Column(name = "IS_SERVICE_PROVIDER", nullable = false)
@@ -55,6 +57,10 @@ public class CompanyMaster {
     @Builder.Default
     @Column(name = "IS_REQUESTOR", nullable = false)
     private Boolean isRequestor = false;
+    
+    @Builder.Default
+    @Column(name = "IS_BOTH", nullable = false)
+    private Boolean isBoth = false;
 
     @Builder.Default
     @Column(name = "IS_ACTIVE", nullable = false)
