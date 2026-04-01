@@ -5,9 +5,10 @@ import lombok.Data;
 
 @Data 
 @AllArgsConstructor
-public class FlickzzDeskSuccessResponse {
+public class FlickzzDeskResponse {
 
 	private String code; 
 	private String title; 
 	private String description;
+	private Object attributes;
 }

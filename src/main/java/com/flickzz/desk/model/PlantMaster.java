@@ -12,46 +12,47 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+@Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Getter
-@Setter
-@Table(name = "AUTH")
-public class Auth {
+@Table(name = "FD_PLANT_MASTER")
+public class PlantMaster {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="authGenn")
-    @Column(name = "AUTH_ID", unique=true, nullable = false)
-	@SequenceGenerator(name="authGenn", sequenceName = "AUTH_SEQ", allocationSize = 1)
-    private Long authId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "plantGen")
+    @SequenceGenerator(name = "plantGen", sequenceName = "PLANT_SEQ", allocationSize = 1)
+    @Column(name = "PLANT_ID", unique = true, nullable = false)
+    private Long plantId;
 
-    @Column(name = "TOKEN", nullable = false, length = 255, unique = true)
-    private String token;
+    @Column(name = "PLANT_NAME", unique = true, nullable = false, length = 255)
+    private String plantName;
 
-    @Column(name = "EXPIRES_AT", nullable = false)
-    private Date expiresAt;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "COUNTRY_ID", unique = true,
+                foreignKey = @ForeignKey(name = "FK_PLANT_REGION"), nullable = false)
+    private CountryMaster region;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false,
-                foreignKey = @ForeignKey(name = "FD_USERS_REFRESH_TOKEN"))
-    private User user;
+    /* Relation: Plant → Calendar */
+    @ManyToOne
+    @JoinColumn(name = "CALENDAR_ID", nullable = false)
+    private CalendarMaster calendar;
 
-    /* ===================== STATUS ===================== */
     @Builder.Default
-    @Column(name = "IS_ACTIVE")
+    @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
 
     @Column(name = "CREATED_BY", length = 50)

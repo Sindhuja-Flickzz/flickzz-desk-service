@@ -108,8 +108,7 @@ public class SettingsService {
 			existing.setWorkFrom(request.getWorkFrom());
 			existing.setWorkTo(request.getWorkTo());
 			existing.setTimezone(request.getTimezone());
-			existing.setUpdatedBy(request.getCreateBy());
-			existing.setUpdatedAt(new Date());
+			existing.setUpdatedBy(request.getUpdatedBy());
 
 			existing.getHolidays().clear();
 			if (request.getHolidays() != null) {
@@ -118,8 +117,6 @@ public class SettingsService {
 						.holidayDate(h.getHolidayDate())
 						.description(h.getDescription())
 						.calendarMaster(existing)
-						.updatedAt(new Date())
-						.updatedBy(request.getCreateBy())
 						.build()
 				).toList());
 			}
@@ -131,8 +128,6 @@ public class SettingsService {
 						.workday(workingDay)
 						.calendarMaster(existing)
 						.createdBy(request.getCreateBy())
-						.createdAt(new Date())
-						.updatedAt(new Date())
 						.updatedBy(request.getCreateBy())
 						.build();
 					return workday;

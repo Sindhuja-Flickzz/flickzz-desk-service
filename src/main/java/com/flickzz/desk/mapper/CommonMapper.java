@@ -8,17 +8,27 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.flickzz.desk.model.AgentMaster;
 import com.flickzz.desk.model.CalendarHoliday;
 import com.flickzz.desk.model.CalendarMaster;
 import com.flickzz.desk.model.CalendarWorkday;
+import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.model.CountryMaster;
 import com.flickzz.desk.model.LoginMaster;
+import com.flickzz.desk.model.PlantMaster;
+import com.flickzz.desk.model.SkillMaster;
 import com.flickzz.desk.model.User;
-import com.flickzz.desk.security.CustomUserDetails;
+import com.flickzz.desk.vo.AgentMasterVO;
 import com.flickzz.desk.vo.CalendarHolidayVO;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
 import com.flickzz.desk.vo.CalendarWorkdayVO;
+import com.flickzz.desk.vo.CompanyMasterRequestVO;
+import com.flickzz.desk.vo.CompanyMasterVO;
+import com.flickzz.desk.vo.CountryMasterVO;
+import com.flickzz.desk.vo.PlantMasterVO;
 import com.flickzz.desk.vo.RegisterLoginRequestVO;
+import com.flickzz.desk.vo.SkillMasterVO;
 
 @Component
 public class CommonMapper {
@@ -69,6 +79,8 @@ public class CommonMapper {
 				.timezone(calendar.getTimezone())
 				.holidays(calendar.getHolidays() == null ? null : calendar.getHolidays().stream()
 						.filter(CalendarHoliday::isActive).map(this::toCalendarHolidayVO).toList())
+				.createdBy(calendar.getCreatedBy())
+				.updatedBy(calendar.getUpdatedBy())
 				.build();
 	}
 
@@ -80,6 +92,8 @@ public class CommonMapper {
 				.workdayId(workday.getWorkdayId())
 				.workday(workday.getWorkday())
 				.isActive(workday.getIsActive())
+				.createdBy(workday.getCreatedBy())
+				.updatedBy(workday.getUpdatedBy())
 				.build();
 	}
 
@@ -91,6 +105,8 @@ public class CommonMapper {
 				.holidayDate(holiday.getHolidayDate())
 				.description(holiday.getDescription())
 				.isActive(holiday.getIsActive())
+				.createdBy(holiday.getCreatedBy())
+				.updatedBy(holiday.getUpdatedBy())
 				.build();
 	}
 
@@ -109,8 +125,6 @@ public class CommonMapper {
 				.isRequestor(request.isRequestor())
 				.isSupport(request.isSupport())
 				.createdBy(request.getCreateBy())
-				.createdAt(new Date())
-				.updatedAt(new Date())
 				.updatedBy(request.getCreateBy())
 				.build();
 	}
@@ -122,8 +136,6 @@ public class CommonMapper {
 			.description(h.getDescription())
 			.calendarMaster(entity)
 			.createdBy(createdBy)
-			.createdAt(new Date())
-			.updatedAt(new Date())
 			.updatedBy(createdBy)
 			.build();
 		return holiday;
@@ -136,12 +148,103 @@ public class CommonMapper {
 					.workday(workingDay)
 					.calendarMaster(entity)
 					.createdBy(createdBy)
-					.createdAt(new Date())
-					.updatedAt(new Date())
 					.updatedBy(createdBy)
 					.build();
 			return workday;
 		}).toList();
+	}
+
+	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request, CountryMaster country) {
+		if (request == null) {
+			return null;
+		}
+		return CompanyMaster.builder()
+				.companyName(request.getCompanyName())
+				.registeredNumber(request.getRegisteredNumber())
+				.country(country)
+				.address(request.getAddress())
+				.mail(request.getMail())
+				.isBoth(request.getMarkAsServiceProvider() ? true : false)
+				.isServiceProvider(request.getMarkAsServiceProvider() ? false : request.getIsServiceProvider())
+				.isRequestor(request.getMarkAsServiceProvider() ? false : request.getIsRequestor())
+				.createdBy(request.getCreatedBy())
+				.updatedBy(request.getCreatedBy()).build();
+	}
+
+	public CompanyMasterVO toCompanyMasterVO(CompanyMaster entity) {
+		if (entity == null) {
+			return null;
+		}
+		return CompanyMasterVO.builder()
+				.companyId(entity.getCompanyId())
+				.companyName(entity.getCompanyName())
+				.registeredNumber(entity.getRegisteredNumber())
+				.country(toCountryMasterVO(entity.getCountry()))
+				.address(entity.getAddress())
+				.mail(entity.getMail())
+				.isBoth(entity.getIsBoth())
+				.isServiceProvider(entity.getIsServiceProvider())
+				.isRequestor(entity.getIsRequestor())
+				.isActive(entity.getIsActive())
+				.createdBy(entity.getCreatedBy())
+				.updatedBy(entity.getUpdatedBy()).build();
+	}
+
+	public PlantMasterVO toPlantMasterVO(PlantMaster entity) {
+		if (entity == null) {
+			return null;
+		}
+		return PlantMasterVO.builder()
+				.plantId(entity.getPlantId())
+				.plantName(entity.getPlantName())
+				.region(toCountryMasterVO(entity.getRegion()))
+				.calendar(toCalendarMasterVO(entity.getCalendar()))
+				.createdBy(entity.getCreatedBy())
+				.updatedBy(entity.getUpdatedBy())
+				.isActive(entity.getIsActive()).build();
+	}
+
+	public CountryMasterVO toCountryMasterVO(CountryMaster country) {
+		if (country == null) {
+            return null;
+        }
+        return CountryMasterVO.builder()
+                .countryId(country.getCountryId())
+                .countryName(country.getCountryName())
+                .isoCode(country.getIsoCode())
+                .currency(country.getCurrency())
+                .build();
+	}
+
+	public SkillMasterVO toSkillMasterVo(SkillMaster save) {
+		if (save == null) {
+			return null;
+		}
+		return SkillMasterVO.builder()
+				.skillId(save.getSkillId())
+				.skillName(save.getSkillName())
+				.experienceYears(save.getExperienceYears())
+				.experienceMonths(save.getExperienceMonths())
+				.isActive(save.getIsActive())
+				.createdBy(save.getCreatedBy())
+				.updatedBy(save.getUpdatedBy())
+				.build();
+	}
+
+	public AgentMasterVO toAgentMasterVO(AgentMaster agent) {
+		if (agent == null) {
+			return null;
+		}
+		return AgentMasterVO.builder()
+				.agentId(agent.getAgentId())
+				.agentName(agent.getAgentName())
+				.mailId(agent.getMailId())
+				.accessId(agent.getAccessId())
+				.phone(agent.getPhone())
+				.organization(toCompanyMasterVO(agent.getOrganization()))
+				.calendar(toCalendarMasterVO(agent.getCalendar()))
+				.createdBy(agent.getCreatedBy())
+				.isActive(agent.getIsActive()).build();
 	}
 }
 

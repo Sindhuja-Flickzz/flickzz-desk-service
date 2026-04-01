@@ -15,8 +15,16 @@ public class FlickzzDeskConstants {
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";
 	public static final String COMPANY_NAME = "Company name";
+	public static final String PLANT_NAME = "Plant name";
+	public static final String SKILL_NAME = "Skill name";
+	public static final String AGENT_NAME = "Agent name";
 	public static final String REGISTERED_NUMBER = "Registered Number";
 	public static final String CURRENCY = "Currency";
-	
-
+	public static final String COMPANY = "Company";	
+	public static final String COUNTRY = "Country";	
+	public static final String MAIL_ID = "Mail Id";
+	public static final String ACCESS_ID = "Access Id";
+	public static final String PHONE = "Phone";
+	public static final String YEAR = "Year";
+	public static final String MONTH = "Month";
 }

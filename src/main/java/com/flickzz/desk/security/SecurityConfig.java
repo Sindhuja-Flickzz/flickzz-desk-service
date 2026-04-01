@@ -46,7 +46,7 @@ public class SecurityConfig {
         	.cors(Customizer.withDefaults())
         	.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-	            .requestMatchers("/register","/verify","/login","/auth/**", "/refresh","/menu/**").permitAll()
+	            .requestMatchers("/register","/verify","/login","/auth/**", "/refresh","/menu/**","/settings/**").permitAll()
 	            .anyRequest().authenticated()
 	        )
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)

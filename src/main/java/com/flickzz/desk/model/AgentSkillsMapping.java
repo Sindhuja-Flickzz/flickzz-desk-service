@@ -1,7 +1,6 @@
 package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,38 +18,30 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Getter
-@Setter
-@Table(name = "AUTH")
-public class Auth {
+@Table(name = "FD_AGENT_SKILLS_MAPPING")
+public class AgentSkillsMapping {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="authGenn")
-    @Column(name = "AUTH_ID", unique=true, nullable = false)
-	@SequenceGenerator(name="authGenn", sequenceName = "AUTH_SEQ", allocationSize = 1)
-    private Long authId;
-
-    @Column(name = "TOKEN", nullable = false, length = 255, unique = true)
-    private String token;
-
-    @Column(name = "EXPIRES_AT", nullable = false)
-    private Date expiresAt;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "agentSkillSeq")
+    @SequenceGenerator(name = "agentSkillSeq", sequenceName = "AGENT_SKILL_SEQ", allocationSize = 1)
+    @Column(name = "AGENT_SKILL_ID")
+    private Long agentSkillId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false,
-                foreignKey = @ForeignKey(name = "FD_USERS_REFRESH_TOKEN"))
-    private User user;
+    @JoinColumn(name = "AGENT_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_AGENT"))
+    private AgentMaster agent;
 
-    /* ===================== STATUS ===================== */
-    @Builder.Default
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SKILL_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_SKILL"))
+    private SkillMaster skill;
+
     @Column(name = "IS_ACTIVE")
     private Boolean isActive = true;
 

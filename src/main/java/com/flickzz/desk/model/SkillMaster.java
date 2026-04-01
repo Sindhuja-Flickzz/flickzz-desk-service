@@ -1,17 +1,12 @@
 package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -19,39 +14,33 @@ import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+@Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Getter
-@Setter
-@Table(name = "AUTH")
-public class Auth {
+@Table(name = "FD_SKILL_MASTER")
+public class SkillMaster {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="authGenn")
-    @Column(name = "AUTH_ID", unique=true, nullable = false)
-	@SequenceGenerator(name="authGenn", sequenceName = "AUTH_SEQ", allocationSize = 1)
-    private Long authId;
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "skillGen")
+    @SequenceGenerator(name = "skillGen", sequenceName = "SKILL_SEQ", allocationSize = 1)
+    @Column(name = "SKILL_ID", unique = true, nullable = false)
+    private Long skillId;
 
-    @Column(name = "TOKEN", nullable = false, length = 255, unique = true)
-    private String token;
+    @Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
+    private String skillName;
 
-    @Column(name = "EXPIRES_AT", nullable = false)
-    private Date expiresAt;
+    @Column(name = "EXPERIENCE_YEARS", nullable = false)
+    private Integer experienceYears;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false,
-                foreignKey = @ForeignKey(name = "FD_USERS_REFRESH_TOKEN"))
-    private User user;
-
-    /* ===================== STATUS ===================== */
+    @Column(name = "EXPERIENCE_MONTHS", nullable = false)
+    private Integer experienceMonths;
+    
     @Builder.Default
-    @Column(name = "IS_ACTIVE")
+    @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
 
     @Column(name = "CREATED_BY", length = 50)

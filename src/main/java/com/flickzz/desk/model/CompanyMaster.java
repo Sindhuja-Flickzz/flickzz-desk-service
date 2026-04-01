@@ -11,7 +11,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -22,52 +21,53 @@ import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
+@Entity
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Getter
-@Setter
-@Table(name = "LOGIN_MASTER")
-public class LoginMaster {
-    @Id 
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="loginGenn")
-    @Column(name = "LOGIN_ID", unique=true, nullable = false)
-	@SequenceGenerator(name="loginGenn", sequenceName = "LOGIN_SEQ", allocationSize = 1)
-    private Long loginId;
-    
-    @Column(name = "USER_NAME", nullable = false, length = 255, unique = true)
-    private String userName;
-    
-    @Column(name = "PASSWORD", nullable = false, length = 255, unique = true)
-    private String password;
-    
-    @Column(name = "ROLE", nullable = false, length = 100)
-    private String role;
+@Table(name = "FD_COMPANY_MASTER")
+public class CompanyMaster {
 
-    @Column(name = "LAST_LOGIN_DATETIME")
-    private Date lastLoginDatetime;
-    
-    // Foreign key to FD_USER
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false, unique = true,
-                foreignKey = @ForeignKey(name = "FK_LOGIN_USER"))
-    private User user;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "companyGen")
+    @SequenceGenerator(name = "companyGen", sequenceName = "COMPANY_SEQ", allocationSize = 1)
+    @Column(name = "COMPANY_ID", unique = true, nullable = false)
+    private Long companyId;
 
-    // Foreign key to AUTH
+    @Column(name = "COMPANY_NAME", unique = true, nullable = false, length = 255)
+    private String companyName;
+
+    @Column(name = "REGISTERED_NUMBER", nullable = false, length = 100)
+    private String registeredNumber;
+
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AUTH_ID", unique = true,
-                foreignKey = @ForeignKey(name = "FK_LOGIN_AUTH"))
-    private Auth auth;
+    @JoinColumn(name = "COUNTRY_ID",
+                foreignKey = @ForeignKey(name = "FK_PLANT_REGION"), nullable = false)
+    private CountryMaster country;
+    
+    @Column(name = "ADDRESS", length = 255)
+    private String address;
 
-    /* ===================== STATUS ===================== */
+    @Column(name = "MAIL", length = 100)
+    private String mail;
+
     @Builder.Default
-    @Column(name = "IS_ACTIVE")
+    @Column(name = "IS_SERVICE_PROVIDER", nullable = false)
+    private Boolean isServiceProvider = false;
+
+    @Builder.Default
+    @Column(name = "IS_REQUESTOR", nullable = false)
+    private Boolean isRequestor = false;
+    
+    @Builder.Default
+    @Column(name = "IS_BOTH", nullable = false)
+    private Boolean isBoth = false;
+
+    @Builder.Default
+    @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
 
     @Column(name = "CREATED_BY", length = 50)
