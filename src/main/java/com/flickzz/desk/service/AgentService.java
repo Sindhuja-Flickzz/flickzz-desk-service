@@ -37,27 +37,28 @@ import com.flickzz.desk.repo.CompanyMasterRepository;
 import com.flickzz.desk.repo.SkillMasterRepository;
 import com.flickzz.desk.vo.AgentMasterVO;
 import com.flickzz.desk.vo.AgentRequestVO;
+import com.flickzz.desk.vo.AgentSkillsMappingVO;
 
 @Service
 public class AgentService {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(AgentService.class);
-	
+
 	@Autowired
 	private CompanyMasterRepository companyMasterRepository;
-	
+
 	@Autowired
 	private SkillMasterRepository skillMasterRepository;
-	
+
 	@Autowired
 	private CalendarMasterRepository calendarMasterRepository;
-	
+
 	@Autowired
 	private AgentMasterRepository agentMasterRepository;
-	
+
 	@Autowired
 	private AgentSkillsMappingRepository agentSkillsMappingRepository;
-	
+
 	@Autowired
 	private CommonMapper mapper;
 
@@ -65,63 +66,60 @@ public class AgentService {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getAgentName() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), AGENT_NAME));
-		 	}
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), AGENT_NAME));
+			}
 
 			if (request == null || request.getMailId() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), MAIL_ID));
-		 	}
+				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), MAIL_ID));
+			}
 
 			if (request == null || request.getAccessId() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), ACCESS_ID));
-		 	}
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), ACCESS_ID));
+			}
 
 			if (request == null || request.getPhone() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
-		 	}
-					
+				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
+			}
+
 			Optional<CompanyMaster> company = companyMasterRepository.findById(request.getOrgId());
 			if (company == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
-			
+
 			request.getSkills().stream().forEach(skillId -> {
 				Optional<SkillMaster> skill = skillMasterRepository.findById(skillId);
 				if (skill == null) {
-					throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
 				}
 			});
-			
+
 			Optional<CalendarMaster> calendar = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendar == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
-			
-			AgentMaster agent = AgentMaster.builder()
-					.agentName(request.getAgentName())
-					.mailId(request.getMailId())
-					.accessId(request.getAccessId())
-					.phone(request.getPhone())
-					.organization(company.get())
-					.calendar(calendar.get())
-					.createdBy(request.getCreatedBy())
-					.build();
+
+			AgentMaster agent = AgentMaster.builder().agentName(request.getAgentName()).mailId(request.getMailId())
+					.accessId(request.getAccessId()).phone(request.getPhone()).organization(company.get())
+					.calendarMaster(calendar.get()).createdBy(request.getCreatedBy()).build();
 			AgentMaster agentMaster = agentMasterRepository.save(agent);
 
 			List<SkillMaster> skills = skillMasterRepository.findAllById(request.getSkills());
 			skills.stream().forEach(skill -> {
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder()
-						.agent(agentMaster)
-						.skill(skill)
+				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agentMaster).skill(skill)
 						.createdBy(request.getCreatedBy()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
-			
+
 			return mapper.toAgentMasterVO(agentMasterRepository.save(agent));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createCompany method in FlickzzDeskService");
+			log.error("Exception in createAgent method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
@@ -131,73 +129,72 @@ public class AgentService {
 		try {
 			Optional<AgentMaster> agentMaster = agentMasterRepository.findById(Long.valueOf(agentId));
 			if (agentMaster == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
 			}
 			return mapper.toAgentMasterVO(agentMaster.get());
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in getPlantInfo method in FlickzzDeskService");
+			log.error("Exception in getAgentInfo method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public AgentMasterVO updateAgent(AgentRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
-        try {
-            Optional<AgentMaster> existing = agentMasterRepository.findById(request.getAgentId());
-            if (existing == null) {
-                throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
-            }
-            
-            if (request == null || request.getPhone() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
-		 	}
-					
+		try {
+			Optional<AgentMaster> existing = agentMasterRepository.findById(request.getAgentId());
+			if (existing == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+			}
+
+			if (request == null || request.getPhone() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
+			}
+
 			Optional<CompanyMaster> company = companyMasterRepository.findById(request.getOrgId());
 			if (company == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
-			
+
 			request.getSkills().stream().forEach(skillId -> {
 				Optional<SkillMaster> skill = skillMasterRepository.findById(skillId);
 				if (skill == null) {
-					throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
 				}
 			});
-			
-			existing.get().getSkills().clear();
+
+			existing.get().getAgentSkillsMappings().clear();
 			List<SkillMaster> skills = skillMasterRepository.findAllById(request.getSkills());
-			
+
 			Optional<CalendarMaster> calendar = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendar == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
-			
+
 			AgentMaster agent = existing.get();
 			agent.setPhone(request.getPhone());
 			agent.setOrganization(company.get());
-			agent.setCalendar(calendar.get());
+			agent.setCalendarMaster(calendar.get());
 			agent.setUpdatedBy(request.getUpdatedBy());
 			agentMasterRepository.save(agent);
-			
+
 			skills.stream().forEach(skill -> {
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder()
-						.agent(existing.get())
-						.skill(skill)
-						.updatedBy(request.getUpdatedBy())
-						.build();
+				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(existing.get()).skill(skill)
+						.updatedBy(request.getUpdatedBy()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
-			
+
 			return mapper.toAgentMasterVO(agentMasterRepository.save(existing.get()));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in updatePlant method in FlickzzDeskService");
+			log.error("Exception in updateAgent method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-		}            
+		}
 	}
 
 	public void deleteAgent(String agentId) {
@@ -211,7 +208,7 @@ public class AgentService {
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in deletePlant method in FlickzzDeskService");
+			log.error("Exception in deleteAgent method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
@@ -222,6 +219,23 @@ public class AgentService {
 			return agentMasterRepository.findAll().stream().map(mapper::toAgentMasterVO).toList();
 		} catch (Exception e) {
 			log.error("Exception in getPlantList method in FlickzzDeskService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<AgentSkillsMappingVO> getAgentSkills(String agentId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			List<AgentSkillsMapping> agentMaster = agentSkillsMappingRepository
+					.findByAgentAgentId(Long.valueOf(agentId));
+			if (agentMaster == null) {
+				return List.of();
+			}
+			return agentMaster.stream().map(mapper::toAgentSkillMappingVo).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getAgentSkills method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
