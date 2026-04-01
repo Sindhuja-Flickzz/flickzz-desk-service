@@ -16,14 +16,14 @@ public class AgentMasterVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private Long agentId;
-    private String agentName;
-    private String mailId;
-    private String accessId;
-    private String phone;
-    private CompanyMasterVO organization;
-    private List<SkillMasterVO> skills;
-    private CalendarMasterVO calendar;
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
+	private String agentName;
+	private String mailId;
+	private String accessId;
+	private String phone;
+	private CompanyMasterVO organization;
+	private List<AgentSkillsMappingVO> agentSkillsMappings;
+	private CalendarMasterVO calendar;
+	private Boolean isActive;
+	private String createdBy;
+	private String updatedBy;
 }

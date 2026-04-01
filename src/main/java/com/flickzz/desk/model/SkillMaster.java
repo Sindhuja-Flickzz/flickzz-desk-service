@@ -24,45 +24,45 @@ import lombok.NoArgsConstructor;
 @Table(name = "FD_SKILL_MASTER")
 public class SkillMaster {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "skillGen")
-    @SequenceGenerator(name = "skillGen", sequenceName = "SKILL_SEQ", allocationSize = 1)
-    @Column(name = "SKILL_ID", unique = true, nullable = false)
-    private Long skillId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "skillGen")
+	@SequenceGenerator(name = "skillGen", sequenceName = "SKILL_SEQ", allocationSize = 1)
+	@Column(name = "SKILL_ID", unique = true, nullable = false)
+	private Long skillId;
 
-    @Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
-    private String skillName;
+	@Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
+	private String skillName;
 
-    @Column(name = "EXPERIENCE_YEARS", nullable = false)
-    private Integer experienceYears;
+	@Column(name = "EXPERIENCE_YEARS", nullable = false)
+	private Integer experienceYears;
 
-    @Column(name = "EXPERIENCE_MONTHS", nullable = false)
-    private Integer experienceMonths;
-    
-    @Builder.Default
-    @Column(name = "IS_ACTIVE", nullable = false)
-    private Boolean isActive = true;
+	@Column(name = "EXPERIENCE_MONTHS", nullable = false)
+	private Integer experienceMonths;
 
-    @Column(name = "CREATED_BY", length = 50)
-    private String createdBy;
+	@Builder.Default
+	@Column(name = "IS_ACTIVE")
+	private Boolean isActive = true;
 
-    @Column(name = "UPDATED_BY", length = 50)
-    private String updatedBy;
+	@Column(name = "CREATED_BY", length = 50)
+	private String createdBy;
 
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(name = "UPDATED_BY", length = 50)
+	private String updatedBy;
 
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-    
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+	@Column(name = "CREATED_AT")
+	private LocalDateTime createdAt = LocalDateTime.now();
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }    
+	@Column(name = "UPDATED_AT")
+	private LocalDateTime updatedAt = LocalDateTime.now();
+
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }
