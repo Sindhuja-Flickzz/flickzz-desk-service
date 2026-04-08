@@ -62,6 +62,16 @@ public class AgentController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
 	}
 
+	@GetMapping("/get/{agentName}")
+	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByName(@PathVariable String agentName) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		AgentMasterVO response = agentService.getAgentInfoByName(agentName);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+	}
+
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateAgent(@RequestBody AgentRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));

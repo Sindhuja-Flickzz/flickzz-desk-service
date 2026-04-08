@@ -11,19 +11,15 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SkillRequestVO implements Serializable{
-	
+public class SkillRequestVO implements Serializable {
+
 	private static final long serialVersionUID = 1L;
-	
+
 	private Long skillId;
-	
+
 	private String skillName;
-	
-	private Integer experienceYears;
-    
-	private Integer experienceMonths;
-	
+
 	private String createdBy;
-	
+
 	private String updatedBy;
 }

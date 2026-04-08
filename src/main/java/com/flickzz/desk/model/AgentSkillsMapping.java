@@ -47,6 +47,12 @@ public class AgentSkillsMapping {
 	@JsonManagedReference
 	private SkillMaster skill;
 
+	@Column(name = "EXPERIENCE_YEARS", nullable = false)
+	private Integer experienceYears;
+
+	@Column(name = "EXPERIENCE_MONTHS", nullable = false)
+	private Integer experienceMonths;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;

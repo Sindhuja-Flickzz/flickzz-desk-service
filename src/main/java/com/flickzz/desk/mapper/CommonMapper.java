@@ -164,7 +164,6 @@ public class CommonMapper {
 			return null;
 		}
 		return SkillMasterVO.builder().skillId(save.getSkillId()).skillName(save.getSkillName())
-				.experienceYears(save.getExperienceYears()).experienceMonths(save.getExperienceMonths())
 				.isActive(save.getIsActive()).createdBy(save.getCreatedBy()).updatedBy(save.getUpdatedBy()).build();
 	}
 
@@ -190,6 +189,8 @@ public class CommonMapper {
 		}
 		return AgentSkillsMappingVO.builder().agentSkillId(agentSkillsMappings.getAgentSkillId())
 				.skill(toSkillMasterVo(agentSkillsMappings.getSkill()))
-				.agent(toAgentMasterVO(agentSkillsMappings.getAgent())).build();
+				.agent(toAgentMasterVO(agentSkillsMappings.getAgent()))
+				.experienceYears(agentSkillsMappings.getExperienceYears())
+				.experienceMonths(agentSkillsMappings.getExperienceMonths()).build();
 	}
 }

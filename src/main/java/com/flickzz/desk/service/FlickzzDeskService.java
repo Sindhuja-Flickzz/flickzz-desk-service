@@ -1,21 +1,20 @@
 package com.flickzz.desk.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.FD_USER;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INCORRECT_CODE;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_CREDENTIALS;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.TFA_ERROR;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.stereotype.Service;
-
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.Auth;
@@ -54,6 +53,9 @@ public class FlickzzDeskService {
 
 	@Autowired
 	private CommonMapper mapper;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
 	public RegisterLoginResponseVO register(RegisterLoginRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
@@ -119,11 +121,8 @@ public class FlickzzDeskService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
-			userRepository.findByUserNameAndPassword(request.getEmail(), request.getPassword())
-					.orElseThrow(() -> new FlickzzDeskException(INVALID_CREDENTIALS));
-
-			if (!user.getPassword().equals(user.getPassword())) {
-				throw new FlickzzDeskException(INCORRECT_CODE, INCORRECT_CODE.getDescription());
+			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+				throw new FlickzzDeskException(INVALID_CREDENTIALS);
 			}
 
 			if (user.isMfaEnabled()) {
@@ -134,9 +133,7 @@ public class FlickzzDeskService {
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
 			return RegisterLoginResponseVO.builder().accessToken(jwtToken).refreshToken(refreshToken).mfaEnabled(false)
 					.build();
-		} catch (FlickzzDeskException e) {
-			throw e;
-		} catch (AuthenticationException e) {
+		} catch (FlickzzDeskException | AuthenticationException e) {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in register method in FlickzzDeskService");

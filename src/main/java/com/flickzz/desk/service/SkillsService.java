@@ -1,9 +1,15 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
+import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL_NAME;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.NO_DATA;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,53 +30,39 @@ import com.flickzz.desk.vo.SkillRequestVO;
 public class SkillsService {
 
 	private static final Logger log = LoggerFactory.getLogger(SkillsService.class);
-	
+
 	@Autowired
 	SkillMasterRepository skillMasterRepository;
-	
+
 	@Autowired
 	CommonMapper mapper;
-	
+
 	public List<SkillMasterVO> createSkills(List<SkillRequestVO> skills) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
-		try {			
+		try {
 			if (skills.size() == 0) {
 				throw new FlickzzDeskException(NO_DATA, NO_DATA.getDescription());
 			}
-			
+
 			List<SkillMasterVO> skillMasterVOs = new ArrayList<SkillMasterVO>();
-			
+
 			skills.forEach(skill -> {
 				if (skill.getSkillName() == null) {
 					throw new FlickzzDeskException(INVALID_FIELD,
 							getDescription(INVALID_FIELD.getDescription(), SKILL_NAME));
 				}
-				
-				if (skill.getExperienceYears() == null || skill.getExperienceYears() < 0 || skill.getExperienceYears() > 100) {
-					throw new FlickzzDeskException(INVALID_FIELD,
-							getDescription(INVALID_FIELD.getDescription(), YEAR));
-				}
-				
-				if (skill.getExperienceMonths() == null || skill.getExperienceMonths() < 0 || skill.getExperienceMonths() > 11) {
-					throw new FlickzzDeskException(INVALID_FIELD,
-							getDescription(INVALID_FIELD.getDescription(), MONTH));
-				}
-				
+
 				skillMasterRepository.findBySkillName(skill.getSkillName()).ifPresent(s -> {
 					throw new FlickzzDeskException(ALREADY_EXISTS,
 							getDescription(ALREADY_EXISTS.getDescription(), skill.getSkillName()));
 				});
-				
-				SkillMaster skillMaster = SkillMaster.builder()
-						.skillName(skill.getSkillName())
-						.experienceYears(skill.getExperienceYears())
-						.experienceMonths(skill.getExperienceMonths())
-						.createdBy(skill.getCreatedBy())
-						.build();
+
+				SkillMaster skillMaster = SkillMaster.builder().skillName(skill.getSkillName())
+						.createdBy(skill.getCreatedBy()).build();
 				skillMasterVOs.add(mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster)));
-				
+
 			});
-			
+
 			return skillMasterVOs;
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -83,8 +75,9 @@ public class SkillsService {
 	public SkillMasterVO getSkillInfo(String skillId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId)).orElseThrow(
-					() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
+			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
 			return mapper.toSkillMasterVo(skillMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -97,12 +90,11 @@ public class SkillsService {
 	public SkillMasterVO updateSkill(SkillRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			SkillMaster skillMaster = skillMasterRepository.findBySkillId(request.getSkillId()).orElseThrow(
-					() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
-			skillMaster.setExperienceYears(request.getExperienceYears());
-			skillMaster.setExperienceMonths(request.getExperienceMonths());
+			SkillMaster skillMaster = skillMasterRepository.findBySkillId(request.getSkillId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
 			skillMaster.setUpdatedBy(request.getUpdatedBy());
-			return mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster));			
+			return mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
@@ -129,7 +121,7 @@ public class SkillsService {
 	public List<SkillMasterVO> getSkillList() {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			return skillMasterRepository.findAll().stream().map(skill -> mapper.toSkillMasterVo(skill)).toList() ;
+			return skillMasterRepository.findAll().stream().map(skill -> mapper.toSkillMasterVo(skill)).toList();
 		} catch (Exception e) {
 			log.error("Exception in getCompanyList method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);

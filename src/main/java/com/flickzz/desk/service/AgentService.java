@@ -11,6 +11,7 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.PHONE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
@@ -89,11 +90,11 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
 
-			request.getSkills().stream().forEach(skillId -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillId);
+			request.getSkills().stream().forEach(skillInfo -> {
+				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
 				if (skill == null) {
 					throw new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
+							getDescription(DOES_NOT_EXIST.getDescription(), (SKILL + " " + skillInfo.getSkillName())));
 				}
 			});
 
@@ -108,10 +109,11 @@ public class AgentService {
 					.calendarMaster(calendar.get()).createdBy(request.getCreatedBy()).build();
 			AgentMaster agentMaster = agentMasterRepository.save(agent);
 
-			List<SkillMaster> skills = skillMasterRepository.findAllById(request.getSkills());
-			skills.stream().forEach(skill -> {
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agentMaster).skill(skill)
-						.createdBy(request.getCreatedBy()).build();
+			request.getSkills().stream().forEach(skillInfo -> {
+				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
+				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agentMaster).skill(skill.get())
+						.experienceYears(skillInfo.getExperienceYears())
+						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 
@@ -140,6 +142,22 @@ public class AgentService {
 		}
 	}
 
+	public AgentMasterVO getAgentInfoByName(String agentName) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentName(agentName);
+			agentMaster.ifPresent(agent -> {
+				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), AGENT));
+			});
+			return new AgentMasterVO();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getAgentInfo method in FlickzzDeskService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
 	public AgentMasterVO updateAgent(AgentRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
@@ -158,8 +176,8 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
 
-			request.getSkills().stream().forEach(skillId -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillId);
+			request.getSkills().stream().forEach(skillInfo -> {
+				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
 				if (skill == null) {
 					throw new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
@@ -167,7 +185,7 @@ public class AgentService {
 			});
 
 			existing.get().getAgentSkillsMappings().clear();
-			List<SkillMaster> skills = skillMasterRepository.findAllById(request.getSkills());
+//			List<SkillMaster> skills = skillMasterRepository.findAllById(request.getSkills());
 
 			Optional<CalendarMaster> calendar = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendar == null) {
@@ -182,9 +200,11 @@ public class AgentService {
 			agent.setUpdatedBy(request.getUpdatedBy());
 			agentMasterRepository.save(agent);
 
-			skills.stream().forEach(skill -> {
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(existing.get()).skill(skill)
-						.updatedBy(request.getUpdatedBy()).build();
+			request.getSkills().stream().forEach(skillInfo -> {
+				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
+				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(existing.get()).skill(skill.get())
+						.experienceYears(skillInfo.getExperienceYears())
+						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 

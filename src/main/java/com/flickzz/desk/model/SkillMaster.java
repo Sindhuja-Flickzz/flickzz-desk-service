@@ -32,13 +32,6 @@ public class SkillMaster {
 
 	@Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
 	private String skillName;
-
-	@Column(name = "EXPERIENCE_YEARS", nullable = false)
-	private Integer experienceYears;
-
-	@Column(name = "EXPERIENCE_MONTHS", nullable = false)
-	private Integer experienceMonths;
-
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
