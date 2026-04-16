@@ -1,7 +1,6 @@
 package com.flickzz.desk.vo;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,19 +11,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CountryMasterVO implements Serializable {
+public class PriorityMasterVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private Long countryId;
-	private String countryName;
-	private String isoCode;
-	private String phoneCode;
-	private String currencyCode;
-	private String currencyName;
-	private String timezone;
+	private Long priorityId;
+	private String priorityName;
+	private CompanyMasterVO organization;
+	private Integer rank;
+	private String colorCode;
+	private Integer responseSla;
+	private Integer resolutionSla;
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
 }

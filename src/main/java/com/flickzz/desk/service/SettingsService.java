@@ -53,7 +53,7 @@ public class SettingsService {
 			});
 			
 			CalendarMaster entity = mapper.toCalendarMasterEntity(request);
-			if (request.getHolidays() != null) {
+			if (request.getHolidays() != null && request.getHolidays().size() > 0) {
 				entity.setHolidays(mapper.toCalendarHolidayEntity(request.getHolidays(), request.getCreateBy(), entity));
 			}
 			if (request.getWorkingDays() != null) {

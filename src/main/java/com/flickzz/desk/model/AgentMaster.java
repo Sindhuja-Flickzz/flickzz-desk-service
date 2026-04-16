@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -52,6 +54,10 @@ public class AgentMaster {
 	@Column(name = "PHONE", length = 20)
 	private String phone;
 
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "USER_ID", nullable = false, unique = true, foreignKey = @ForeignKey(name = "FK_AGENT_USER"))
+	private User user;
+
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_COMPANY"))
 	private CompanyMaster organization;
@@ -75,10 +81,10 @@ public class AgentMaster {
 	private List<AgentSkillsMapping> agentSkillsMappings;
 
 	@Column(name = "CREATED_AT")
-	private LocalDateTime createdAt = LocalDateTime.now();
+	private LocalDateTime createdAt;
 
 	@Column(name = "UPDATED_AT")
-	private LocalDateTime updatedAt = LocalDateTime.now();
+	private LocalDateTime updatedAt;
 
 	@PrePersist
 	protected void onCreate() {

@@ -2,7 +2,7 @@ package com.flickzz.desk.controller;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT;
+import static com.flickzz.desk.config.FlickzzDeskConstants.PRIORITY;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
@@ -27,67 +27,68 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
-import com.flickzz.desk.service.PlantService;
-import com.flickzz.desk.vo.PlantMasterRequestVO;
-import com.flickzz.desk.vo.PlantMasterVO;
+import com.flickzz.desk.service.PriorityService;
+import com.flickzz.desk.vo.PriorityMasterVO;
+import com.flickzz.desk.vo.PriorityRequestVO;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/plant")
-public class PlantController {
+@RequestMapping("/priority")
+public class PriorityController {
 
-	private static final Logger log = LoggerFactory.getLogger(PlantController.class);
+	private static final Logger log = LoggerFactory.getLogger(PriorityController.class);
 
 	@Autowired
-	private PlantService plantService;
+	private PriorityService priorityService;
 
 	@PostMapping("create")
-	public ResponseEntity<FlickzzDeskResponse> createPlant(@RequestBody PlantMasterRequestVO request) throws Exception {
+	public ResponseEntity<FlickzzDeskResponse> createPriority(@RequestBody PriorityRequestVO request) throws Exception {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		PlantMasterVO respVO = plantService.createPlant(request);
+		PriorityMasterVO respVO = priorityService.createPriority(request);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), PLANT), respVO);
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), PRIORITY), respVO);
 	}
 
-	@GetMapping("/{plantId}")
-	public ResponseEntity<FlickzzDeskResponse> getPlantInfo(@PathVariable String plantId) {
+	@GetMapping("/{priorityId}")
+	public ResponseEntity<FlickzzDeskResponse> getPriorityInfo(@PathVariable String priorityId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		PlantMasterVO response = plantService.getPlantInfo(plantId);
+		PriorityMasterVO response = priorityService.getPriorityInfo(priorityId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PLANT), response);
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<FlickzzDeskResponse> updatePlant(@RequestBody PlantMasterRequestVO request) {
+	public ResponseEntity<FlickzzDeskResponse> updatePriority(@RequestBody PriorityRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		PlantMasterVO response = plantService.updatePlant(request);
+		PriorityMasterVO response = priorityService.updatePriority(request);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), PLANT), response);
+		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), PRIORITY),
+				response);
 	}
 
-	@DeleteMapping("/delete/{plantId}")
-	public ResponseEntity<FlickzzDeskResponse> deletePlant(@PathVariable String plantId) {
+	@DeleteMapping("/delete/{priorityId}")
+	public ResponseEntity<FlickzzDeskResponse> deletePriority(@PathVariable String priorityId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		plantService.deletePlant(plantId);
+		priorityService.deletePriority(priorityId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PLANT));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PRIORITY));
 	}
 
 	@GetMapping("/list")
-	public ResponseEntity<FlickzzDeskResponse> getPlantList() {
+	public ResponseEntity<FlickzzDeskResponse> getPriorityList() {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		List<PlantMasterVO> response = plantService.getPlantList();
+		List<PriorityMasterVO> response = priorityService.getPriorityList();
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PLANT), response);
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
 }

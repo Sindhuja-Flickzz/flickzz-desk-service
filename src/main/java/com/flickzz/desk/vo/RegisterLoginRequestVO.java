@@ -12,11 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RegisterLoginRequestVO implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private String firstname;    
-    private String lastname;
-    private String email;    
-    private String password;    
-    private String role;    
-    private Boolean mfaEnabled;
+	private static final long serialVersionUID = 1L;
+	private String firstname;
+	private String lastname;
+	private String email;
+	private String password;
+	private String role;
+	private Boolean mfaEnabled;
 }

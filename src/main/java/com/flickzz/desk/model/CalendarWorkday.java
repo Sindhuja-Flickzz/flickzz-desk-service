@@ -26,48 +26,48 @@ import lombok.NoArgsConstructor;
 @Table(name = "FD_CALENDAR_WORKDAYS")
 public class CalendarWorkday {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "workdayGen")
-    @SequenceGenerator(name = "workdayGen", sequenceName = "WORKDAY_SEQ", allocationSize = 1)
-    @Column(name = "WORKDAY_ID", unique = true, nullable = false)
-    private Long workdayId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "workdayGen")
+	@SequenceGenerator(name = "workdayGen", sequenceName = "WORKDAY_SEQ", allocationSize = 1)
+	@Column(name = "WORKDAY_ID", unique = true, nullable = false)
+	private Long workdayId;
 
-    @Column(name = "WORKDAY", nullable = false, length = 20)
-    private String workday; // e.g., "Monday", "Tuesday"
+	@Column(name = "WORKDAY", nullable = false, length = 20)
+	private String workday; // e.g., "Monday", "Tuesday"
 
-    @ManyToOne
-    @JoinColumn(name = "CALENDAR_ID", nullable = false)
-    private CalendarMaster calendarMaster;
+	@ManyToOne
+	@JoinColumn(name = "CALENDAR_ID", nullable = false)
+	private CalendarMaster calendarMaster;
 
-    @Builder.Default
-    @Column(name = "IS_ACTIVE")
-    private Boolean isActive = true;
+	@Builder.Default
+	@Column(name = "IS_ACTIVE")
+	private Boolean isActive = true;
 
-    @Column(name = "CREATED_BY", length = 50)
-    private String createdBy;
+	@Column(name = "CREATED_BY", length = 50)
+	private String createdBy;
 
-    @Column(name = "UPDATED_BY", length = 50)
-    private String updatedBy;
+	@Column(name = "UPDATED_BY", length = 50)
+	private String updatedBy;
 
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(name = "CREATED_AT")
+	private LocalDateTime createdAt;
 
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+	@Column(name = "UPDATED_AT")
+	private LocalDateTime updatedAt;
 
-    // or follow JavaBean convention for booleans:
+	// or follow JavaBean convention for booleans:
 	public boolean isActive() {
-	    return Boolean.TRUE.equals(isActive);
-	} 
-       
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+		return Boolean.TRUE.equals(isActive);
+	}
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }    
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }

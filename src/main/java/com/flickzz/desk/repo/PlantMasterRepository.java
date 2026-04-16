@@ -10,6 +10,6 @@ public interface PlantMasterRepository extends JpaRepository<PlantMaster, Long> 
 
 	Optional<PlantMaster> findByPlantName(String plantName);
 
-	Optional<PlantMaster> findByPlantId(String plantId);
-    
+	Optional<PlantMaster> findByPlantId(Long plantId);
+
 }

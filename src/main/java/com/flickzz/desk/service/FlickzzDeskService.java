@@ -1,5 +1,18 @@
 package com.flickzz.desk.service;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.FD_USER;
+import static com.flickzz.desk.config.FlickzzDeskConstants.USERNAME_OR_EMAIL;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_CREDENTIALS;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.TFA_ERROR;
+
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,14 +20,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.FD_USER;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_CREDENTIALS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.TFA_ERROR;
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.Auth;
@@ -60,8 +65,11 @@ public class FlickzzDeskService {
 	public RegisterLoginResponseVO register(RegisterLoginRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			userRepository.findByUserName(request.getEmail()).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-					getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
+			Optional<User> userCheck = userRepository.findByUserName(request.getEmail());
+			if (userCheck.isPresent()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), USERNAME_OR_EMAIL));
+			}
 
 			var user = mapper.registerRequesttoUser(request);
 
@@ -132,7 +140,7 @@ public class FlickzzDeskService {
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
 			return RegisterLoginResponseVO.builder().accessToken(jwtToken).refreshToken(refreshToken).mfaEnabled(false)
-					.build();
+					.userRole(user.getRole()).build();
 		} catch (FlickzzDeskException | AuthenticationException e) {
 			throw e;
 		} catch (Exception e) {

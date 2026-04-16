@@ -4,9 +4,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -21,32 +24,33 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_COUNTRY_MASTER")
-public class CountryMaster {
+@Table(name = "FD_PRIORITY_MASTER")
+public class PriorityMaster {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "countryGen")
-	@SequenceGenerator(name = "countryGen", sequenceName = "COUNTRY_SEQ", allocationSize = 1)
-	@Column(name = "COUNTRY_ID")
-	private Long countryId;
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "priorityGen")
+	@SequenceGenerator(name = "priorityGen", sequenceName = "PRIORITY_SEQ", allocationSize = 1)
+	@Column(name = "PRIORITY_ID")
+	private Long priorityId;
 
-	@Column(name = "COUNTRY_NAME", nullable = false, unique = true, length = 100)
-	private String countryName;
+	@Column(name = "PRIORITY_NAME", nullable = false, length = 100)
+	private String priorityName;
 
-	@Column(name = "ISO_CODE", nullable = false, unique = true, length = 3)
-	private String isoCode;
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_PRIORITY_COMPANY"), nullable = false)
+	private CompanyMaster organization;
 
-	@Column(name = "PHONE_CODE", nullable = false, length = 10)
-	private String phoneCode;
+	@Column(name = "RANK", nullable = false)
+	private Integer rank;
 
-	@Column(name = "CURRENCY_CODE", length = 10)
-	private String currencyCode;
+	@Column(name = "COLOR_CODE", length = 20)
+	private String colorCode;
 
-	@Column(name = "CURRENCY_NAME", length = 50)
-	private String currencyName;
+	@Column(name = "RESPONSE_SLA", nullable = false)
+	private Integer responseSla;
 
-	@Column(name = "TIMEZONE", length = 100)
-	private String timezone;
+	@Column(name = "RESOLUTION_SLA", nullable = false)
+	private Integer resolutionSla;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

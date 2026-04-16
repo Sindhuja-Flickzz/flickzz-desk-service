@@ -69,10 +69,10 @@ public class User {
 	private String updatedBy;
 
 	@Column(name = "CREATED_AT")
-	private LocalDateTime createdAt = LocalDateTime.now();
+	private LocalDateTime createdAt;
 
 	@Column(name = "UPDATED_AT")
-	private LocalDateTime updatedAt = LocalDateTime.now();
+	private LocalDateTime updatedAt;
 
 	@PrePersist
 	protected void onCreate() {

@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.flickzz.desk.config.FlickzzDeskConstants;
 import com.flickzz.desk.model.AgentMaster;
 import com.flickzz.desk.model.AgentSkillsMapping;
 import com.flickzz.desk.model.CalendarHoliday;
@@ -16,6 +17,7 @@ import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.model.CountryMaster;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.PlantMaster;
+import com.flickzz.desk.model.PriorityMaster;
 import com.flickzz.desk.model.SkillMaster;
 import com.flickzz.desk.model.User;
 import com.flickzz.desk.vo.AgentMasterVO;
@@ -28,6 +30,8 @@ import com.flickzz.desk.vo.CompanyMasterRequestVO;
 import com.flickzz.desk.vo.CompanyMasterVO;
 import com.flickzz.desk.vo.CountryMasterVO;
 import com.flickzz.desk.vo.PlantMasterVO;
+import com.flickzz.desk.vo.PriorityMasterVO;
+import com.flickzz.desk.vo.PriorityRequestVO;
 import com.flickzz.desk.vo.RegisterLoginRequestVO;
 import com.flickzz.desk.vo.SkillMasterVO;
 
@@ -43,8 +47,8 @@ public class CommonMapper {
 		return User.builder().firstName(request.getFirstname()).lastName(request.getLastname())
 				.email(request.getEmail()).userName(request.getEmail())
 				.password(passwordEncoder().encode(request.getPassword()))
-				.role(request.getRole() != null ? request.getRole() : "ADMIN").mfaEnabled(request.getMfaEnabled())
-				.build();
+				.role(request.getRole() != null ? request.getRole() : FlickzzDeskConstants.ROLE_ADMIN)
+				.mfaEnabled(request.getMfaEnabled()).build();
 	}
 
 	public LoginMaster userToLoginMaster(User user) {
@@ -156,7 +160,8 @@ public class CommonMapper {
 			return null;
 		}
 		return CountryMasterVO.builder().countryId(country.getCountryId()).countryName(country.getCountryName())
-				.isoCode(country.getIsoCode()).currency(country.getCurrency()).build();
+				.isoCode(country.getIsoCode()).phoneCode(country.getPhoneCode()).currencyCode(country.getCurrencyCode())
+				.countryName(country.getCountryName()).timezone(country.getTimezone()).build();
 	}
 
 	public SkillMasterVO toSkillMasterVo(SkillMaster save) {
@@ -192,5 +197,20 @@ public class CommonMapper {
 				.agent(toAgentMasterVO(agentSkillsMappings.getAgent()))
 				.experienceYears(agentSkillsMappings.getExperienceYears())
 				.experienceMonths(agentSkillsMappings.getExperienceMonths()).build();
+	}
+
+	public PriorityMaster toPriorityMaster(PriorityRequestVO vo, CompanyMaster companyMaster) {
+		return PriorityMaster.builder().priorityId(vo.getPriorityId()).priorityName(vo.getPriorityName())
+				.organization(companyMaster).rank(vo.getRank()).colorCode(vo.getColorCode())
+				.responseSla(vo.getResponseSla()).resolutionSla(vo.getResolutionSla()).isActive(vo.getIsActive())
+				.createdBy(vo.getCreatedBy()).updatedBy(vo.getUpdatedBy()).build();
+	}
+
+	public PriorityMasterVO toPriorityMasterVo(PriorityMaster entity) {
+		return PriorityMasterVO.builder().priorityId(entity.getPriorityId()).priorityName(entity.getPriorityName())
+				.organization(toCompanyMasterVO(entity.getOrganization())).rank(entity.getRank())
+				.colorCode(entity.getColorCode()).responseSla(entity.getResponseSla())
+				.resolutionSla(entity.getResolutionSla()).isActive(entity.getIsActive())
+				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
 	}
 }

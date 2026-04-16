@@ -1,8 +1,10 @@
 package com.flickzz.desk.config;
 
 public class FlickzzDeskConstants {
-	
-	public static final String ENTRY = "Entry";	
+
+	public static final String ROLE_ADMIN = "Admin";
+	public static final String ROLE_AGENT = "Agent";
+	public static final String ENTRY = "Entry";
 	public static final String EXIT = "Exit";
 	public static final String FD_USER = "User";
 	public static final String LOGIN = "Login";
@@ -12,6 +14,10 @@ public class FlickzzDeskConstants {
 	public static final String PLANT = "Plant";
 	public static final String SKILL = "Skill";
 	public static final String AGENT = "Agent";
+	public static final String COMPANY = "Company";
+	public static final String COUNTRY = "Country";
+	public static final String PRIORITY = "Priority";
+
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";
 	public static final String COMPANY_NAME = "Company name";
@@ -20,11 +26,16 @@ public class FlickzzDeskConstants {
 	public static final String AGENT_NAME = "Agent name";
 	public static final String REGISTERED_NUMBER = "Registered Number";
 	public static final String CURRENCY = "Currency";
-	public static final String COMPANY = "Company";	
-	public static final String COUNTRY = "Country";	
 	public static final String MAIL_ID = "Mail Id";
 	public static final String ACCESS_ID = "Access Id";
 	public static final String PHONE = "Phone";
 	public static final String YEAR = "Year";
 	public static final String MONTH = "Month";
+	public static final String PRIORITY_NAME = "Priority name";
+	public static final String PRIORITY_AND_COMPANY = "priority for selected organization";
+	public static final String RANK = "Rank";
+	public static final String RESPONSE_SLA = "Response SLA";
+	public static final String RESOLUTION_SLA = "Resolution SLA";
+
+	public static final String USERNAME_OR_EMAIL = "Username or Email";
 }
