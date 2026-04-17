@@ -30,7 +30,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "AUTH")
+@Table(name = "FD_AUTH")
 public class Auth {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "authGenn")

@@ -30,7 +30,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "LOGIN_MASTER")
+@Table(name = "FD_LOGIN_MASTER")
 public class LoginMaster {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "loginGenn")

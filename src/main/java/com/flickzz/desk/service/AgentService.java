@@ -11,6 +11,7 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.PHONE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_AGENT;
 import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateTemporaryPassword;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
@@ -23,7 +24,6 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,8 +80,8 @@ public class AgentService {
 	@Autowired
 	private CommonMapper mapper;
 
-	@Value("${default.password}")
-	private String defaultPassword;
+	@Autowired
+	private MailService mailService;
 
 	@Transactional
 	public AgentMasterVO createAgent(AgentRequestVO request) {
@@ -132,9 +132,12 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
+			String rawPassword = generateTemporaryPassword();
+
 			User newUser = User.builder().firstName(request.getAgentName()).lastName(request.getAgentName())
 					.email(request.getMailId()).userName(request.getMailId()).email(request.getMailId())
-					.password(passwordEncoder.encode(defaultPassword)).role(ROLE_AGENT).mfaEnabled(true).build();
+					.registerId(request.getAccessId()).password(passwordEncoder.encode(rawPassword)).role(ROLE_AGENT)
+					.mfaEnabled(false).build();
 			userRepository.save(newUser);
 
 			LoginMaster loginMaster = mapper.userToLoginMaster(newUser);
@@ -152,6 +155,8 @@ public class AgentService {
 						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
+
+			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
 
 			return mapper.toAgentMasterVO(agentMasterRepository.save(agent));
 		} catch (FlickzzDeskException e) {

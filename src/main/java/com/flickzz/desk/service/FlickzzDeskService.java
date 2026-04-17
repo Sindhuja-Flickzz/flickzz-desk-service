@@ -60,6 +60,9 @@ public class FlickzzDeskService {
 	private CommonMapper mapper;
 
 	@Autowired
+	private MailService mailService;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	public RegisterLoginResponseVO register(RegisterLoginRequestVO request) {
@@ -71,22 +74,18 @@ public class FlickzzDeskService {
 						getDescription(ALREADY_EXISTS.getDescription(), USERNAME_OR_EMAIL));
 			}
 
-			var user = mapper.registerRequesttoUser(request);
+			String rawPassword = request.getPassword();
+			var user = mapper.registerRequesttoUser(request, rawPassword);
 
 			GoogleAuthenticatorKey key = tfaService.generateNewSecret();
-			// if MFA enabled --> Generate Secret
-			if (request.getMfaEnabled()) {
-				user.setSecret(key.getKey());
-			}
+			user.setSecret(key.getKey());
 			userRepository.save(user);
 
 			LoginMaster loginMaster = mapper.userToLoginMaster(user);
 			loginMasterRepository.save(loginMaster);
 
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
-			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken(); // keepMeLoggedIn is
-																								// false to have short
-																								// duration for token
+			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
 			return RegisterLoginResponseVO.builder()
 					.secretImageUri(tfaService.generateQrCodeImageUri(key, user.getUserName())).accessToken(jwtToken)
 					.refreshToken(refreshToken).mfaEnabled(user.isMfaEnabled()).userRole(user.getRole()).build();
@@ -111,6 +110,8 @@ public class FlickzzDeskService {
 			}
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
+			user.setMfaEnabled(true);
+			userRepository.save(user);
 			return RegisterLoginResponseVO.builder().accessToken(jwtToken).refreshToken(refreshToken)
 					.mfaEnabled(user.isMfaEnabled()).userRole(user.getRole()).build();
 		} catch (FlickzzDeskException e) {
@@ -133,14 +134,18 @@ public class FlickzzDeskService {
 				throw new FlickzzDeskException(INVALID_CREDENTIALS);
 			}
 
-			if (user.isMfaEnabled()) {
-				return RegisterLoginResponseVO.builder().accessToken("").refreshToken("").mfaEnabled(true)
-						.userRole(user.getRole()).build();
+			if (!user.isMfaEnabled()) {
+				GoogleAuthenticatorKey key = tfaService.generateNewSecret();
+				user.setSecret(key.getKey());
+				userRepository.save(user);
+				return RegisterLoginResponseVO.builder()
+						.secretImageUri(tfaService.generateQrCodeImageUri(key, user.getUserName()))
+						.mfaEnabled(user.isMfaEnabled()).userRole(user.getRole()).build();
 			}
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
-			return RegisterLoginResponseVO.builder().accessToken(jwtToken).refreshToken(refreshToken).mfaEnabled(false)
-					.userRole(user.getRole()).build();
+			return RegisterLoginResponseVO.builder().accessToken(jwtToken).refreshToken(refreshToken)
+					.mfaEnabled(user.isMfaEnabled()).userRole(user.getRole()).build();
 		} catch (FlickzzDeskException | AuthenticationException e) {
 			throw e;
 		} catch (Exception e) {

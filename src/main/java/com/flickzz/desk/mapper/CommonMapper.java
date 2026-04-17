@@ -43,17 +43,17 @@ public class CommonMapper {
 		return new BCryptPasswordEncoder();
 	}
 
-	public User registerRequesttoUser(RegisterLoginRequestVO request) {
+	public User registerRequesttoUser(RegisterLoginRequestVO request, String rawPassword) {
 		return User.builder().firstName(request.getFirstname()).lastName(request.getLastname())
-				.email(request.getEmail()).userName(request.getEmail())
-				.password(passwordEncoder().encode(request.getPassword()))
+				.email(request.getEmail()).userName(request.getEmail()).password(passwordEncoder().encode(rawPassword))
 				.role(request.getRole() != null ? request.getRole() : FlickzzDeskConstants.ROLE_ADMIN)
-				.mfaEnabled(request.getMfaEnabled()).build();
+				.registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
+				.createdBy(request.getCreatedBy()).build();
 	}
 
 	public LoginMaster userToLoginMaster(User user) {
 		return LoginMaster.builder().userName(user.getUserName()).password(user.getPassword()).role(user.getRole())
-				.user(user).build();
+				.createdBy(user.getCreatedBy()).user(user).build();
 	}
 
 	public CalendarMasterVO toCalendarMasterVO(CalendarMaster calendar) {

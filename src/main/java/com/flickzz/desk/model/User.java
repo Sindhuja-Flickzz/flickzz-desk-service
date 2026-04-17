@@ -36,7 +36,7 @@ public class User {
 	@Column(name = "USER_NAME", nullable = false, length = 50, unique = true)
 	private String userName;
 
-	@Column(name = "PASSWORD", nullable = false, length = 255, unique = true)
+	@Column(name = "PASSWORD", nullable = false, length = 255)
 	private String password;
 
 	@Column(name = "FIRST_NAME", nullable = false, length = 50, unique = true)
@@ -44,6 +44,9 @@ public class User {
 
 	@Column(name = "LAST_NAME", nullable = false, length = 50, unique = true)
 	private String lastName;
+
+	@Column(name = "REGISTER_ID", nullable = false, length = 50, unique = true)
+	private String registerId;
 
 	@Column(name = "EMAIL", nullable = false, length = 50, unique = true)
 	private String email;
