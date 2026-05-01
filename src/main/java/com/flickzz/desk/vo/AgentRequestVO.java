@@ -25,5 +25,7 @@ public class AgentRequestVO implements Serializable {
 	private String updatedBy;
 	private List<AgentSkillRequestVO> skills;
 	private Long calendarId;
-
+	private Long countryId;
+	private Long cityId;
+	private Long languageId;
 }

@@ -19,6 +19,11 @@ public class RegisterLoginRequestVO implements Serializable {
 	private String password;
 	private String registerId;
 	private String role;
+	private String phone;
+	private Long countryId;
+	private Long cityId;
+	private Long languageId;
 	private Boolean mfaEnabled;
 	private String createdBy;
+	private String oldPassword;
 }

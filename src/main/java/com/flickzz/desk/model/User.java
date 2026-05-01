@@ -4,9 +4,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -39,10 +42,10 @@ public class User {
 	@Column(name = "PASSWORD", nullable = false, length = 255)
 	private String password;
 
-	@Column(name = "FIRST_NAME", nullable = false, length = 50, unique = true)
+	@Column(name = "FIRST_NAME", length = 50, unique = true)
 	private String firstName;
 
-	@Column(name = "LAST_NAME", nullable = false, length = 50, unique = true)
+	@Column(name = "LAST_NAME", length = 50, unique = true)
 	private String lastName;
 
 	@Column(name = "REGISTER_ID", nullable = false, length = 50, unique = true)
@@ -53,6 +56,21 @@ public class User {
 
 	@Column(name = "ROLE", nullable = false, length = 100)
 	private String role;
+
+	@Column(name = "PHONE", nullable = false, length = 20, unique = true)
+	private String phone;
+
+	@ManyToOne
+	@JoinColumn(name = "COUNTRY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_COUNTRY"))
+	private CountryMaster country;
+
+	@ManyToOne
+	@JoinColumn(name = "CITY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_CITY"))
+	private CityMaster city;
+
+	@ManyToOne
+	@JoinColumn(name = "LANGUAGE_ID", foreignKey = @ForeignKey(name = "FK_AGENT_LANGUAGE"))
+	private LanguageMaster language;
 
 	@Column(name = "MFA_ENABLED", nullable = false)
 	private boolean mfaEnabled;

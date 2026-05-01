@@ -1,4 +1,5 @@
 package com.flickzz.desk.config;
+
 import lombok.Getter;
 
 @Getter
@@ -12,7 +13,8 @@ public enum FlickzzDeskSuccessCodes {
 	FETCH_SUCCESS("GM-205", "Fetch Successful", "%s fetch successful!"),
 	CREATE_SUCCESS("GM-206", "Create Successful", "%s created successfully!"),
 	UPDATE_SUCCESS("GM-207", "Update Successful", "%s updated successfully!"),
-	DELETE_SUCCESS("GM-208", "Delete Successful", "%s deleted successfully!");
+	DELETE_SUCCESS("GM-208", "Delete Successful", "%s deleted successfully!"),
+	PASSWORD_RESET_SUCCESS("GM-200", "Password Reset Successful", "Password Reset Successful!");
 
 	private String code;
 	private String title;

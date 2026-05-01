@@ -51,9 +51,6 @@ public class AgentMaster {
 	@Column(name = "ACCESS_ID", nullable = false, length = 100)
 	private String accessId;
 
-	@Column(name = "PHONE", length = 20)
-	private String phone;
-
 	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "USER_ID", nullable = false, unique = true, foreignKey = @ForeignKey(name = "FK_AGENT_USER"))
 	private User user;

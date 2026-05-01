@@ -16,7 +16,18 @@ public class FlickzzDeskConstants {
 	public static final String AGENT = "Agent";
 	public static final String COMPANY = "Company";
 	public static final String COUNTRY = "Country";
+	public static final String CITY = "City";
 	public static final String PRIORITY = "Priority";
+	public static final String LANGUAGE = "Language";
+	public static final String TIME_ZONE = "Current time of timezone";
+	public static final String BUSINESS_SERVICE = "Business Service";
+	public static final String REQUEST_NUMBER = "Request Number";
+	public static final String REQUEST_CONFIG = "Request Config";
+	public static final String PHONE_NUMBER = "Phone Number";
+	public static final String RITM = "Request Item";
+	public static final String INCIDENT = "Incident";
+
+	public static final Boolean ACTIVE = true;
 
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";
@@ -38,4 +49,5 @@ public class FlickzzDeskConstants {
 	public static final String RESOLUTION_SLA = "Resolution SLA";
 
 	public static final String USERNAME_OR_EMAIL = "Username or Email";
+	public static final String USER_LIST = "User list";
 }

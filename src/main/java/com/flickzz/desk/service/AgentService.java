@@ -4,8 +4,11 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.ACCESS_ID;
 import static com.flickzz.desk.config.FlickzzDeskConstants.AGENT;
 import static com.flickzz.desk.config.FlickzzDeskConstants.AGENT_NAME;
 import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR;
+import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.LANGUAGE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.MAIL_ID;
 import static com.flickzz.desk.config.FlickzzDeskConstants.PHONE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_AGENT;
@@ -33,14 +36,20 @@ import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.AgentMaster;
 import com.flickzz.desk.model.AgentSkillsMapping;
 import com.flickzz.desk.model.CalendarMaster;
+import com.flickzz.desk.model.CityMaster;
 import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.model.CountryMaster;
+import com.flickzz.desk.model.LanguageMaster;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.SkillMaster;
 import com.flickzz.desk.model.User;
 import com.flickzz.desk.repo.AgentMasterRepository;
 import com.flickzz.desk.repo.AgentSkillsMappingRepository;
 import com.flickzz.desk.repo.CalendarMasterRepository;
+import com.flickzz.desk.repo.CityMasterRepository;
 import com.flickzz.desk.repo.CompanyMasterRepository;
+import com.flickzz.desk.repo.CountryMasterRepository;
+import com.flickzz.desk.repo.LanguageMasterRepository;
 import com.flickzz.desk.repo.LoginMasterRepository;
 import com.flickzz.desk.repo.SkillMasterRepository;
 import com.flickzz.desk.repo.UserRepository;
@@ -73,6 +82,15 @@ public class AgentService {
 
 	@Autowired
 	private LoginMasterRepository loginMasterRepository;
+
+	@Autowired
+	private CountryMasterRepository countryMasterRepository;
+
+	@Autowired
+	private CityMasterRepository cityMasterRepository;
+
+	@Autowired
+	private LanguageMasterRepository languageMasterRepository;
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -132,20 +150,32 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
+			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
+
+			CityMaster city = cityMasterRepository.findById(request.getCityId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
+
+			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
+
 			String rawPassword = generateTemporaryPassword();
 
-			User newUser = User.builder().firstName(request.getAgentName()).lastName(request.getAgentName())
-					.email(request.getMailId()).userName(request.getMailId()).email(request.getMailId())
-					.registerId(request.getAccessId()).password(passwordEncoder.encode(rawPassword)).role(ROLE_AGENT)
-					.mfaEnabled(false).build();
+			User newUser = User.builder().firstName(request.getAgentName()).email(request.getMailId())
+					.userName(request.getMailId()).email(request.getMailId()).registerId(request.getAccessId())
+					.phone(request.getPhone()).country(country).city(city).language(language)
+					.password(passwordEncoder.encode(rawPassword)).role(ROLE_AGENT).mfaEnabled(false).build();
 			userRepository.save(newUser);
 
 			LoginMaster loginMaster = mapper.userToLoginMaster(newUser);
 			loginMasterRepository.save(loginMaster);
 
 			AgentMaster agent = AgentMaster.builder().agentName(request.getAgentName()).mailId(request.getMailId())
-					.accessId(request.getAccessId()).phone(request.getPhone()).organization(company.get())
-					.calendarMaster(calendar.get()).createdBy(request.getCreatedBy()).user(newUser).build();
+					.accessId(request.getAccessId()).organization(company.get()).calendarMaster(calendar.get())
+					.createdBy(request.getCreatedBy()).user(newUser).build();
 			AgentMaster agentMaster = agentMasterRepository.save(agent);
 
 			request.getSkills().stream().forEach(skillInfo -> {
@@ -156,9 +186,9 @@ public class AgentService {
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 
-			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
+//			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
 
-			return mapper.toAgentMasterVO(agentMasterRepository.save(agent));
+			return mapper.toAgentMasterVO(agentMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
@@ -234,12 +264,36 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
+			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
+
+			CityMaster city = cityMasterRepository.findById(request.getCityId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
+
+			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
+
 			AgentMaster agent = existing.get();
-			agent.setPhone(request.getPhone());
 			agent.setOrganization(company.get());
 			agent.setCalendarMaster(calendar.get());
 			agent.setUpdatedBy(request.getUpdatedBy());
 			agentMasterRepository.save(agent);
+
+			if ((request.getPhone() != existing.get().getUser().getPhone())
+					|| (country.getCountryId() != existing.get().getUser().getCountry().getCountryId())
+					|| (city.getCityId() != existing.get().getUser().getCity().getCityId())
+					|| (language.getLanguageId() != existing.get().getUser().getLanguage().getLanguageId())) {
+				User user = existing.get().getUser();
+				user.setPhone(request.getPhone());
+				user.setCountry(country);
+				user.setCity(city);
+				user.setLanguage(language);
+				user.setUpdatedBy(request.getUpdatedBy());
+				userRepository.save(user);
+			}
 
 			request.getSkills().stream().forEach(skillInfo -> {
 				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());

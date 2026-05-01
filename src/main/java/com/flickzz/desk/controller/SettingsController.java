@@ -1,5 +1,17 @@
 package com.flickzz.desk.controller;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.BUSINESS_SERVICE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -15,81 +27,126 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
 import com.flickzz.desk.config.FlickzzDeskResponse;
-import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import com.flickzz.desk.service.SettingsService;
+import com.flickzz.desk.vo.BusinessServiceRequestVO;
+import com.flickzz.desk.vo.BusinessServiceVO;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
 
-//@CrossOrigin(origins = "http://localhost:4200",
-//	allowedHeaders = {"Content-Type", "Authorization", "X-Requested-With"},
-//	methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
 @CrossOrigin
 @RestController
 @RequestMapping("/settings")
 public class SettingsController {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
-	
+
 	@Autowired
 	private SettingsService settingsService;
-	
-    @PostMapping("/calendar/create")
-    public ResponseEntity<FlickzzDeskResponse> createCalendar(@RequestBody CalendarMasterRequestVO request) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        CalendarMasterVO response = settingsService.createCalendar(request);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), CALENDAR), response);
-    }
-    
-    @GetMapping("/calendar/{calendarCode}")
-    public ResponseEntity<FlickzzDeskResponse> getCalendarInfo(@PathVariable String calendarCode) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        CalendarMasterVO response = settingsService.getCalendarInfo(calendarCode);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
-    }
 
-    @PostMapping("/calendar/update/{calendarCode}")
-    public ResponseEntity<FlickzzDeskResponse> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        CalendarMasterVO response = settingsService.updateCalendar(request);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), CALENDAR), response);
-    }
+	@PostMapping("/calendar/create")
+	public ResponseEntity<FlickzzDeskResponse> createCalendar(@RequestBody CalendarMasterRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-    @DeleteMapping("/calendar/delete/{calendarCode}")
-    public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        settingsService.deleteCalendar(calendarCode);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR));
-    }
+		CalendarMasterVO response = settingsService.createCalendar(request);
 
-    @GetMapping("/calendar/list")
-    public ResponseEntity<FlickzzDeskResponse> listCalendars() {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        List<CalendarMasterVO> response = settingsService.listCalendars();
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
-    }
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), CALENDAR),
+				response);
+	}
+
+	@GetMapping("/calendar/{calendarCode}")
+	public ResponseEntity<FlickzzDeskResponse> getCalendarInfo(@PathVariable String calendarCode) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		CalendarMasterVO response = settingsService.getCalendarInfo(calendarCode);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
+	}
+
+	@PostMapping("/calendar/update/{calendarCode}")
+	public ResponseEntity<FlickzzDeskResponse> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		CalendarMasterVO response = settingsService.updateCalendar(request);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), CALENDAR),
+				response);
+	}
+
+	@DeleteMapping("/calendar/delete/{calendarCode}")
+	public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		settingsService.deleteCalendar(calendarCode);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR));
+	}
+
+	@GetMapping("/calendar/list")
+	public ResponseEntity<FlickzzDeskResponse> listCalendars() {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<CalendarMasterVO> response = settingsService.listCalendars();
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
+	}
+
+	@PostMapping("/business/service/create")
+	public ResponseEntity<FlickzzDeskResponse> createBusinessService(
+			@RequestBody BusinessServiceRequestVO businessServiceRequestVO) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		BusinessServiceVO response = settingsService.createBusinessService(businessServiceRequestVO);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), BUSINESS_SERVICE));
+	}
+
+	@PostMapping("/business/service/update")
+	public ResponseEntity<FlickzzDeskResponse> updateBusinessService(
+			@RequestBody BusinessServiceRequestVO businessServiceRequestVO) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		BusinessServiceVO response = settingsService.updateBusinessService(businessServiceRequestVO);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), BUSINESS_SERVICE));
+	}
+
+	@GetMapping("/business/service/list")
+	public ResponseEntity<FlickzzDeskResponse> listBusinessServices() {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<BusinessServiceVO> response = settingsService.listBusinessServices();
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), BUSINESS_SERVICE),
+				response);
+	}
+
+	@GetMapping("/business/service/{serviceId}")
+	public ResponseEntity<FlickzzDeskResponse> getBusinessServiceInfo(@PathVariable String serviceId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		BusinessServiceVO response = settingsService.getBusinessServiceInfo(serviceId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), BUSINESS_SERVICE),
+				response);
+	}
+
+	@DeleteMapping("/business/service/delete/{serviceId}")
+	public ResponseEntity<FlickzzDeskResponse> deleteBusinessService(@PathVariable String serviceId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		settingsService.deleteBusinessService(serviceId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), BUSINESS_SERVICE));
+	}
 }

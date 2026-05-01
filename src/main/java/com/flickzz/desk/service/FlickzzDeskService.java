@@ -1,16 +1,22 @@
 package com.flickzz.desk.service;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.FD_USER;
+import static com.flickzz.desk.config.FlickzzDeskConstants.LANGUAGE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.PHONE_NUMBER;
 import static com.flickzz.desk.config.FlickzzDeskConstants.USERNAME_OR_EMAIL;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INCORRECT_PASSWORD;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_CREDENTIALS;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.TFA_ERROR;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -23,8 +29,14 @@ import org.springframework.stereotype.Service;
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.Auth;
+import com.flickzz.desk.model.CityMaster;
+import com.flickzz.desk.model.CountryMaster;
+import com.flickzz.desk.model.LanguageMaster;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.User;
+import com.flickzz.desk.repo.CityMasterRepository;
+import com.flickzz.desk.repo.CountryMasterRepository;
+import com.flickzz.desk.repo.LanguageMasterRepository;
 import com.flickzz.desk.repo.LoginMasterRepository;
 import com.flickzz.desk.repo.UserRepository;
 import com.flickzz.desk.security.JwtUtil;
@@ -33,6 +45,7 @@ import com.flickzz.desk.vo.CommonRequestVO;
 import com.flickzz.desk.vo.LoginResponseVO;
 import com.flickzz.desk.vo.RegisterLoginRequestVO;
 import com.flickzz.desk.vo.RegisterLoginResponseVO;
+import com.flickzz.desk.vo.UserVO;
 import com.flickzz.desk.vo.VerificationRequestVO;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 
@@ -57,6 +70,15 @@ public class FlickzzDeskService {
 	private TwoFactorAuthenticationService tfaService;
 
 	@Autowired
+	private CountryMasterRepository countryMasterRepository;
+
+	@Autowired
+	private CityMasterRepository cityMasterRepository;
+
+	@Autowired
+	private LanguageMasterRepository languageMasterRepository;
+
+	@Autowired
 	private CommonMapper mapper;
 
 	@Autowired
@@ -74,8 +96,25 @@ public class FlickzzDeskService {
 						getDescription(ALREADY_EXISTS.getDescription(), USERNAME_OR_EMAIL));
 			}
 
+			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
+
+			CityMaster city = cityMasterRepository.findById(request.getCityId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
+
+			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
+
+			userRepository.findByPhone(request.getPhone()).ifPresent(u -> {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), PHONE_NUMBER));
+			});
+
 			String rawPassword = request.getPassword();
-			var user = mapper.registerRequesttoUser(request, rawPassword);
+			var user = mapper.registerRequesttoUser(request, rawPassword, country, city, language);
 
 			GoogleAuthenticatorKey key = tfaService.generateNewSecret();
 			user.setSecret(key.getKey());
@@ -197,6 +236,38 @@ public class FlickzzDeskService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in logoutAllUsers method in FlickzzDeskService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public void resetPassword(RegisterLoginRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			User user = userRepository.findByUserName(request.getEmail())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
+
+			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+				throw new FlickzzDeskException(INCORRECT_PASSWORD);
+			}
+
+			user.setPassword(passwordEncoder.encode(request.getPassword()));
+			userRepository.save(user);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in resetPassword method in FlickzzDeskService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<UserVO> getUserList() {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			var users = userRepository.findAll();
+			return mapper.usersToUserVO(users);
+		} catch (Exception e) {
+			log.error("Exception in getUserList method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

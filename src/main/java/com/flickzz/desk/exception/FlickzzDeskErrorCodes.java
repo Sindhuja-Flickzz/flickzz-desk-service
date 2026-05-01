@@ -14,7 +14,8 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 	TFA_ERROR("FD-105", "Code Error", "Code is not valid. Please verify!"),
 	INCORRECT_CODE("FD-106", "Incorrect Code", "Code is not correct. Please retry!"),
 	INVALID_FIELD("FD-107", "Not a valid value", "Value for %s is not valid. Please verify!"),
-	NO_DATA("FD-108", "No data found", "No data found. Please verify!");
+	NO_DATA("FD-108", "No data found", "No data found. Please verify!"),
+	INCORRECT_PASSWORD("FD-109", "Incorrect Password", "Current password is incorrect. Please verify!");
 
 	private String code;
 	private String title;

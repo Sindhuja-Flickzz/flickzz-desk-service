@@ -43,9 +43,11 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain filterChain(HttpSecurity http, FlickzzDeskLogoutSuccessHandler logoutSuccessHandler)
 			throws Exception {
-		http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable()).authorizeHttpRequests(auth -> auth
-				.requestMatchers("/register", "/verify", "/login", "/auth/**", "/refresh", "/agent/**", "/skills/**")
-				.permitAll().anyRequest().authenticated())
+		http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/register", "/verify", "/login", "/auth/**", "/refresh", "/reset/**",
+								"/country/**", "/city/**", "/language/**", "/getTime/**")
+						.permitAll().anyRequest().authenticated())
 				.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
 				.logout(logout -> logout.logoutUrl("/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
 						.logoutSuccessHandler(logoutSuccessHandler));
