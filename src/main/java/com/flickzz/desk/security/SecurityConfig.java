@@ -31,63 +31,45 @@ import com.flickzz.desk.repo.AuthRepository;
 
 @Configuration
 public class SecurityConfig {
-	
+
 	@Autowired
 	private JwtRequestFilter jwtRequestFilter;
 
-    @Bean
-    FlickzzDeskLogoutSuccessHandler flickzzDeskLogoutSuccessHandler(AuthRepository repo) {
-	    return new FlickzzDeskLogoutSuccessHandler(repo);
+	@Bean
+	FlickzzDeskLogoutSuccessHandler flickzzDeskLogoutSuccessHandler(AuthRepository repo) {
+		return new FlickzzDeskLogoutSuccessHandler(repo);
 	}
 
 	@Bean
-    SecurityFilterChain filterChain(HttpSecurity http, FlickzzDeskLogoutSuccessHandler logoutSuccessHandler) throws Exception {
-        http
-        	.cors(Customizer.withDefaults())
-        	.csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-	            .requestMatchers("/register","/verify","/login","/auth/**", "/refresh","/menu/**","/settings/**").permitAll()
-	            .anyRequest().authenticated()
-	        )
-            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
-            .logout(logout -> logout
-              .logoutUrl("/logout")
-              .invalidateHttpSession(true)
-              .deleteCookies("JSESSIONID")
-              .logoutSuccessHandler(logoutSuccessHandler)
-            );
+	SecurityFilterChain filterChain(HttpSecurity http, FlickzzDeskLogoutSuccessHandler logoutSuccessHandler)
+			throws Exception {
+		http.cors(Customizer.withDefaults()).csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/register", "/verify", "/login", "/auth/**", "/refresh", "/reset/**",
+								"/country/**", "/city/**", "/language/**", "/getTime/**")
+						.permitAll().anyRequest().authenticated())
+				.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+				.logout(logout -> logout.logoutUrl("/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
+						.logoutSuccessHandler(logoutSuccessHandler));
 
-        return http.build();
-    }
-	
-    @Bean
-    AuthenticationManager authManager(AuthenticationConfiguration  config) throws Exception {
-        return config.getAuthenticationManager();
-    }
+		return http.build();
+	}
 
-    @Bean
-    CorsFilter corsFilter() {
-      final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-      final CorsConfiguration config = new CorsConfiguration();
-      config.setAllowCredentials(true);
-      config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
-      config.setAllowedHeaders(Arrays.asList(
-              ORIGIN,
-              CONTENT_TYPE,
-              ACCEPT,
-              AUTHORIZATION,
-              "x-user-id"
-      ));
-      config.setAllowedMethods(Arrays.asList(
-              GET.name(),
-              POST.name(),
-              DELETE.name(),
-              PUT.name(),
-              PATCH.name()
-      ));
-      source.registerCorsConfiguration("/**", config);
-      return new CorsFilter(source);
+	@Bean
+	AuthenticationManager authManager(AuthenticationConfiguration config) throws Exception {
+		return config.getAuthenticationManager();
+	}
 
-    }
+	@Bean
+	CorsFilter corsFilter() {
+		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		final CorsConfiguration config = new CorsConfiguration();
+		config.setAllowCredentials(true);
+		config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+		config.setAllowedHeaders(Arrays.asList(ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, "x-user-id"));
+		config.setAllowedMethods(Arrays.asList(GET.name(), POST.name(), DELETE.name(), PUT.name(), PATCH.name()));
+		source.registerCorsConfiguration("/**", config);
+		return new CorsFilter(source);
+
+	}
 }
-

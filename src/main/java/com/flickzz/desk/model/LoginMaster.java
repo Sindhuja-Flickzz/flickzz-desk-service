@@ -11,14 +11,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,63 +30,61 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-@Table(name = "LOGIN_MASTER")
+@Table(name = "FD_LOGIN_MASTER")
 public class LoginMaster {
-    @Id 
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="loginGenn")
-    @Column(name = "LOGIN_ID", unique=true, nullable = false)
-	@SequenceGenerator(name="loginGenn", sequenceName = "LOGIN_SEQ", allocationSize = 1)
-    private Long loginId;
-    
-    @Column(name = "USER_NAME", nullable = false, length = 255, unique = true)
-    private String userName;
-    
-    @Column(name = "PASSWORD", nullable = false, length = 255, unique = true)
-    private String password;
-    
-    @Column(name = "ROLE", nullable = false, length = 100)
-    private String role;
+	@Id
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "loginGenn")
+	@Column(name = "LOGIN_ID", unique = true, nullable = false)
+	@SequenceGenerator(name = "loginGenn", sequenceName = "LOGIN_SEQ", allocationSize = 1)
+	private Long loginId;
 
-    @Column(name = "LAST_LOGIN_DATETIME")
-    private Date lastLoginDatetime;
-    
-    // Foreign key to FD_USER
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "USER_ID", nullable = false, unique = true,
-                foreignKey = @ForeignKey(name = "FK_LOGIN_USER"))
-    private User user;
+	@Column(name = "USER_NAME", nullable = false, length = 255, unique = true)
+	private String userName;
 
-    // Foreign key to AUTH
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AUTH_ID", unique = true,
-                foreignKey = @ForeignKey(name = "FK_LOGIN_AUTH"))
-    private Auth auth;
+	@Column(name = "PASSWORD", nullable = false, length = 255, unique = true)
+	private String password;
 
-    /* ===================== STATUS ===================== */
-    @Builder.Default
-    @Column(name = "IS_ACTIVE")
-    private Boolean isActive = true;
+	@Column(name = "ROLE", nullable = false, length = 100)
+	private String role;
 
-    @Column(name = "CREATED_BY", length = 50)
-    private String createdBy;
+	@Column(name = "LAST_LOGIN_DATETIME")
+	private Date lastLoginDatetime;
 
-    @Column(name = "UPDATED_BY", length = 50)
-    private String updatedBy;
+	// Foreign key to FD_USER
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "USER_ID", nullable = false, unique = true, foreignKey = @ForeignKey(name = "FK_LOGIN_USER"))
+	private User user;
 
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt = LocalDateTime.now();
+	// Foreign key to AUTH
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "AUTH_ID", unique = true, foreignKey = @ForeignKey(name = "FK_LOGIN_AUTH"))
+	private Auth auth;
 
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-    
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+	/* ===================== STATUS ===================== */
+	@Builder.Default
+	@Column(name = "IS_ACTIVE")
+	private Boolean isActive = true;
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }    
+	@Column(name = "CREATED_BY", length = 50)
+	private String createdBy;
+
+	@Column(name = "UPDATED_BY", length = 50)
+	private String updatedBy;
+
+	@Column(name = "CREATED_AT")
+	private LocalDateTime createdAt;
+
+	@Column(name = "UPDATED_AT")
+	private LocalDateTime updatedAt;
+
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }

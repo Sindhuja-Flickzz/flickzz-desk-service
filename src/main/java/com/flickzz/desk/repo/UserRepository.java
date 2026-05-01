@@ -8,6 +8,10 @@ import com.flickzz.desk.model.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-	Optional<User> findByUserName(String username);
+	Optional<User> findByUserNameAndPassword(String userName, String password);
+
+	Optional<User> findByUserName(String email);
+
+	Optional<User> findByPhone(String phone);
 
 }

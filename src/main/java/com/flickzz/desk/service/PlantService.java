@@ -33,48 +33,47 @@ import com.flickzz.desk.vo.PlantMasterVO;
 
 @Service
 public class PlantService {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(PlantService.class);
-	
+
 	@Autowired
 	private CountryMasterRepository countryMasterRepository;
-	
+
 	@Autowired
 	private CalendarMasterRepository calendarMasterRepository;
-	
+
 	@Autowired
 	private PlantMasterRepository plantMasterRepository;
-	
+
 	@Autowired
 	private CommonMapper mapper;
-	
 
 	public PlantMasterVO createPlant(PlantMasterRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getPlantName() == null) {
-		 		throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PLANT_NAME));
-		 	}
-					
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), PLANT_NAME));
+			}
+
 			Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
 			if (countryMaster == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
 			}
-			
+
 			Optional<CalendarMaster> calendarMaster = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendarMaster == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
 			}
-			
-		 	plantMasterRepository.findByPlantName(request.getPlantName()).ifPresent(c -> {
-		 		throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), PLANT));
-		 	});
-		 	
-			PlantMaster plant = PlantMaster.builder()
-					.plantName(request.getPlantName())
-					.region(countryMaster.get())
-					.calendar(calendarMaster.get())
-					.createdBy(request.getCreatedBy()).build();
+
+			plantMasterRepository.findByPlantName(request.getPlantName()).ifPresent(c -> {
+				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), PLANT));
+			});
+
+			PlantMaster plant = PlantMaster.builder().plantName(request.getPlantName()).region(countryMaster.get())
+					.calendar(calendarMaster.get()).createdBy(request.getCreatedBy()).build();
 			return mapper.toPlantMasterVO(plantMasterRepository.save(plant));
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -107,19 +106,21 @@ public class PlantService {
 			if (existing == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), PLANT));
 			}
-			
+
 			Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
 			if (countryMaster == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
 			}
-			
+
 			Optional<CalendarMaster> calendarMaster = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendarMaster == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
 			}
-					
+
 			PlantMaster entity = existing.get();
-			
+
 			entity.setRegion(countryMaster.get());
 			entity.setCalendar(calendarMaster.get());
 			entity.setUpdatedBy(request.getUpdatedBy());
@@ -135,7 +136,7 @@ public class PlantService {
 	public void deletePlant(String plantId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			Optional<PlantMaster> existing = plantMasterRepository.findByPlantId(plantId);
+			Optional<PlantMaster> existing = plantMasterRepository.findByPlantId(Long.valueOf(plantId));
 			if (existing == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), PLANT));
 			}

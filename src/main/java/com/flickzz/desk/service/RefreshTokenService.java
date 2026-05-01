@@ -14,53 +14,51 @@ import com.flickzz.desk.repo.UserRepository;
 
 @Service
 public class RefreshTokenService {
-	
-    @Value("${jwt.refresh.expiration}")
-    private Long refreshTokenDuration;
-    
-    @Value("${jwt.refresh.expiration.extended}")
-    private Long refreshTokenExtendedDuration;
 
-    @Autowired
-    private AuthRepository authRepository;
-    
-    @Autowired
-    private UserRepository userRepository;
-    
+	@Value("${jwt.refresh.expiration}")
+	private Long refreshTokenDuration;
 
-    public Auth createRefreshToken(User user, boolean keepMeLoggedIn) {
-        User fDUser = userRepository.findByUserName(user.getUserName())                .orElseThrow(() -> new RuntimeException("User not found"));
+	@Value("${jwt.refresh.expiration.extended}")
+	private Long refreshTokenExtendedDuration;
 
-     // Refresh token lifetime depends on "keep me logged in" 
-        long duration = keepMeLoggedIn ? refreshTokenExtendedDuration : refreshTokenDuration; // 30 days vs 1 day
-        
-        Auth fDAuth = new Auth();
-        fDAuth.setUser(fDUser);
-        fDAuth.setExpiresAt(new Date(System.currentTimeMillis() + duration * 1000));
-        fDAuth.setToken(UUID.randomUUID().toString());
+	@Autowired
+	private AuthRepository authRepository;
 
-        return authRepository.save(fDAuth);
-    }
+	@Autowired
+	private UserRepository userRepository;
 
-    public Auth validateRefreshToken(String token) {
-        Auth refreshToken = authRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+	public Auth createRefreshToken(User user, boolean keepMeLoggedIn) {
+		User fDUser = userRepository.findByUserName(user.getUserName())
+				.orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (refreshToken.getExpiresAt().before(new Date())) {
-            throw new RuntimeException("Refresh token expired");
-        }
-        return refreshToken;
-    }
+		// Refresh token lifetime depends on "keep me logged in"
+		long duration = keepMeLoggedIn ? refreshTokenExtendedDuration : refreshTokenDuration; // 30 days vs 1 day
 
-    public void revokeRefreshToken(String token) {
-        authRepository.findByToken(token).ifPresent(authRepository::delete);
-    }
+		Auth fDAuth = new Auth();
+		fDAuth.setUser(fDUser);
+		fDAuth.setExpiresAt(new Date(System.currentTimeMillis() + duration * 1000));
+		fDAuth.setToken(UUID.randomUUID().toString());
+		fDAuth.setCreatedBy(fDUser.getRole());
 
-    public void revokeAllTokensForUser(User user) {
-        authRepository.deleteAll(
-            authRepository.findAll().stream()
-                .filter(rt -> rt.getUser().getUserId().equals(user.getUserId()))
-                .toList()
-        );
-    }
+		return authRepository.save(fDAuth);
+	}
+
+	public Auth validateRefreshToken(String token) {
+		Auth refreshToken = authRepository.findByToken(token)
+				.orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+		if (refreshToken.getExpiresAt().before(new Date())) {
+			throw new RuntimeException("Refresh token expired");
+		}
+		return refreshToken;
+	}
+
+	public void revokeRefreshToken(String token) {
+		authRepository.findByToken(token).ifPresent(authRepository::delete);
+	}
+
+	public void revokeAllTokensForUser(User user) {
+		authRepository.deleteAll(authRepository.findAll().stream()
+				.filter(rt -> rt.getUser().getUserId().equals(user.getUserId())).toList());
+	}
 }

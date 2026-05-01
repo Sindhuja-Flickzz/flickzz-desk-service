@@ -1,7 +1,6 @@
 package com.flickzz.desk.vo;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,10 +12,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AgentSkillsMappingVO implements Serializable {
-	
+
 	private static final long serialVersionUID = 1L;
 	private Long agentSkillId;
-    private Long agentId;
-    private Long skillId;
-    private LocalDateTime assignedAt;
+	private AgentMasterVO agent;
+	private SkillMasterVO skill;
+	private Integer experienceYears;
+	private Integer experienceMonths;
 }

@@ -2,9 +2,10 @@ package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,52 +20,68 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@ToString(exclude = { "agent", "skill" })
 @Table(name = "FD_AGENT_SKILLS_MAPPING")
 public class AgentSkillsMapping {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "agentSkillSeq")
-    @SequenceGenerator(name = "agentSkillSeq", sequenceName = "AGENT_SKILL_SEQ", allocationSize = 1)
-    @Column(name = "AGENT_SKILL_ID")
-    private Long agentSkillId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "agentSkillSeq")
+	@SequenceGenerator(name = "agentSkillSeq", sequenceName = "AGENT_SKILL_SEQ", allocationSize = 1)
+	@Column(name = "AGENT_SKILL_ID")
+	private Long agentSkillId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AGENT_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_AGENT"))
-    private AgentMaster agent;
+	@ManyToOne
+	@JoinColumn(name = "AGENT_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_AGENT"))
+	@JsonManagedReference
+	private AgentMaster agent;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SKILL_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_SKILL"))
-    private SkillMaster skill;
+	@ManyToOne
+	@JoinColumn(name = "SKILL_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_AGENT_SKILL_SKILL"))
+	@JsonManagedReference
+	private SkillMaster skill;
 
-    @Column(name = "IS_ACTIVE")
-    private Boolean isActive = true;
+	@Column(name = "EXPERIENCE_YEARS", nullable = false)
+	private Integer experienceYears;
 
-    @Column(name = "CREATED_BY", length = 50)
-    private String createdBy;
+	@Column(name = "EXPERIENCE_MONTHS", nullable = false)
+	private Integer experienceMonths;
 
-    @Column(name = "UPDATED_BY", length = 50)
-    private String updatedBy;
+	@Builder.Default
+	@Column(name = "IS_ACTIVE")
+	private Boolean isActive = true;
 
-    @Column(name = "CREATED_AT")
-    private LocalDateTime createdAt = LocalDateTime.now();
+	@Column(name = "CREATED_BY", length = 50)
+	private String createdBy;
 
-    @Column(name = "UPDATED_AT")
-    private LocalDateTime updatedAt = LocalDateTime.now();
-    
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+	@Column(name = "UPDATED_BY", length = 50)
+	private String updatedBy;
 
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }    
+	@Column(name = "CREATED_AT")
+	private LocalDateTime createdAt;
+
+	@Column(name = "UPDATED_AT")
+	private LocalDateTime updatedAt;
+
+	// or follow JavaBean convention for booleans:
+	public boolean isActive() {
+		return Boolean.TRUE.equals(isActive);
+	}
+
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	protected void onUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }

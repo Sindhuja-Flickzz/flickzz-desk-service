@@ -12,16 +12,19 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CountryMasterVO implements Serializable{
+public class CountryMasterVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private Long countryId;
-    private String countryName;
-    private String isoCode;
-    private String currency;
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+	private String countryName;
+	private String isoCode;
+	private String phoneCode;
+	private String currencyCode;
+	private String currencyName;
+	private String timezone;
+	private Boolean isActive;
+	private String createdBy;
+	private String updatedBy;
+	private LocalDateTime createdAt;
+	private LocalDateTime updatedAt;
 }
