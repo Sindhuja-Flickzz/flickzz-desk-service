@@ -19,6 +19,9 @@ import com.flickzz.desk.model.CalendarWorkday;
 import com.flickzz.desk.model.CityMaster;
 import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.model.CountryMaster;
+import com.flickzz.desk.model.EnquiryInfo;
+import com.flickzz.desk.model.EnquiryRegistration;
+import com.flickzz.desk.model.ImpactMaster;
 import com.flickzz.desk.model.LanguageMaster;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.PlantMaster;
@@ -40,6 +43,11 @@ import com.flickzz.desk.vo.CityMasterVO;
 import com.flickzz.desk.vo.CompanyMasterRequestVO;
 import com.flickzz.desk.vo.CompanyMasterVO;
 import com.flickzz.desk.vo.CountryMasterVO;
+import com.flickzz.desk.vo.EnquiryInfoVO;
+import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
+import com.flickzz.desk.vo.EnquiryRegistrationVO;
+import com.flickzz.desk.vo.ImpactMasterVO;
+import com.flickzz.desk.vo.ImpactRequestVO;
 import com.flickzz.desk.vo.LanguageMasterVO;
 import com.flickzz.desk.vo.PlantMasterVO;
 import com.flickzz.desk.vo.PriorityMasterVO;
@@ -334,5 +342,66 @@ public class CommonMapper {
 			return Collections.emptyList();
 		}
 		return requestConfigs.stream().map(this::toRequestConfigVO).toList();
+	}
+
+	public ImpactMaster toImpactMaster(ImpactRequestVO request, CompanyMaster companyMaster) {
+		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
+				.organization(companyMaster).impactLevel(request.getImpactLevel())
+				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
+				.updatedBy(request.getUpdatedBy()).build();
+	}
+
+	public ImpactMasterVO toImpactMasterVo(ImpactMaster save) {
+		if (save == null) {
+			return null;
+		}
+		return ImpactMasterVO.builder().impactId(save.getImpactId()).impactCode(save.getImpactCode())
+				.organization(toCompanyMasterVO(save.getOrganization())).impactLevel(save.getImpactLevel())
+				.slaMultiplier(save.getSlaMultiplier()).isActive(save.getIsActive()).createdBy(save.getCreatedBy())
+				.updatedBy(save.getUpdatedBy()).build();
+	}
+
+	public UserVO userToUserVO(User user) {
+		if (user == null) {
+			return null;
+		}
+		return UserVO.builder().userId(user.getUserId()).firstName(user.getFirstName()).lastName(user.getLastName())
+				.email(user.getEmail()).userName(user.getUserName()).role(user.getRole())
+				.registerId(user.getRegisterId()).phone(user.getPhone()).country(toCountryMasterVO(user.getCountry()))
+				.city(toCityMasterVO(user.getCity())).language(toLanguageMasterVO(user.getLanguage()))
+				.mfaEnabled(user.isMfaEnabled()).isActive(user.getIsActive()).createdBy(user.getCreatedBy())
+				.updatedBy(user.getUpdatedBy()).build();
+	}
+
+	public EnquiryRegistration enquiryRegisterRequestToEnquiryRegistration(EnquiryRegisterRequestVO request,
+			CountryMaster country, String role) {
+		if (request == null) {
+			return null;
+		}
+		return EnquiryRegistration.builder().firstName(request.getFirstName()).middleName(request.getMiddleName())
+				.lastName(request.getLastName()).email(request.getEmail()).phone(request.getPhone())
+				.userName(request.getEmail()).userRole(role).orgName(request.getOrgName()).country(country)
+				.employeeSize(request.getEmployeeSize()).build();
+	}
+
+	public EnquiryInfoVO toEnquiryInfoVo(EnquiryInfo enquiryInfo) {
+		if (enquiryInfo == null) {
+			return null;
+		}
+		return EnquiryInfoVO.builder().id(enquiryInfo.getId()).token(enquiryInfo.getToken()).used(enquiryInfo.getUsed())
+				.enquiryRegistration(toEnquiryRegistrationVO(enquiryInfo.getEnquiryRegistration()))
+				.expiryTime(enquiryInfo.getExpiryTime()).build();
+	}
+
+	private EnquiryRegistrationVO toEnquiryRegistrationVO(EnquiryRegistration enquiryRegistration) {
+		if (enquiryRegistration == null) {
+			return null;
+		}
+		return EnquiryRegistrationVO.builder().enquiryId(enquiryRegistration.getEnquiryId())
+				.firstName(enquiryRegistration.getFirstName()).middleName(enquiryRegistration.getMiddleName())
+				.lastName(enquiryRegistration.getLastName()).email(enquiryRegistration.getEmail())
+				.phone(enquiryRegistration.getPhone()).orgName(enquiryRegistration.getOrgName())
+				.country(toCountryMasterVO(enquiryRegistration.getCountry()))
+				.employeeSize(enquiryRegistration.getEmployeeSize()).build();
 	}
 }

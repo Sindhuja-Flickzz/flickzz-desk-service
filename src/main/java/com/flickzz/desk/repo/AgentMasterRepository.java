@@ -5,8 +5,11 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.flickzz.desk.model.AgentMaster;
+import com.flickzz.desk.model.User;
 
 public interface AgentMasterRepository extends JpaRepository<AgentMaster, Long> {
 
 	Optional<AgentMaster> findByAgentName(String agentName);
+
+	AgentMaster findByUser(User user);
 }

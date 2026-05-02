@@ -39,7 +39,7 @@ public class RequestController {
 	@Autowired
 	private RequestService requestService;
 
-	@GetMapping("/number")
+	@GetMapping("/number/{requestType}")
 	public ResponseEntity<FlickzzDeskResponse> getRequestNumber(@PathVariable String requestType) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 

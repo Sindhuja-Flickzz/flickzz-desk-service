@@ -50,4 +50,9 @@ public class FlickzzDeskConstants {
 
 	public static final String USERNAME_OR_EMAIL = "Username or Email";
 	public static final String USER_LIST = "User list";
+	public static final String IMPACT = "Impact";
+	public static final String IMPACT_CODE = "Impact Code";
+	public static final String IMPACT_LEVEL = "Impact Level";
+	public static final String EMAIL = "Email";
+	public static final String PASSWORD = "Password";
 }

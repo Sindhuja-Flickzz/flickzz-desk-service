@@ -45,16 +45,16 @@ public class FlickzzDeskController {
 	@Autowired
 	private FlickzzDeskService flickzzDeskService;
 
-	@PostMapping("register")
-	public ResponseEntity<FlickzzDeskResponse> register(@RequestBody RegisterLoginRequestVO request) throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
-
-		RegisterLoginResponseVO respVO = flickzzDeskService.register(request);
-
-		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(REGISTRATION_SUCCESS, getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN),
-				respVO);
-	}
+//	@PostMapping("register")
+//	public ResponseEntity<FlickzzDeskResponse> register(@RequestBody RegisterLoginRequestVO request) throws Exception {
+//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//
+//		RegisterLoginResponseVO respVO = flickzzDeskService.register(request);
+//
+//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		return handleSuccessResponse(REGISTRATION_SUCCESS, getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN),
+//				respVO);
+//	}
 
 	@PostMapping("verify")
 	public ResponseEntity<FlickzzDeskResponse> verifyCode(@RequestBody VerificationRequestVO request) {
@@ -117,5 +117,15 @@ public class FlickzzDeskController {
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), USER_LIST), respVO);
+	}
+
+	@GetMapping("user/info")
+	public ResponseEntity<FlickzzDeskResponse> getUserInfo(@RequestBody CommonRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		UserVO respVO = flickzzDeskService.getUserInfo(request);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 	}
 }

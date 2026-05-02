@@ -42,13 +42,16 @@ public class User {
 	@Column(name = "PASSWORD", nullable = false, length = 255)
 	private String password;
 
-	@Column(name = "FIRST_NAME", length = 50, unique = true)
+	@Column(name = "FIRST_NAME", length = 50)
 	private String firstName;
 
-	@Column(name = "LAST_NAME", length = 50, unique = true)
+//	@Column(name = "MIDDLE_NAME", length = 50)
+//	private String middleName;
+
+	@Column(name = "LAST_NAME", length = 50)
 	private String lastName;
 
-	@Column(name = "REGISTER_ID", nullable = false, length = 50, unique = true)
+	@Column(name = "REGISTER_ID", length = 50)
 	private String registerId;
 
 	@Column(name = "EMAIL", nullable = false, length = 50, unique = true)
@@ -57,7 +60,7 @@ public class User {
 	@Column(name = "ROLE", nullable = false, length = 100)
 	private String role;
 
-	@Column(name = "PHONE", nullable = false, length = 20, unique = true)
+	@Column(name = "PHONE", length = 20, unique = true, nullable = false)
 	private String phone;
 
 	@ManyToOne

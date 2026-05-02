@@ -1,8 +1,9 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
+import static com.flickzz.desk.config.FlickzzDeskConstants.IMPACT;
+import static com.flickzz.desk.config.FlickzzDeskConstants.PRIORITY;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
@@ -27,70 +28,67 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
-import com.flickzz.desk.service.CompanyService;
-import com.flickzz.desk.vo.CompanyMasterRequestVO;
-import com.flickzz.desk.vo.CompanyMasterVO;
+import com.flickzz.desk.service.ImpactService;
+import com.flickzz.desk.vo.ImpactMasterVO;
+import com.flickzz.desk.vo.ImpactRequestVO;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/company")
-public class CompanyController {
+@RequestMapping("/impact")
+public class ImpactController {
 
-	private static final Logger log = LoggerFactory.getLogger(CompanyController.class);
+	private static final Logger log = LoggerFactory.getLogger(ImpactController.class);
 
 	@Autowired
-	private CompanyService companyService;
+	private ImpactService impactService;
 
-	@PostMapping("/create")
-	public ResponseEntity<FlickzzDeskResponse> createCompany(@RequestBody CompanyMasterRequestVO request)
-			throws Exception {
+	@PostMapping("create")
+	public ResponseEntity<FlickzzDeskResponse> createImpact(@RequestBody ImpactRequestVO request) throws Exception {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		CompanyMasterVO respVO = companyService.createCompany(request);
+		ImpactMasterVO respVO = impactService.createImpact(request);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), COMPANY), respVO);
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), IMPACT), respVO);
 	}
 
-	@GetMapping("/{companyId}")
-	public ResponseEntity<FlickzzDeskResponse> getCompanyInfo(@PathVariable String companyId) {
+	@GetMapping("/{impactId}")
+	public ResponseEntity<FlickzzDeskResponse> getImpactInfo(@PathVariable String impactId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		CompanyMasterVO response = companyService.getCompanyInfo(companyId);
+		ImpactMasterVO response = impactService.getImpactInfo(impactId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), IMPACT), response);
 	}
 
 	@PostMapping("/update")
-	public ResponseEntity<FlickzzDeskResponse> updateCompany(@RequestBody CompanyMasterRequestVO request) {
+	public ResponseEntity<FlickzzDeskResponse> updateImpact(@RequestBody ImpactRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		CompanyMasterVO response = companyService.updateCompany(request);
+		ImpactMasterVO response = impactService.updateImpact(request);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), COMPANY),
-				response);
+		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), IMPACT), response);
 	}
 
-	@DeleteMapping("/delete/{companyId}")
-	public ResponseEntity<FlickzzDeskResponse> deleteCompany(@PathVariable String companyId) {
+	@DeleteMapping("/delete/{impactId}")
+	public ResponseEntity<FlickzzDeskResponse> deleteImpact(@PathVariable String impactId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		companyService.deleteCompany(companyId);
+		impactService.deleteImpact(impactId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), COMPANY));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PRIORITY));
 	}
 
-	@GetMapping("/list")
-	public ResponseEntity<FlickzzDeskResponse> listCompanies() {
+	@GetMapping("/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getImpactList(@PathVariable String orgId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		List<CompanyMasterVO> response = companyService.listCompanies();
+		List<ImpactMasterVO> response = impactService.getImpactList(orgId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
-
 }

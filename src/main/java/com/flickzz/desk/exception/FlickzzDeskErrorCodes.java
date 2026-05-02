@@ -15,7 +15,12 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 	INCORRECT_CODE("FD-106", "Incorrect Code", "Code is not correct. Please retry!"),
 	INVALID_FIELD("FD-107", "Not a valid value", "Value for %s is not valid. Please verify!"),
 	NO_DATA("FD-108", "No data found", "No data found. Please verify!"),
-	INCORRECT_PASSWORD("FD-109", "Incorrect Password", "Current password is incorrect. Please verify!");
+	INCORRECT_PASSWORD("FD-109", "Incorrect Password", "Current password is incorrect. Please verify!"),
+	INVALID_TOKEN("FD-110", "Token Invalid", "Token Invalid or Expired!"),
+	EXPIRED_LINK("FD-110", "Link Expired", "Link Expired! Please raise enquiry again."),
+	INVALID_PASSWORD("FD-111", "Invalid Password",
+			"Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character."),
+	INVALID_TEXT("FD-112", "Invalid Text", "Invalid %s. Please verify!");
 
 	private String code;
 	private String title;

@@ -15,10 +15,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class RegisterLoginResponseVO implements Serializable {
-      private static final long serialVersionUID = 1L;
-	  private String accessToken;
-	  private String refreshToken;
-	  private boolean mfaEnabled;
-	  private String userRole;
-	  private String secretImageUri;
+	private static final long serialVersionUID = 1L;
+	private String accessToken;
+	private String refreshToken;
+	private boolean mfaEnabled;
+	private String userRole;
+	private boolean isEnquiryUser;
+	private Long userOrganization;
+	private String secretImageUri;
 }
