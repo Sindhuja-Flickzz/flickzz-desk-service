@@ -27,6 +27,7 @@ public class TicketVO implements Serializable {
 	private String shortDescription;
 	private String description;
 	private String attachment;
+	private CompanyMasterVO company; // FK reference
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;

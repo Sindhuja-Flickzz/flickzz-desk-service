@@ -17,13 +17,16 @@ public class UserVO implements Serializable {
 	private Long userId;
 	private String userName;
 	private String firstName;
+	private String middleName;
 	private String lastName;
 	private String registerId;
 	private String email;
 	private String role;
-	private String phone;
+	private String phoneCode;
+	private String phoneNumber;
 	private CountryMasterVO country;
 	private CityMasterVO city;
+	private AgentMasterVO agent;
 	private LanguageMasterVO language;
 	private boolean mfaEnabled;
 	private Boolean isActive;

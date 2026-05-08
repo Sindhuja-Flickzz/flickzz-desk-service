@@ -19,14 +19,11 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.RequestService;
-import com.flickzz.desk.vo.RequestConfigRequestVO;
 import com.flickzz.desk.vo.RequestConfigVO;
 
 @CrossOrigin
@@ -50,41 +47,41 @@ public class RequestController {
 				requestNumber);
 	}
 
-	@PostMapping("/config/create")
-	public ResponseEntity<FlickzzDeskResponse> createRequestConfig(
-			@RequestBody RequestConfigRequestVO requestConfigVO) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
-
-		RequestConfigVO createdConfig = requestService.createRequestConfig(requestConfigVO);
-
-		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
-				createdConfig);
-	}
-
-	@PostMapping("/config/update")
-	public ResponseEntity<FlickzzDeskResponse> updateRequestConfig(
-			@RequestBody RequestConfigRequestVO requestConfigVO) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
-
-		RequestConfigVO updatedConfig = requestService.updateRequestConfig(requestConfigVO);
-
-		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
-				updatedConfig);
-	}
-
-	@GetMapping("/config/{requestType}/{plantId}")
-	public ResponseEntity<FlickzzDeskResponse> getRequestConfig(@PathVariable String requestType,
-			@PathVariable Long plantId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
-
-		RequestConfigVO requestConfig = requestService.getRequestConfig(requestType, plantId);
-
-		log.debug(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
-				requestConfig);
-	}
+//	@PostMapping("/config/create")
+//	public ResponseEntity<FlickzzDeskResponse> createRequestConfig(
+//			@RequestBody RequestConfigRequestVO requestConfigVO) {
+//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//
+//		RequestConfigVO createdConfig = requestService.createRequestConfig(requestConfigVO);
+//
+//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
+//				createdConfig);
+//	}
+//
+//	@PostMapping("/config/update")
+//	public ResponseEntity<FlickzzDeskResponse> updateRequestConfig(
+//			@RequestBody RequestConfigRequestVO requestConfigVO) {
+//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//
+//		RequestConfigVO updatedConfig = requestService.updateRequestConfig(requestConfigVO);
+//
+//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
+//				updatedConfig);
+//	}
+//
+//	@GetMapping("/config/{requestType}/{plantId}")
+//	public ResponseEntity<FlickzzDeskResponse> getRequestConfig(@PathVariable String requestType,
+//			@PathVariable Long plantId) {
+//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//
+//		RequestConfigVO requestConfig = requestService.getRequestConfig(requestType, plantId);
+//
+//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
+//				requestConfig);
+//	}
 
 	@GetMapping("/config/list")
 	public ResponseEntity<FlickzzDeskResponse> getAllRequestConfigs() {

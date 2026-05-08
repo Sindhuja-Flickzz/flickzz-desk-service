@@ -22,9 +22,11 @@ public class EnquiryRegistrationVO implements Serializable {
 	private String password;
 	private String userRole;
 	private String email;
-	private String orgName;
-	private String phone;
+	private CompanyMasterVO company;
+	private StateMasterVO state;
+	private CityMasterVO city;
+	private String phoneCode;
+	private String phoneNumber;
 	private CountryMasterVO country;
-	private Integer employeeSize;
 	private Boolean isActive;
 }

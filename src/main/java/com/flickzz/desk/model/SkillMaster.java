@@ -4,13 +4,17 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +25,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_SKILL_MASTER")
+@Table(name = "FD_SKILL_MASTER", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_SKILL_NAME_COMPANY", columnNames = { "SKILL_NAME", "COMPANY_ID" }) })
 public class SkillMaster {
 
 	@Id
@@ -30,8 +35,13 @@ public class SkillMaster {
 	@Column(name = "SKILL_ID", unique = true, nullable = false)
 	private Long skillId;
 
-	@Column(name = "SKILL_NAME", nullable = false, length = 100, unique = true)
+	@Column(name = "SKILL_NAME", nullable = false, length = 100)
 	private String skillName;
+
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_SKILL_COMPANY"), nullable = false)
+	private CompanyMaster company;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;

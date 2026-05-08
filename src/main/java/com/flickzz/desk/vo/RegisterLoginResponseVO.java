@@ -21,6 +21,7 @@ public class RegisterLoginResponseVO implements Serializable {
 	private boolean mfaEnabled;
 	private String userRole;
 	private boolean isEnquiryUser;
-	private Long userOrganization;
+	private Long userOrgId;
+	private String userOrgName;
 	private String secretImageUri;
 }

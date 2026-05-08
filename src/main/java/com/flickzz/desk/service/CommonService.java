@@ -3,7 +3,6 @@ package com.flickzz.desk.service;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
@@ -27,9 +26,11 @@ import com.flickzz.desk.model.CountryMaster;
 import com.flickzz.desk.repo.CityMasterRepository;
 import com.flickzz.desk.repo.CountryMasterRepository;
 import com.flickzz.desk.repo.LanguageMasterRepository;
+import com.flickzz.desk.repo.StateMasterRepository;
 import com.flickzz.desk.vo.CityMasterVO;
 import com.flickzz.desk.vo.CountryMasterVO;
 import com.flickzz.desk.vo.LanguageMasterVO;
+import com.flickzz.desk.vo.StateMasterVO;
 
 @Service
 public class CommonService {
@@ -38,6 +39,9 @@ public class CommonService {
 
 	@Autowired
 	private CountryMasterRepository countryMasterRepository;
+
+	@Autowired
+	private StateMasterRepository stateMasterRepository;
 
 	@Autowired
 	private CityMasterRepository cityMasterRepository;
@@ -49,7 +53,7 @@ public class CommonService {
 	private CommonMapper mapper;
 
 	public CountryMasterVO getCountyInfo(String countryId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCountyInfo", this.getClass().getName()));
 		try {
 			Optional<CountryMaster> countryMaster = countryMasterRepository.findById(Long.valueOf(countryId));
 			if (countryMaster == null) {
@@ -66,7 +70,7 @@ public class CommonService {
 	}
 
 	public List<CountryMasterVO> getCountyList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCountyList", this.getClass().getName()));
 		try {
 			return countryMasterRepository.findAll().stream().map(mapper::toCountryMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -78,7 +82,7 @@ public class CommonService {
 	}
 
 	public CityMasterVO getCityInfo(String cityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCityInfo", this.getClass().getName()));
 		try {
 			Optional<CityMaster> cityMaster = cityMasterRepository.findById(Long.valueOf(cityId));
 			if (cityMaster == null) {
@@ -94,7 +98,7 @@ public class CommonService {
 	}
 
 	public List<CityMasterVO> getCityListOfCountry(String countryId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCityListOfCountry", this.getClass().getName()));
 		try {
 			return cityMasterRepository.findByCountryCountryIdAndIsActive(Long.valueOf(countryId), ACTIVE).stream()
 					.map(mapper::toCityMasterVO).toList();
@@ -107,7 +111,7 @@ public class CommonService {
 	}
 
 	public List<CityMasterVO> getCityList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCityList", this.getClass().getName()));
 		try {
 			return cityMasterRepository.findAll().stream().map(mapper::toCityMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -119,7 +123,7 @@ public class CommonService {
 	}
 
 	public LanguageMasterVO getLanguageInfo(String languageId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getLanguageInfo", this.getClass().getName()));
 		try {
 			return mapper.toLanguageMasterVO(languageMasterRepository.findById(Long.valueOf(languageId)).get());
 		} catch (FlickzzDeskException e) {
@@ -131,7 +135,7 @@ public class CommonService {
 	}
 
 	public List<LanguageMasterVO> getLanguageList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getLanguageList", this.getClass().getName()));
 		try {
 			return languageMasterRepository.findAll().stream().map(mapper::toLanguageMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -143,7 +147,7 @@ public class CommonService {
 	}
 
 	public String getCurrentTimeOfTimezone(String timezone) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getCurrentTimeOfTimezone", this.getClass().getName()));
 		try {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -152,6 +156,45 @@ public class CommonService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in getCurrentTimeOfTimezone method in CommonService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<StateMasterVO> getStateListOfCountry(String countryId) {
+		log.debug(generateLog("getStateListOfCountry", this.getClass().getName()));
+		try {
+			return stateMasterRepository.findByCountry_CountryIdAndIsActive(Long.valueOf(countryId), ACTIVE).stream()
+					.map(state -> mapper.toStateMasterVO(state)).distinct().toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getStateListOfCountry method in CommonService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<CityMasterVO> getCityListOfState(String stateId) {
+		log.debug(generateLog("getCityListOfState", this.getClass().getName()));
+		try {
+			return cityMasterRepository.findByStateStateIdAndIsActive(Long.valueOf(stateId), ACTIVE).stream()
+					.map(city -> mapper.toCityMasterVO(city)).distinct().toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getCityListOfState method in CommonService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<StateMasterVO> getAllStateList() {
+		log.debug(generateLog("getAllStateList", this.getClass().getName()));
+		try {
+			return stateMasterRepository.findAllByIsActive(ACTIVE).stream().map(state -> mapper.toStateMasterVO(state))
+					.distinct().toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getAllStateList method in CommonService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

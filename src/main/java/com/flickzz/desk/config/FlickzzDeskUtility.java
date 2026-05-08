@@ -5,7 +5,9 @@ import java.security.SecureRandom;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.security.CustomUserDetails;
+import com.flickzz.desk.vo.RegisterLoginResponseVO;
 
 public class FlickzzDeskUtility {
 
@@ -35,4 +37,26 @@ public class FlickzzDeskUtility {
 		}
 		return password.toString();
 	}
+
+	public static String generateUniversalId(String uidPrefix, String currentUID) {
+		String yearSuffix = String.valueOf(java.time.Year.now().getValue()).substring(2);
+		int sequence = 0;
+
+		if (currentUID != null && currentUID.length() > 1) {
+			String sequenceStr = currentUID.substring(uidPrefix.length() + yearSuffix.length());
+			sequence = Integer.parseInt(sequenceStr);
+		}
+		int nextSequence = sequence + 1;
+		return uidPrefix + yearSuffix + nextSequence;
+	}
+
+	public static RegisterLoginResponseVO generateLoginResponse(String jwtToken, String refreshToken,
+			Boolean isEnquiryUser, Boolean mfaEnabled, CompanyMaster company, String userRole, String qrCodeImageUri) {
+		return RegisterLoginResponseVO.builder().accessToken(jwtToken != null ? jwtToken : "")
+				.refreshToken(refreshToken != null ? refreshToken : "").isEnquiryUser(isEnquiryUser)
+				.mfaEnabled(mfaEnabled).userOrgId(company != null ? company.getCompanyId() : 0)
+				.userOrgName(company != null ? company.getCompanyName() : "").userRole(userRole != null ? userRole : "")
+				.secretImageUri(qrCodeImageUri).build();
+	}
+
 }

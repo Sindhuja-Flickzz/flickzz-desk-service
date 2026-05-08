@@ -19,7 +19,8 @@ public class AgentRequestVO implements Serializable {
 	private String agentName;
 	private String mailId;
 	private String accessId;
-	private String phone;
+	private String phoneCode;
+	private String phoneNumber;
 	private Long orgId;
 	private String createdBy;
 	private String updatedBy;

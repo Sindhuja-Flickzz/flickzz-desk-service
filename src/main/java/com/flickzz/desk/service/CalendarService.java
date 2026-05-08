@@ -1,0 +1,266 @@
+package com.flickzz.desk.service;
+
+import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_CODE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_TYPE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.flickzz.desk.exception.FlickzzDeskException;
+import com.flickzz.desk.mapper.CommonMapper;
+import com.flickzz.desk.model.CalendarHoliday;
+import com.flickzz.desk.model.CalendarMaster;
+import com.flickzz.desk.model.CalendarType;
+import com.flickzz.desk.model.CalendarWorkday;
+import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.repo.CalendarMasterRepository;
+import com.flickzz.desk.repo.CalendarTypeRepository;
+import com.flickzz.desk.repo.CompanyMasterRepository;
+import com.flickzz.desk.vo.CalendarMasterRequestVO;
+import com.flickzz.desk.vo.CalendarMasterVO;
+import com.flickzz.desk.vo.CalendarTypeVO;
+
+@Service
+public class CalendarService {
+
+	private static final Logger log = LoggerFactory.getLogger(CalendarService.class);
+
+	@Autowired
+	private CalendarMasterRepository calendarMasterRepository;
+
+	@Autowired
+	private CalendarTypeRepository calendarTypeRepository;
+
+	@Autowired
+	private CompanyMasterRepository companyMasterRepository;
+
+	@Autowired
+	private CommonMapper mapper;
+
+	public CalendarMasterVO createCalendar(CalendarMasterRequestVO request) {
+		log.debug(generateLog("createCalendar", this.getClass().getName()));
+		try {
+			if (request == null || request.getCalendarCode() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), CALENDAR_CODE));
+			}
+
+			if (request == null || request.getCalendarType() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), CALENDAR_TYPE));
+			}
+
+			calendarMasterRepository.findByCalendarCodeAndCompany_CompanyIdAndIsActive(request.getCalendarCode(),
+					request.getCompany(), ACTIVE).ifPresent(c -> {
+						throw new FlickzzDeskException(ALREADY_EXISTS,
+								getDescription(ALREADY_EXISTS.getDescription(), CALENDAR_CODE));
+					});
+
+			CalendarType calendarType = calendarTypeRepository
+					.findByCalendarTypeIdAndCompany_CompanyId(request.getCalendarType(), request.getCompany())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_TYPE)));
+
+			CompanyMaster company = companyMasterRepository.findByCompanyIdAndIsActive(request.getCompany(), ACTIVE)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
+
+			CalendarMaster entity = mapper.toCalendarMasterEntity(request, calendarType, company);
+			if (request.getHolidays() != null && request.getHolidays().size() > 0) {
+				entity.setHolidays(
+						mapper.toCalendarHolidayEntity(request.getHolidays(), request.getCreatedBy(), entity));
+			}
+			if (request.getWorkingDays() != null) {
+				entity.setWorkdays(mapper.toCalendarWorkDay(request.getWorkingDays(), request.getCreatedBy(), entity));
+			}
+
+			CalendarMaster saved = calendarMasterRepository.save(entity);
+			return mapper.toCalendarMasterVO(saved);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in createCalendar method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public CalendarMasterVO getCalendarInfo(String calendarCode) {
+		log.debug(generateLog("getCalendarInfo", this.getClass().getName()));
+		try {
+			if (calendarCode == null) {
+				throw new FlickzzDeskException(INVALID_FIELD, CALENDAR_CODE);
+			}
+
+			CalendarMaster existing = calendarMasterRepository.findByCalendarCodeAndIsActive(calendarCode, true)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE)));
+			return mapper.toCalendarMasterVO(existing);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getCalendarInfo method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public CalendarMasterVO updateCalendar(CalendarMasterRequestVO request) {
+		log.debug(generateLog("updateCalendar", this.getClass().getName()));
+		try {
+			if (request == null || request.getCalendarCode() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD, CALENDAR_CODE);
+			}
+
+			if (request == null || request.getCalendarType() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), CALENDAR_TYPE));
+			}
+
+			CalendarMaster existing = calendarMasterRepository
+					.findByCalendarCodeAndCompany_CompanyId(request.getCalendarCode(), request.getCompany())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE)));
+
+			CalendarType calendarType = calendarTypeRepository
+					.findByCalendarTypeIdAndCompany_CompanyId(request.getCalendarType(), request.getCompany())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_TYPE)));
+
+			existing.setIsActive(ACTIVE);
+			existing.setCalendarType(calendarType);
+			existing.setValidFrom(request.getValidFrom());
+			existing.setValidTo(request.getValidTo());
+			existing.setWorkFrom(request.getWorkFrom());
+			existing.setWorkTo(request.getWorkTo());
+			existing.setTimezone(request.getTimezone());
+			existing.setUpdatedBy(request.getUpdatedBy());
+
+			existing.getHolidays().clear();
+			if (request.getHolidays() != null) {
+				existing.getHolidays()
+						.addAll(request.getHolidays().stream()
+								.map(h -> CalendarHoliday.builder().holidayDate(h.getHolidayDate())
+										.description(h.getDescription()).calendarMaster(existing).build())
+								.toList());
+			}
+
+			existing.getWorkdays().clear();
+			if (request.getWorkingDays() != null) {
+				existing.getWorkdays().addAll(request.getWorkingDays().stream().map(workingDay -> {
+					CalendarWorkday workday = CalendarWorkday.builder().workday(workingDay).calendarMaster(existing)
+							.createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
+					return workday;
+				}).toList());
+			}
+
+			CalendarMaster saved = calendarMasterRepository.save(existing);
+			return mapper.toCalendarMasterVO(saved);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in updateCalendar method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public void deleteCalendar(String calendarCode) {
+		log.debug(generateLog("deleteCalendar", this.getClass().getName()));
+		try {
+			CalendarMaster existing = calendarMasterRepository.findByCalendarCode(calendarCode)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), "Calendar")));
+			existing.setIsActive(false);
+			calendarMasterRepository.save(existing);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in deleteCalendar method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<CalendarMasterVO> listCalendars(String orgId) {
+		log.debug(generateLog("listCalendars", this.getClass().getName()));
+		try {
+			return calendarMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+					.map(mapper::toCalendarMasterVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in listCalendars method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<CalendarTypeVO> createCalendarType(CalendarMasterRequestVO request) {
+		log.debug(generateLog("createCalendarType", this.getClass().getName()));
+		try {
+			if (request == null || request.getCalendarTypeList() == null || request.getCalendarTypeList().size() == 0) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Calendar Type List"));
+			}
+
+			CompanyMaster company = companyMasterRepository.findByCompanyIdAndIsActive(request.getCompany(), ACTIVE)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
+
+			List<CalendarTypeVO> calendarTypeVOs = new ArrayList<CalendarTypeVO>();
+
+			request.getCalendarTypeList().forEach(type -> {
+				calendarTypeRepository.findByTypeNameAndCompany_CompanyId(type, request.getCompany()).ifPresent(c -> {
+					c.setIsActive(true);
+					calendarTypeRepository.save(c);
+				});
+				calendarTypeVOs.add(mapper.toCalendarTypeVO(calendarTypeRepository
+						.save(mapper.toCalendarTypeEntity(type, company, request.getCreatedBy()))));
+			});
+			return calendarTypeVOs;
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in createCalendarType method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public void deleteCalendarType(String calendarTypeId) {
+		log.debug(generateLog("deleteCalendarType", this.getClass().getName()));
+		try {
+			CalendarType calendarType = calendarTypeRepository.findById(Long.valueOf(calendarTypeId))
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), "Calendar Type")));
+			calendarType.setIsActive(false);
+			calendarTypeRepository.save(calendarType);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in deleteCalendarType method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<CalendarTypeVO> listCalendarTypes(String orgId) {
+		log.debug(generateLog("listCalendarTypes", this.getClass().getName()));
+		try {
+			return calendarTypeRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+					.map(mapper::toCalendarTypeVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in listCalendarTypes method in CalendarService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+}

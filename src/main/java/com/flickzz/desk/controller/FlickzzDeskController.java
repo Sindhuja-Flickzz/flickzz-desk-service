@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,17 +45,6 @@ public class FlickzzDeskController {
 
 	@Autowired
 	private FlickzzDeskService flickzzDeskService;
-
-//	@PostMapping("register")
-//	public ResponseEntity<FlickzzDeskResponse> register(@RequestBody RegisterLoginRequestVO request) throws Exception {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
-//
-//		RegisterLoginResponseVO respVO = flickzzDeskService.register(request);
-//
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
-//		return handleSuccessResponse(REGISTRATION_SUCCESS, getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN),
-//				respVO);
-//	}
 
 	@PostMapping("verify")
 	public ResponseEntity<FlickzzDeskResponse> verifyCode(@RequestBody VerificationRequestVO request) {
@@ -119,13 +109,23 @@ public class FlickzzDeskController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), USER_LIST), respVO);
 	}
 
-	@GetMapping("user/info")
-	public ResponseEntity<FlickzzDeskResponse> getUserInfo(@RequestBody CommonRequestVO request) {
+	@GetMapping("user/info/{userEmail}")
+	public ResponseEntity<FlickzzDeskResponse> getUserInfo(@PathVariable String userEmail) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		UserVO respVO = flickzzDeskService.getUserInfo(request);
+		UserVO respVO = flickzzDeskService.getUserInfo(userEmail);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 	}
+
+//	@PostMapping("profile/update")
+//	public ResponseEntity<FlickzzDeskResponse> updateProfile(@RequestBody UserVO request) {
+//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//
+//		UserVO respVO = flickzzDeskService.updateProfile(request);
+//
+//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
+//	}
 }

@@ -10,7 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -37,30 +37,41 @@ public class CompanyMaster {
 	@Column(name = "COMPANY_NAME", unique = true, nullable = false, length = 255)
 	private String companyName;
 
+	@Column(name = "PHONE_CODE", length = 10)
+	private String phoneCode;
+
 	@Column(name = "REGISTERED_NUMBER", nullable = false, length = 100)
 	private String registeredNumber;
 
-	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "COUNTRY_ID", foreignKey = @ForeignKey(name = "FK_PLANT_REGION"), nullable = false)
+	@Column(name = "UID", nullable = false, length = 100, unique = true)
+	private String uid;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "COUNTRY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_COUNTRY"), nullable = false)
 	private CountryMaster country;
 
-	@Column(name = "ADDRESS", length = 255)
-	private String address;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "STATE_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_STATE"))
+	private StateMaster state;
 
-	@Column(name = "MAIL", length = 100)
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "CITY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_CITY"))
+	private CityMaster city;
+
+	@Column(name = "PIN_CODE", length = 20)
+	private String pinCode;
+
+	@Column(name = "EMPLOYEE_SIZE")
+	private Integer employeeSize;
+
+	@Column(name = "ADDRESS_LINE_1", length = 255)
+	private String addressLine1;
+
+	@Column(name = "ADDRESS_LINE_2", length = 255)
+	private String addressLine2;
+
+	@Column(name = "MAIL", length = 100, nullable = false, unique = true)
 	private String mail;
-
-	@Builder.Default
-	@Column(name = "IS_SERVICE_PROVIDER", nullable = false)
-	private Boolean isServiceProvider = false;
-
-	@Builder.Default
-	@Column(name = "IS_REQUESTOR", nullable = false)
-	private Boolean isRequestor = false;
-
-	@Builder.Default
-	@Column(name = "IS_BOTH", nullable = false)
-	private Boolean isBoth = false;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

@@ -4,6 +4,7 @@ public class FlickzzDeskConstants {
 
 	public static final String ROLE_ADMIN = "Admin";
 	public static final String ROLE_AGENT = "Agent";
+	public static final String ROLE_ADMIN_AGENT = "AdminAgent";
 	public static final String ENTRY = "Entry";
 	public static final String EXIT = "Exit";
 	public static final String FD_USER = "User";
@@ -16,6 +17,7 @@ public class FlickzzDeskConstants {
 	public static final String AGENT = "Agent";
 	public static final String COMPANY = "Company";
 	public static final String COUNTRY = "Country";
+	public static final String STATE = "State";
 	public static final String CITY = "City";
 	public static final String PRIORITY = "Priority";
 	public static final String LANGUAGE = "Language";

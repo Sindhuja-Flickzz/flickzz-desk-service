@@ -14,7 +14,8 @@ public enum FlickzzDeskSuccessCodes {
 	CREATE_SUCCESS("GM-206", "Create Successful", "%s created successfully!"),
 	UPDATE_SUCCESS("GM-207", "Update Successful", "%s updated successfully!"),
 	DELETE_SUCCESS("GM-208", "Delete Successful", "%s deleted successfully!"),
-	PASSWORD_RESET_SUCCESS("GM-200", "Password Reset Successful", "Password Reset Successful!");
+	PASSWORD_RESET_SUCCESS("GM-200", "Password Reset Successful", "Password Reset Successful!"),
+	ENQUIRY_VERIFICATION_SUCCESS("GM-209", "Enquiry Verification Successful", "Enquiry verification successful!");
 
 	private String code;
 	private String title;

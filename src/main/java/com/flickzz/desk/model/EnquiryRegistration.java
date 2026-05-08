@@ -10,7 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -55,18 +55,27 @@ public class EnquiryRegistration {
 	@Column(name = "EMAIL", nullable = false, length = 150)
 	private String email;
 
-	@Column(name = "ORG_NAME", length = 200)
-	private String orgName;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_ENQUIRY_COMPANY"), nullable = false)
+	private CompanyMaster company; // FK to FD_COMPANY_MASTER
 
-	@Column(name = "PHONE", length = 20)
-	private String phone;
+	@Column(name = "PHONE_CODE", length = 10)
+	private String phoneCode;
 
-	@OneToOne(fetch = FetchType.LAZY)
+	@Column(name = "PHONE_NUMBER", length = 20)
+	private String phoneNumber;
+
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "COUNTRY_ID", foreignKey = @ForeignKey(name = "FK_ENQUIRY_COUNTRY"), nullable = false)
 	private CountryMaster country; // FK to FD_COUNTRY_MASTER
 
-	@Column(name = "EMPLOYEE_SIZE")
-	private Integer employeeSize;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "STATE_ID", foreignKey = @ForeignKey(name = "FK_ENQUIRY_STATE"))
+	private StateMaster state;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "CITY_ID", foreignKey = @ForeignKey(name = "FK_ENQUIRY_CITY"))
+	private CityMaster city;
 
 	@Column(name = "CREATED_AT")
 	private LocalDateTime createdAt = LocalDateTime.now();

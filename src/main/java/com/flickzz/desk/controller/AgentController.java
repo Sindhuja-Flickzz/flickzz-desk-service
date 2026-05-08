@@ -72,6 +72,16 @@ public class AgentController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
 	}
 
+	@GetMapping("/email/{agentName}")
+	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String agentName) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		AgentMasterVO response = agentService.getAgentInfoByEmail(agentName);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+	}
+
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateAgent(@RequestBody AgentRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
@@ -92,11 +102,11 @@ public class AgentController {
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), AGENT));
 	}
 
-	@GetMapping("/list")
-	public ResponseEntity<FlickzzDeskResponse> getAgentList() {
+	@GetMapping("/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getAgentList(@PathVariable String orgId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		List<AgentMasterVO> response = agentService.getAgentList();
+		List<AgentMasterVO> response = agentService.getAgentList(orgId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);

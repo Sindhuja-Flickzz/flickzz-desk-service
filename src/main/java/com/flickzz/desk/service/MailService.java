@@ -57,7 +57,10 @@ public class MailService {
 		String enquiryLink = String.format("%s/enquiry/verify?username=%s&token=%s", this.baseUrl, userName, token);
 		String body = String.format("Thank you for your enquiry on Flickzz Desk.<br><br>"
 				+ "Your User Name for FlickzzDesk login is: <b>%s</b><br><br>"
-				+ "Please click the link below to verify:<br>" + "<a href='%s'>Verify Your Enquiry</a><br><br>"
+				+ "Please click the link below to verify:<br><br>"
+				+ "<a href='%s' style='display:inline-block;padding:7px 25px;"
+				+ "font-size:16px;color:#F4F4F4;background-color:#00246B;"
+				+ "text-decoration:none;border-radius:5px;'>Verify</a><br><br>"
 				+ "Note: This link is valid for 3 hours only.<br><br>"
 				+ "If you did not expect this email, please ignore it.<br><br>" + "Thank you,<br>Flickzz Desk Team",
 				userName, enquiryLink);
@@ -83,7 +86,6 @@ public class MailService {
 
 	private void sendSimpleEmail(String toEmail, String subject, String text) {
 		try {
-
 			SimpleMailMessage message = new SimpleMailMessage();
 			message.setFrom(fromAddress);
 			message.setTo(toEmail);
@@ -101,7 +103,6 @@ public class MailService {
 	public String sendMailWithAttachment(String toEmail, String subject, String text) {
 
 		MimeMessage mimeMessage = mailSender.createMimeMessage();
-
 		MimeMessageHelper helper;
 
 		try {

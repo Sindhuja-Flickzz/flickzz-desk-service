@@ -9,6 +9,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -79,6 +80,10 @@ public class Ticket {
 
 	@Column(name = "ATTACHMENT", length = 255)
 	private String attachment;
+
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_TICKET_COMPANY"), nullable = false)
+	private CompanyMaster company;
 
 	@Column(name = "CREATED_BY", length = 100)
 	private String createdBy;

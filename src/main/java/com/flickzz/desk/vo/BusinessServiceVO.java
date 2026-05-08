@@ -18,6 +18,7 @@ public class BusinessServiceVO implements Serializable {
 	private Long serviceId;
 	private String serviceName;
 	private List<ServiceOfferingVO> serviceOfferings; // mapped list
+	private CompanyMasterVO company;
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;

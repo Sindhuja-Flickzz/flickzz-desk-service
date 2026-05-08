@@ -13,12 +13,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EnquiryRegisterRequestVO implements Serializable {
 	private static final long serialVersionUID = 1L;
+	private String enquiryId;
 	private String firstName;
 	private String middleName;
 	private String lastName;
 	private String email;
 	private String orgName;
-	private String phone;
+	private String phoneCode;
+	private String phoneNumber;
 	private Long countryId;
+	private Long stateId;
+	private Long cityId;
 	private Integer employeeSize;
 }

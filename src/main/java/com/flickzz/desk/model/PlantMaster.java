@@ -16,6 +16,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,7 +27,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_PLANT_MASTER")
+@Table(name = "FD_PLANT_MASTER", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_PLANT_NAME_COMPANY", columnNames = { "PLANT_NAME", "COMPANY_ID" }) })
 public class PlantMaster {
 
 	@Id
@@ -35,7 +37,7 @@ public class PlantMaster {
 	@Column(name = "PLANT_ID", unique = true, nullable = false)
 	private Long plantId;
 
-	@Column(name = "PLANT_NAME", unique = true, nullable = false, length = 255)
+	@Column(name = "PLANT_NAME", nullable = false, length = 255)
 	private String plantName;
 
 	@OneToOne(fetch = FetchType.LAZY)
@@ -46,6 +48,10 @@ public class PlantMaster {
 	@ManyToOne
 	@JoinColumn(name = "CALENDAR_ID", nullable = false)
 	private CalendarMaster calendar;
+
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_PLANT_COMPANY"), nullable = false)
+	private CompanyMaster company;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE", nullable = false)
