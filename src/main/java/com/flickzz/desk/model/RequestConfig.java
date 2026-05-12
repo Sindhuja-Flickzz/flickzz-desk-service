@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -52,9 +52,9 @@ public class RequestConfig {
 	@Column(name = "CALCULATE_BACKWARD")
 	private Boolean calculateBackward = false;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "PLANT_ID", nullable = false)
-	private PlantMaster plant;
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_REQUEST_CONFIG_COMPANY"), nullable = false)
+	private CompanyMaster company;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

@@ -81,11 +81,11 @@ public class PlantController {
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PLANT));
 	}
 
-	@GetMapping("/list")
-	public ResponseEntity<FlickzzDeskResponse> getPlantList() {
+	@GetMapping("/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getPlantList(@PathVariable String orgId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-		List<PlantMasterVO> response = plantService.getPlantList();
+		List<PlantMasterVO> response = plantService.getPlantList(orgId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PLANT), response);

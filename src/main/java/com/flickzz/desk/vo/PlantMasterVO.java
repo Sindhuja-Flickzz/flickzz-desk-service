@@ -12,13 +12,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PlantMasterVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private Long plantId;
-    private String plantName;
-    private CountryMasterVO region;
-    private CalendarMasterVO calendar;   // reference to CalendarMaster
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
+	private Long plantId;
+	private String plantName;
+	private CountryMasterVO region;
+	private CalendarMasterVO calendar; // reference to CalendarMaster
+	private CompanyMasterVO company; // reference to CompanyMaster
+	private Boolean isActive;
+	private String createdBy;
+	private String updatedBy;
 }

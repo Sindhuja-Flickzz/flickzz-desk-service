@@ -56,7 +56,7 @@ public class AgentMaster {
 	private User user;
 
 	@ManyToOne
-	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_COMPANY"))
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_COMPANY"), nullable = false)
 	private CompanyMaster organization;
 
 	@ManyToOne

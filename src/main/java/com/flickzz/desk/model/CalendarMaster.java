@@ -7,14 +7,18 @@ import java.util.List;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +31,8 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString(exclude = { "workdays", "holidays", "agentMasters" })
-@Table(name = "FD_CALENDAR_MASTER")
+@Table(name = "FD_CALENDAR_MASTER", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_CALENDAR_CODE_COMPANY", columnNames = { "CALENDAR_CODE", "COMPANY_ID" }) })
 public class CalendarMaster {
 
 	@Id
@@ -36,11 +41,12 @@ public class CalendarMaster {
 	@Column(name = "CALENDAR_ID", unique = true, nullable = false)
 	private Long calendarId;
 
-	@Column(name = "CALENDAR_CODE", nullable = false, length = 20, unique = true)
+	@Column(name = "CALENDAR_CODE", nullable = false, length = 20)
 	private String calendarCode;
 
-	@Column(name = "CALENDAR_TYPE", nullable = false, length = 20, unique = true)
-	private String calendarType;
+	@ManyToOne
+	@JoinColumn(name = "CALENDAR_TYPE_ID", foreignKey = @ForeignKey(name = "FK_CALENDAR_TYPE"), nullable = false)
+	private CalendarType calendarType;
 
 	@Column(name = "VALID_FROM", nullable = false)
 	private Date validFrom;
@@ -58,13 +64,9 @@ public class CalendarMaster {
 	@OneToMany(mappedBy = "calendarMaster", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<AgentMaster> agentMasters;
 
-	@Builder.Default
-	@Column(name = "IS_SUPPORT", nullable = false)
-	private Boolean isSupport = false;
-
-	@Builder.Default
-	@Column(name = "IS_REQUESTOR", nullable = false)
-	private Boolean isRequestor = false;
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_CALENDAR_COMPANY"), nullable = false)
+	private CompanyMaster company;
 
 	@Column(name = "WORK_FROM")
 	private String workFrom; // HH:mm

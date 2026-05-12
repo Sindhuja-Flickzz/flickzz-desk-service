@@ -1,6 +1,7 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
 import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL_NAME;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
@@ -21,7 +22,9 @@ import org.springframework.stereotype.Service;
 
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
+import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.model.SkillMaster;
+import com.flickzz.desk.repo.CompanyMasterRepository;
 import com.flickzz.desk.repo.SkillMasterRepository;
 import com.flickzz.desk.vo.SkillMasterVO;
 import com.flickzz.desk.vo.SkillRequestVO;
@@ -35,14 +38,21 @@ public class SkillsService {
 	SkillMasterRepository skillMasterRepository;
 
 	@Autowired
+	CompanyMasterRepository companyMasterRepository;
+
+	@Autowired
 	CommonMapper mapper;
 
 	public List<SkillMasterVO> createSkills(List<SkillRequestVO> skills) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("createSkills", this.getClass().getName()));
 		try {
 			if (skills.size() == 0) {
 				throw new FlickzzDeskException(NO_DATA, NO_DATA.getDescription());
 			}
+
+			CompanyMaster company = companyMasterRepository.findByCompanyId(skills.get(0).getCompanyId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
 
 			List<SkillMasterVO> skillMasterVOs = new ArrayList<SkillMasterVO>();
 
@@ -52,12 +62,13 @@ public class SkillsService {
 							getDescription(INVALID_FIELD.getDescription(), SKILL_NAME));
 				}
 
-				skillMasterRepository.findBySkillName(skill.getSkillName()).ifPresent(s -> {
-					throw new FlickzzDeskException(ALREADY_EXISTS,
-							getDescription(ALREADY_EXISTS.getDescription(), skill.getSkillName()));
-				});
+				skillMasterRepository.findBySkillNameAndCompany_CompanyIdAndIsActive(skill.getSkillName(),
+						skill.getCompanyId(), ACTIVE).ifPresent(s -> {
+							throw new FlickzzDeskException(ALREADY_EXISTS,
+									getDescription(ALREADY_EXISTS.getDescription(), skill.getSkillName()));
+						});
 
-				SkillMaster skillMaster = SkillMaster.builder().skillName(skill.getSkillName())
+				SkillMaster skillMaster = SkillMaster.builder().skillName(skill.getSkillName()).company(company)
 						.createdBy(skill.getCreatedBy()).build();
 				skillMasterVOs.add(mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster)));
 
@@ -67,13 +78,13 @@ public class SkillsService {
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createCompany method in FlickzzDeskService");
+			log.error("Exception in createSkills method in SkillsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public SkillMasterVO getSkillInfo(String skillId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getSkillInfo", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -82,48 +93,51 @@ public class SkillsService {
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in getCompanyInfo method in FlickzzDeskService");
+			log.error("Exception in getSkillInfo method in SkillsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public SkillMasterVO updateSkill(SkillRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("updateSkill", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(request.getSkillId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
+			skillMaster.setIsActive(ACTIVE);
 			skillMaster.setUpdatedBy(request.getUpdatedBy());
 			return mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in getCompanyInfo method in FlickzzDeskService");
+			log.error("Exception in updateSkill method in SkillsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public void deleteSkill(String skillId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("deleteSkill", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
-			skillMasterRepository.delete(skillMaster);
+			skillMaster.setIsActive(false);
+			skillMasterRepository.save(skillMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in deleteCompany method in FlickzzDeskService");
+			log.error("Exception in deleteSkill method in SkillsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public List<SkillMasterVO> getSkillList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+	public List<SkillMasterVO> getSkillList(String orgId) {
+		log.debug(generateLog("getSkillList", this.getClass().getName()));
 		try {
-			return skillMasterRepository.findAll().stream().map(skill -> mapper.toSkillMasterVo(skill)).toList();
+			return skillMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+					.map(skill -> mapper.toSkillMasterVo(skill)).toList();
 		} catch (Exception e) {
-			log.error("Exception in getCompanyList method in FlickzzDeskService");
+			log.error("Exception in getSkillList method in SkillsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

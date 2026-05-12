@@ -3,11 +3,11 @@ package com.flickzz.desk.controller;
 import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
@@ -35,60 +35,62 @@ import com.flickzz.desk.vo.CompanyMasterVO;
 @RestController
 @RequestMapping("/company")
 public class CompanyController {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(CompanyController.class);
-	
+
 	@Autowired
 	private CompanyService companyService;
-	
-	@PostMapping("create")
-	public ResponseEntity<FlickzzDeskResponse> createCompany(@RequestBody CompanyMasterRequestVO request) throws Exception {
+
+	@PostMapping("/create")
+	public ResponseEntity<FlickzzDeskResponse> createCompany(@RequestBody CompanyMasterRequestVO request)
+			throws Exception {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
-		
+
 		CompanyMasterVO respVO = companyService.createCompany(request);
-		
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), COMPANY), respVO);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), COMPANY), respVO);
 	}
-	
+
 	@GetMapping("/{companyId}")
-    public ResponseEntity<FlickzzDeskResponse> getCompanyInfo(@PathVariable String companyId) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        CompanyMasterVO response = companyService.getCompanyInfo(companyId);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
-    }
+	public ResponseEntity<FlickzzDeskResponse> getCompanyInfo(@PathVariable String companyId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
-    @PostMapping("/update")
-    public ResponseEntity<FlickzzDeskResponse> updateCompany(@RequestBody CompanyMasterRequestVO request) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        CompanyMasterVO response = companyService.updateCompany(request);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), COMPANY), response);
-    }
+		CompanyMasterVO response = companyService.getCompanyInfo(companyId);
 
-    @DeleteMapping("/delete/{companyId}")
-    public ResponseEntity<FlickzzDeskResponse> deleteCompany(@PathVariable String companyId) {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        companyService.deleteCompany(companyId);
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), COMPANY));
-    }
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
+	}
 
-    @GetMapping("/list")
-    public ResponseEntity<FlickzzDeskResponse> listCompanies() {
-        log.debug(generateLog(ENTRY, this.getClass().getName()));
-        
-        List<CompanyMasterVO> response = companyService.listCompanies();
-        
-        log.debug(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
-    }
+	@PostMapping("/update")
+	public ResponseEntity<FlickzzDeskResponse> updateCompany(@RequestBody CompanyMasterRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		CompanyMasterVO response = companyService.updateCompany(request);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), COMPANY),
+				response);
+	}
+
+	@DeleteMapping("/delete/{companyId}")
+	public ResponseEntity<FlickzzDeskResponse> deleteCompany(@PathVariable String companyId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		companyService.deleteCompany(companyId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), COMPANY));
+	}
+
+	@GetMapping("/list")
+	public ResponseEntity<FlickzzDeskResponse> listCompanies() {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<CompanyMasterVO> response = companyService.listCompanies();
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
+	}
 
 }

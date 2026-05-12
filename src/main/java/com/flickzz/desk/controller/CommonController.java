@@ -29,6 +29,7 @@ import com.flickzz.desk.service.CommonService;
 import com.flickzz.desk.vo.CityMasterVO;
 import com.flickzz.desk.vo.CountryMasterVO;
 import com.flickzz.desk.vo.LanguageMasterVO;
+import com.flickzz.desk.vo.StateMasterVO;
 
 @CrossOrigin
 @RestController
@@ -60,6 +61,16 @@ public class CommonController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 
+	@GetMapping("state/{countryId}")
+	public ResponseEntity<FlickzzDeskResponse> getStateListOfCountry(@PathVariable String countryId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<StateMasterVO> response = commonService.getStateListOfCountry(countryId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
+	}
+
 	@GetMapping("city/{cityId}")
 	public ResponseEntity<FlickzzDeskResponse> getCityInfo(@PathVariable String cityId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
@@ -70,11 +81,21 @@ public class CommonController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
 	}
 
-	@GetMapping("city/list/{countryId}")
+	@GetMapping("city/country/list/{countryId}")
 	public ResponseEntity<FlickzzDeskResponse> getCityListOfCountry(@PathVariable String countryId) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CityMasterVO> response = commonService.getCityListOfCountry(countryId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
+	}
+
+	@GetMapping("city/state/list/{stateId}")
+	public ResponseEntity<FlickzzDeskResponse> getCityListOfState(@PathVariable String stateId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<CityMasterVO> response = commonService.getCityListOfState(stateId);
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
@@ -119,5 +140,15 @@ public class CommonController {
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), TIME_ZONE),
 				response);
+	}
+
+	@GetMapping("state/list")
+	public ResponseEntity<FlickzzDeskResponse> getAllStateList() {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<StateMasterVO> response = commonService.getAllStateList();
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 }

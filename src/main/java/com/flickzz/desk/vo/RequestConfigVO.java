@@ -22,7 +22,7 @@ public class RequestConfigVO implements Serializable {
 	private Integer rangeFrom;
 	private Integer rangeTo;
 	private Boolean calculateBackward;
-	private PlantMasterVO plant;
+	private CompanyMasterVO company;
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;

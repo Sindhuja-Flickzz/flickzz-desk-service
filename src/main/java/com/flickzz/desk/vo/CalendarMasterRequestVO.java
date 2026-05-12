@@ -16,21 +16,21 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CalendarMasterRequestVO implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private Long companyId;
-    private String calendarCode;
-    private String calendarType;
-    @JsonFormat(pattern = "dd.MM.yyyy")
-    private Date validFrom;
-    @JsonFormat(pattern = "dd.MM.yyyy")
-    private Date validTo;
-    private List<String> workingDays;
-    private List<CalendarHolidayVO> holidays;
-    private String workFrom;
-    private String workTo;
-    private String timezone;
-    private boolean isSupport;
-    private boolean isRequestor;
-    private String createBy;
-    private String updatedBy;
+	private static final long serialVersionUID = 1L;
+	private Long companyId;
+	private String calendarCode;
+	private Long calendarType;
+	@JsonFormat(pattern = "dd.MM.yyyy")
+	private Date validFrom;
+	@JsonFormat(pattern = "dd.MM.yyyy")
+	private Date validTo;
+	private List<String> workingDays;
+	private List<CalendarHolidayVO> holidays;
+	private Long company;
+	private String workFrom;
+	private String workTo;
+	private String timezone;
+	private String createdBy;
+	private String updatedBy;
+	private List<String> calendarTypeList;
 }

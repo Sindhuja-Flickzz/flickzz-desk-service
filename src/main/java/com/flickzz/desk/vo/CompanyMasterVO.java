@@ -12,18 +12,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CompanyMasterVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private Long companyId;
-    private String companyName;
-    private String registeredNumber;
-    private CountryMasterVO country;
-    private String address;
-    private String mail;
-    private Boolean isServiceProvider;
-    private Boolean isRequestor;
-    private Boolean isBoth;
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
+	private Long companyId;
+	private String companyName;
+	private String phoneCode;
+	private String registeredNumber;
+	private String uid;
+	private CountryMasterVO country;
+	private StateMasterVO state;
+	private CityMasterVO city;
+	private String pinCode;
+	private String addressLine1;
+	private String addressLine2;
+	private Integer employeeSize;
+	private String mail;
+	private Boolean isActive;
+	private String createdBy;
+	private String updatedBy;
 }

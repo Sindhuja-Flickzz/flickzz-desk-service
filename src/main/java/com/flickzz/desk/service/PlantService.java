@@ -1,8 +1,8 @@
 package com.flickzz.desk.service;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_CODE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
 import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT;
 import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT_NAME;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
@@ -23,9 +23,11 @@ import org.springframework.stereotype.Service;
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.CalendarMaster;
+import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.model.CountryMaster;
 import com.flickzz.desk.model.PlantMaster;
 import com.flickzz.desk.repo.CalendarMasterRepository;
+import com.flickzz.desk.repo.CompanyMasterRepository;
 import com.flickzz.desk.repo.CountryMasterRepository;
 import com.flickzz.desk.repo.PlantMasterRepository;
 import com.flickzz.desk.vo.PlantMasterRequestVO;
@@ -40,6 +42,9 @@ public class PlantService {
 	private CountryMasterRepository countryMasterRepository;
 
 	@Autowired
+	private CompanyMasterRepository companyMasterRepository;
+
+	@Autowired
 	private CalendarMasterRepository calendarMasterRepository;
 
 	@Autowired
@@ -49,7 +54,7 @@ public class PlantService {
 	private CommonMapper mapper;
 
 	public PlantMasterVO createPlant(PlantMasterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("createPlant", this.getClass().getName()));
 		try {
 			if (request == null || request.getPlantName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -62,29 +67,35 @@ public class PlantService {
 						getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
 			}
 
+			CompanyMaster company = companyMasterRepository.findByCompanyIdAndIsActive(request.getCompanyId(), ACTIVE)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), "Company")));
+
 			Optional<CalendarMaster> calendarMaster = calendarMasterRepository.findById(request.getCalendarId());
 			if (calendarMaster == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
 			}
 
-			plantMasterRepository.findByPlantName(request.getPlantName()).ifPresent(c -> {
-				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), PLANT));
-			});
+			plantMasterRepository.findByPlantNameAndCompany_CompanyIdAndIsActive(request.getPlantName(),
+					request.getCompanyId(), ACTIVE).ifPresent(c -> {
+						throw new FlickzzDeskException(ALREADY_EXISTS,
+								getDescription(ALREADY_EXISTS.getDescription(), PLANT));
+					});
 
 			PlantMaster plant = PlantMaster.builder().plantName(request.getPlantName()).region(countryMaster.get())
-					.calendar(calendarMaster.get()).createdBy(request.getCreatedBy()).build();
+					.company(company).calendar(calendarMaster.get()).createdBy(request.getCreatedBy()).build();
 			return mapper.toPlantMasterVO(plantMasterRepository.save(plant));
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createCompany method in FlickzzDeskService");
+			log.error("Exception in createCompany method in PlantService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public PlantMasterVO getPlantInfo(String plantId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("getPlantInfo", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> plantMaster = plantMasterRepository.findById(Long.valueOf(plantId));
 			if (plantMaster == null) {
@@ -94,13 +105,13 @@ public class PlantService {
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in getPlantInfo method in FlickzzDeskService");
+			log.error("Exception in getPlantInfo method in PlantService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public PlantMasterVO updatePlant(PlantMasterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("updatePlant", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> existing = plantMasterRepository.findById(request.getPlantId());
 			if (existing == null) {
@@ -121,6 +132,7 @@ public class PlantService {
 
 			PlantMaster entity = existing.get();
 
+			entity.setIsActive(ACTIVE);
 			entity.setRegion(countryMaster.get());
 			entity.setCalendar(calendarMaster.get());
 			entity.setUpdatedBy(request.getUpdatedBy());
@@ -128,35 +140,38 @@ public class PlantService {
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in updatePlant method in FlickzzDeskService");
+			log.error("Exception in updatePlant method in PlantService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public void deletePlant(String plantId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.debug(generateLog("deletePlant", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> existing = plantMasterRepository.findByPlantId(Long.valueOf(plantId));
 			if (existing == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), PLANT));
 			}
-			plantMasterRepository.delete(existing.get());
+			PlantMaster plantMaster = existing.get();
+			plantMaster.setIsActive(false);
+			plantMasterRepository.save(plantMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in deletePlant method in FlickzzDeskService");
+			log.error("Exception in deletePlant method in PlantService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public List<PlantMasterVO> getPlantList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+	public List<PlantMasterVO> getPlantList(String orgId) {
+		log.debug(generateLog("getPlantList", this.getClass().getName()));
 		try {
-			return plantMasterRepository.findAll().stream().map(plant -> mapper.toPlantMasterVO(plant)).toList();
+			return plantMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+					.map(plant -> mapper.toPlantMasterVO(plant)).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in getPlantList method in FlickzzDeskService");
+			log.error("Exception in getPlantList method in PlantService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

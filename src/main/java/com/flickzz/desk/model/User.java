@@ -2,6 +2,9 @@ package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ForeignKey;
@@ -10,6 +13,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.SequenceGenerator;
@@ -42,13 +46,16 @@ public class User {
 	@Column(name = "PASSWORD", nullable = false, length = 255)
 	private String password;
 
-	@Column(name = "FIRST_NAME", length = 50, unique = true)
+	@Column(name = "FIRST_NAME", length = 50)
 	private String firstName;
 
-	@Column(name = "LAST_NAME", length = 50, unique = true)
+	@Column(name = "MIDDLE_NAME", length = 50)
+	private String middleName;
+
+	@Column(name = "LAST_NAME", length = 50)
 	private String lastName;
 
-	@Column(name = "REGISTER_ID", nullable = false, length = 50, unique = true)
+	@Column(name = "REGISTER_ID", length = 50)
 	private String registerId;
 
 	@Column(name = "EMAIL", nullable = false, length = 50, unique = true)
@@ -57,8 +64,11 @@ public class User {
 	@Column(name = "ROLE", nullable = false, length = 100)
 	private String role;
 
-	@Column(name = "PHONE", nullable = false, length = 20, unique = true)
-	private String phone;
+	@Column(name = "PHONE_CODE", length = 10)
+	private String phoneCode;
+
+	@Column(name = "PHONE_NUMBER", length = 20, unique = true, nullable = false)
+	private String phoneNumber;
 
 	@ManyToOne
 	@JoinColumn(name = "COUNTRY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_COUNTRY"))
@@ -71,6 +81,10 @@ public class User {
 	@ManyToOne
 	@JoinColumn(name = "LANGUAGE_ID", foreignKey = @ForeignKey(name = "FK_AGENT_LANGUAGE"))
 	private LanguageMaster language;
+
+	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private AgentMaster agent;
 
 	@Column(name = "MFA_ENABLED", nullable = false)
 	private boolean mfaEnabled;

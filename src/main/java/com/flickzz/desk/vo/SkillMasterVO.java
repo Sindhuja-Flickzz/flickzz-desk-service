@@ -16,6 +16,7 @@ public class SkillMasterVO implements Serializable {
 
 	private Long skillId;
 	private String skillName;
+	private CompanyMasterVO company;
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;

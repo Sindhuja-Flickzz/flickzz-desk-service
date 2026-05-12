@@ -8,9 +8,12 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -45,6 +48,10 @@ public class BusinessService {
 	@OneToMany(mappedBy = "businessService", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private List<ServiceOffering> serviceOfferings;
+
+	@ManyToOne
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_BUSINESS_SERVICE_COMPANY"), nullable = false)
+	private CompanyMaster company;
 
 	@Column(name = "CREATED_BY", length = 50)
 	private String createdBy;

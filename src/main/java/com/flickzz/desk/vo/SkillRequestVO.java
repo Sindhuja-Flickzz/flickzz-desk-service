@@ -19,6 +19,8 @@ public class SkillRequestVO implements Serializable {
 
 	private String skillName;
 
+	private Long companyId;
+
 	private String createdBy;
 
 	private String updatedBy;

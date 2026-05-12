@@ -15,10 +15,14 @@ import com.flickzz.desk.model.AgentSkillsMapping;
 import com.flickzz.desk.model.BusinessService;
 import com.flickzz.desk.model.CalendarHoliday;
 import com.flickzz.desk.model.CalendarMaster;
+import com.flickzz.desk.model.CalendarType;
 import com.flickzz.desk.model.CalendarWorkday;
 import com.flickzz.desk.model.CityMaster;
 import com.flickzz.desk.model.CompanyMaster;
 import com.flickzz.desk.model.CountryMaster;
+import com.flickzz.desk.model.EnquiryInfo;
+import com.flickzz.desk.model.EnquiryRegistration;
+import com.flickzz.desk.model.ImpactMaster;
 import com.flickzz.desk.model.LanguageMaster;
 import com.flickzz.desk.model.LoginMaster;
 import com.flickzz.desk.model.PlantMaster;
@@ -35,11 +39,17 @@ import com.flickzz.desk.vo.BusinessServiceVO;
 import com.flickzz.desk.vo.CalendarHolidayVO;
 import com.flickzz.desk.vo.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
+import com.flickzz.desk.vo.CalendarTypeVO;
 import com.flickzz.desk.vo.CalendarWorkdayVO;
 import com.flickzz.desk.vo.CityMasterVO;
 import com.flickzz.desk.vo.CompanyMasterRequestVO;
 import com.flickzz.desk.vo.CompanyMasterVO;
 import com.flickzz.desk.vo.CountryMasterVO;
+import com.flickzz.desk.vo.EnquiryInfoVO;
+import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
+import com.flickzz.desk.vo.EnquiryRegistrationVO;
+import com.flickzz.desk.vo.ImpactMasterVO;
+import com.flickzz.desk.vo.ImpactRequestVO;
 import com.flickzz.desk.vo.LanguageMasterVO;
 import com.flickzz.desk.vo.PlantMasterVO;
 import com.flickzz.desk.vo.PriorityMasterVO;
@@ -62,10 +72,11 @@ public class CommonMapper {
 	public User registerRequesttoUser(RegisterLoginRequestVO request, String rawPassword, CountryMaster country,
 			CityMaster city, LanguageMaster language) {
 		return User.builder().firstName(request.getFirstname()).lastName(request.getLastname())
-				.email(request.getEmail()).userName(request.getEmail()).password(passwordEncoder().encode(rawPassword))
+				.middleName(request.getMiddlename()).email(request.getEmail()).userName(request.getEmail())
+				.password(passwordEncoder().encode(rawPassword))
 				.role(request.getRole() != null ? request.getRole() : FlickzzDeskConstants.ROLE_ADMIN)
-				.phone(request.getPhone()).country(country).city(city).language(language)
-				.registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
+				.phoneCode(request.getPhoneCode()).phoneNumber(request.getPhoneNumber()).country(country).city(city)
+				.language(language).registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
 				.createdBy(request.getCreatedBy()).build();
 	}
 
@@ -79,9 +90,9 @@ public class CommonMapper {
 			return null;
 		}
 		return CalendarMasterVO.builder().calendarId(calendar.getCalendarId()).calendarCode(calendar.getCalendarCode())
-				.calendarType(calendar.getCalendarType()).validFrom(calendar.getValidFrom())
-				.validTo(calendar.getValidTo()).isActive(calendar.getIsActive()).isSupport(calendar.getIsSupport())
-				.isRequestor(calendar.getIsRequestor())
+				.calendarType(toCalendarTypeVO(calendar.getCalendarType()))
+				.company(toCompanyMasterVO(calendar.getCompany())).validFrom(calendar.getValidFrom())
+				.validTo(calendar.getValidTo()).isActive(calendar.getIsActive())
 				.workdays(calendar.getWorkdays() == null ? null
 						: calendar.getWorkdays().stream().filter(CalendarWorkday::isActive)
 								.map(this::toCalendarWorkdayVO).toList())
@@ -110,15 +121,15 @@ public class CommonMapper {
 				.build();
 	}
 
-	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request) {
+	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request, CalendarType calendarType,
+			CompanyMaster company) {
 		if (request == null) {
 			return null;
 		}
-		return CalendarMaster.builder().calendarCode(request.getCalendarCode()).calendarType(request.getCalendarType())
-				.validFrom(request.getValidFrom()).validTo(request.getValidTo()).workFrom(request.getWorkFrom())
-				.workTo(request.getWorkTo()).timezone(request.getTimezone()).isRequestor(request.isRequestor())
-				.isSupport(request.isSupport()).createdBy(request.getCreateBy()).updatedBy(request.getCreateBy())
-				.build();
+		return CalendarMaster.builder().calendarCode(request.getCalendarCode()).calendarType(calendarType)
+				.company(company).validFrom(request.getValidFrom()).validTo(request.getValidTo())
+				.workFrom(request.getWorkFrom()).workTo(request.getWorkTo()).timezone(request.getTimezone())
+				.createdBy(request.getCreatedBy()).updatedBy(request.getUpdatedBy()).build();
 	}
 
 	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, String createdBy,
@@ -139,15 +150,15 @@ public class CommonMapper {
 		}).toList();
 	}
 
-	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request, CountryMaster country) {
+	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request, CountryMaster country,
+			StateMaster stateMaster, CityMaster cityMaster) {
 		if (request == null) {
 			return null;
 		}
-		return CompanyMaster.builder().companyName(request.getCompanyName())
-				.registeredNumber(request.getRegisteredNumber()).country(country).address(request.getAddress())
-				.mail(request.getMail()).isBoth(request.getMarkAsServiceProvider() ? true : false)
-				.isServiceProvider(request.getMarkAsServiceProvider() ? false : request.getIsServiceProvider())
-				.isRequestor(request.getMarkAsServiceProvider() ? false : request.getIsRequestor())
+		return CompanyMaster.builder().companyName(request.getCompanyName()).uid(request.getUid())
+				.employeeSize(request.getEmployeeSize()).registeredNumber(request.getRegisteredNumber())
+				.pinCode(request.getPinCode()).country(country).state(stateMaster).city(cityMaster)
+				.addressLine1(request.getAddressLine1()).addressLine2(request.getAddressLine2()).mail(request.getMail())
 				.createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
 	}
 
@@ -156,11 +167,12 @@ public class CommonMapper {
 			return null;
 		}
 		return CompanyMasterVO.builder().companyId(entity.getCompanyId()).companyName(entity.getCompanyName())
-				.registeredNumber(entity.getRegisteredNumber()).country(toCountryMasterVO(entity.getCountry()))
-				.address(entity.getAddress()).mail(entity.getMail()).isBoth(entity.getIsBoth())
-				.isServiceProvider(entity.getIsServiceProvider()).isRequestor(entity.getIsRequestor())
-				.isActive(entity.getIsActive()).createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy())
-				.build();
+				.phoneCode(entity.getPhoneCode()).registeredNumber(entity.getRegisteredNumber())
+				.country(toCountryMasterVO(entity.getCountry())).state(toStateMasterVO(entity.getState()))
+				.city(toCityMasterVO(entity.getCity())).addressLine1(entity.getAddressLine1())
+				.addressLine2(entity.getAddressLine2()).pinCode(entity.getPinCode()).isActive(entity.getIsActive())
+				.createdBy(entity.getCreatedBy()).uid(entity.getUid()).employeeSize(entity.getEmployeeSize())
+				.mail(entity.getMail()).updatedBy(entity.getUpdatedBy()).build();
 	}
 
 	public PlantMasterVO toPlantMasterVO(PlantMaster entity) {
@@ -169,6 +181,7 @@ public class CommonMapper {
 		}
 		return PlantMasterVO.builder().plantId(entity.getPlantId()).plantName(entity.getPlantName())
 				.region(toCountryMasterVO(entity.getRegion())).calendar(toCalendarMasterVO(entity.getCalendar()))
+				.company(entity.getCompany() != null ? toCompanyMasterVO(entity.getCompany()) : null)
 				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).isActive(entity.getIsActive())
 				.build();
 	}
@@ -202,7 +215,8 @@ public class CommonMapper {
 		vo.setAccessId(agent.getAccessId());
 		vo.setOrganization(toCompanyMasterVO(agent.getOrganization()));
 		vo.setCalendar(toCalendarMasterVO(agent.getCalendarMaster()));
-		vo.setPhone(agent.getUser().getPhone());
+		vo.setPhoneCode(agent.getUser().getPhoneCode());
+		vo.setPhoneNumber(agent.getUser().getPhoneNumber());
 		vo.setCountry(toCountryMasterVO(agent.getUser().getCountry()));
 		vo.setCity(toCityMasterVO(agent.getUser().getCity()));
 		vo.setLanguage(toLanguageMasterVO(agent.getUser().getLanguage()));
@@ -239,12 +253,16 @@ public class CommonMapper {
 		if (users == null) {
 			return Collections.emptyList();
 		}
-		return users.stream().map(user -> UserVO.builder().userId(user.getUserId()).firstName(user.getFirstName())
-				.lastName(user.getLastName()).email(user.getEmail()).userName(user.getUserName()).role(user.getRole())
-				.registerId(user.getRegisterId()).phone(user.getPhone()).country(toCountryMasterVO(user.getCountry()))
-				.city(toCityMasterVO(user.getCity())).language(toLanguageMasterVO(user.getLanguage()))
-				.mfaEnabled(user.isMfaEnabled()).isActive(user.getIsActive()).createdBy(user.getCreatedBy())
-				.updatedBy(user.getUpdatedBy()).build()).collect(Collectors.toList());
+		return users.stream()
+				.map(user -> UserVO.builder().userId(user.getUserId()).firstName(user.getFirstName())
+						.middleName(user.getMiddleName()).lastName(user.getLastName()).email(user.getEmail())
+						.userName(user.getUserName()).role(user.getRole()).registerId(user.getRegisterId())
+						.phoneCode(user.getPhoneCode()).phoneNumber(user.getPhoneNumber())
+						.country(toCountryMasterVO(user.getCountry())).city(toCityMasterVO(user.getCity()))
+						.language(toLanguageMasterVO(user.getLanguage())).mfaEnabled(user.isMfaEnabled())
+						.isActive(user.getIsActive()).createdBy(user.getCreatedBy()).updatedBy(user.getUpdatedBy())
+						.build())
+				.collect(Collectors.toList());
 	}
 
 	public CityMasterVO toCityMasterVO(CityMaster cityMaster) {
@@ -257,7 +275,7 @@ public class CommonMapper {
 				.createdBy(cityMaster.getCreatedBy()).updatedBy(cityMaster.getUpdatedBy()).build();
 	}
 
-	private StateMasterVO toStateMasterVO(StateMaster state) {
+	public StateMasterVO toStateMasterVO(StateMaster state) {
 		if (state == null) {
 			return null;
 		}
@@ -313,7 +331,7 @@ public class CommonMapper {
 		}
 		return RequestConfig.builder().requestType(request.getRequestType()).requestPrefix(request.getRequestPrefix())
 				.revision(request.getRevision()).rangeFrom(request.getRangeFrom()).rangeTo(request.getRangeTo())
-				.calculateBackward(request.getCalculateBackward()).plant(plant).createdBy(request.getCreatedBy())
+				.calculateBackward(request.getCalculateBackward()).createdBy(request.getCreatedBy())
 				.updatedBy(request.getCreatedBy()).build();
 	}
 
@@ -325,8 +343,7 @@ public class CommonMapper {
 				.requestType(requestConfig.getRequestType()).requestPrefix(requestConfig.getRequestPrefix())
 				.revision(requestConfig.getRevision()).rangeFrom(requestConfig.getRangeFrom())
 				.rangeTo(requestConfig.getRangeTo()).calculateBackward(requestConfig.getCalculateBackward())
-				.plant(toPlantMasterVO(requestConfig.getPlant())).createdBy(requestConfig.getCreatedBy())
-				.updatedBy(requestConfig.getUpdatedBy()).build();
+				.createdBy(requestConfig.getCreatedBy()).updatedBy(requestConfig.getUpdatedBy()).build();
 	}
 
 	public List<RequestConfigVO> toRequestConfigVOList(List<RequestConfig> requestConfigs) {
@@ -334,5 +351,86 @@ public class CommonMapper {
 			return Collections.emptyList();
 		}
 		return requestConfigs.stream().map(this::toRequestConfigVO).toList();
+	}
+
+	public ImpactMaster toImpactMaster(ImpactRequestVO request, CompanyMaster companyMaster) {
+		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
+				.organization(companyMaster).impactLevel(request.getImpactLevel())
+				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
+				.updatedBy(request.getUpdatedBy()).build();
+	}
+
+	public ImpactMasterVO toImpactMasterVo(ImpactMaster save) {
+		if (save == null) {
+			return null;
+		}
+		return ImpactMasterVO.builder().impactId(save.getImpactId()).impactCode(save.getImpactCode())
+				.organization(toCompanyMasterVO(save.getOrganization())).impactLevel(save.getImpactLevel())
+				.slaMultiplier(save.getSlaMultiplier()).isActive(save.getIsActive()).createdBy(save.getCreatedBy())
+				.updatedBy(save.getUpdatedBy()).build();
+	}
+
+	public UserVO userToUserVO(User user) {
+		if (user == null) {
+			return null;
+		}
+		return UserVO.builder().userId(user.getUserId()).firstName(user.getFirstName()).lastName(user.getLastName())
+				.email(user.getEmail()).userName(user.getUserName()).role(user.getRole())
+				.middleName(user.getMiddleName()).registerId(user.getRegisterId()).phoneCode(user.getPhoneCode())
+				.phoneNumber(user.getPhoneNumber()).country(toCountryMasterVO(user.getCountry()))
+				.city(toCityMasterVO(user.getCity())).language(toLanguageMasterVO(user.getLanguage()))
+				.mfaEnabled(user.isMfaEnabled()).agent(toAgentMasterVO(user.getAgent())).isActive(user.getIsActive())
+				.createdBy(user.getCreatedBy()).updatedBy(user.getUpdatedBy()).build();
+	}
+
+	public EnquiryRegistration enquiryRegisterRequestToEnquiryRegistration(EnquiryRegisterRequestVO request,
+			CountryMaster country, String role, CompanyMaster company) {
+		if (request == null) {
+			return null;
+		}
+		return EnquiryRegistration.builder().firstName(request.getFirstName()).middleName(request.getMiddleName())
+				.lastName(request.getLastName()).email(request.getEmail()).phoneNumber(request.getPhoneNumber())
+				.phoneCode(request.getPhoneCode()).userName(request.getEmail()).userRole(role).company(company)
+				.country(country).build();
+	}
+
+	public EnquiryInfoVO toEnquiryInfoVo(EnquiryInfo enquiryInfo) {
+		if (enquiryInfo == null) {
+			return null;
+		}
+		return EnquiryInfoVO.builder().id(enquiryInfo.getId()).token(enquiryInfo.getToken()).used(enquiryInfo.getUsed())
+				.enquiryRegistration(toEnquiryRegistrationVO(enquiryInfo.getEnquiryRegistration()))
+				.expiryTime(enquiryInfo.getExpiryTime()).build();
+	}
+
+	public EnquiryRegistrationVO toEnquiryRegistrationVO(EnquiryRegistration enquiryRegistration) {
+		if (enquiryRegistration == null) {
+			return null;
+		}
+		return EnquiryRegistrationVO.builder().enquiryId(enquiryRegistration.getEnquiryId())
+				.firstName(enquiryRegistration.getFirstName()).middleName(enquiryRegistration.getMiddleName())
+				.lastName(enquiryRegistration.getLastName()).email(enquiryRegistration.getEmail())
+				.phoneNumber(enquiryRegistration.getPhoneNumber()).phoneCode(enquiryRegistration.getPhoneCode())
+				.company(toCompanyMasterVO(enquiryRegistration.getCompany()))
+				.userRole(enquiryRegistration.getUserRole())
+				.country(toCountryMasterVO(enquiryRegistration.getCountry()))
+				.state(toStateMasterVO(enquiryRegistration.getState()))
+				.city(toCityMasterVO(enquiryRegistration.getCity())).build();
+	}
+
+	public CalendarType toCalendarTypeEntity(String type, CompanyMaster company, String createBy) {
+		if (type == null) {
+			return null;
+		}
+		return CalendarType.builder().typeName(type).company(company).createdBy(createBy).updatedBy(createBy).build();
+	}
+
+	public CalendarTypeVO toCalendarTypeVO(CalendarType entity) {
+		if (entity == null) {
+			return null;
+		}
+		return CalendarTypeVO.builder().calendarTypeId(entity.getCalendarTypeId()).typeName(entity.getTypeName())
+				.company(toCompanyMasterVO(entity.getCompany())).isActive(entity.getIsActive())
+				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
 	}
 }

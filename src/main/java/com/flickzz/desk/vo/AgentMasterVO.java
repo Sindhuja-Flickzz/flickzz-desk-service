@@ -22,7 +22,8 @@ public class AgentMasterVO implements Serializable {
 	private CompanyMasterVO organization;
 	private List<AgentSkillsMappingVO> agentSkillsMappings;
 	private CalendarMasterVO calendar;
-	private String phone;
+	private String phoneCode;
+	private String phoneNumber;
 	private CountryMasterVO country;
 	private CityMasterVO city;
 	private LanguageMasterVO language;

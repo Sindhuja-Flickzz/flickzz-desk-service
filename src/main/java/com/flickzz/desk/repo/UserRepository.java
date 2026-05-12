@@ -1,5 +1,6 @@
 package com.flickzz.desk.repo;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	Optional<User> findByUserName(String email);
 
-	Optional<User> findByPhone(String phone);
+//	Optional<User> findByPhone(String phone);
+
+	List<User> findAllByIsActive(Boolean active);
+
+	Optional<User> findByUserNameAndIsActive(String email, Boolean active);
 
 }

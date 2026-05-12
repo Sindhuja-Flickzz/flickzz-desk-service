@@ -45,8 +45,12 @@ public class Auth {
 	private Date expiresAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "USER_ID", nullable = false, foreignKey = @ForeignKey(name = "FD_USERS_REFRESH_TOKEN"))
+	@JoinColumn(name = "USER_ID", foreignKey = @ForeignKey(name = "FD_USERS_REFRESH_TOKEN"))
 	private User user;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "ENQUIRY_ID", foreignKey = @ForeignKey(name = "FD_ENQUIRY_REFRESH_TOKEN"))
+	private EnquiryRegistration enquiryRegistration;
 
 	/* ===================== STATUS ===================== */
 	@Builder.Default

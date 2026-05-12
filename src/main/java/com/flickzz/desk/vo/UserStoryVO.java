@@ -1,0 +1,36 @@
+package com.flickzz.desk.vo;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UserStoryVO implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	private Long storyId;
+	private EpicVO epicId;
+	private ProgressStatusVO progressId;
+	private String storyCode;
+	private String title;
+	private String description;
+	private Integer storySequence;
+	private AgentMasterVO agentId;
+	private Date tentativeStartDate;
+	private Date tentativeEndDate;
+	private Date actualStartDate;
+	private Date actualEndDate;
+	private Long predecessorId;
+	private PriorityMasterVO priorityId;
+	private Integer storyPoints;
+	private Boolean isActive;
+	private String createdBy;
+	private String updatedBy;
+}
