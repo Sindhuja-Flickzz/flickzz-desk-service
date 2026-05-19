@@ -1,23 +1,12 @@
 package com.flickzz.desk.model;
 
-import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.*;
+import java.util.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.*;
+
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
 @Builder
@@ -35,6 +24,7 @@ public class UserStory {
 
 	@ManyToOne
 	@JoinColumn(name = "EPIC_ID", referencedColumnName = "EPIC_ID", nullable = false)
+	@JsonBackReference
 	private Epic epic; // maps to FD_EPIC
 
 	@ManyToOne
@@ -53,21 +43,28 @@ public class UserStory {
 	@Column(name = "STORY_SEQUENCE", nullable = false)
 	private Integer storySequence;
 
+	@OneToMany(mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<ProjectLeadAssignment> projectLeadAssignments;
+
 	@ManyToOne
 	@JoinColumn(name = "AGENT_ID", referencedColumnName = "AGENT_ID")
 	private AgentMaster agent; // maps to FD_AGENT_MASTER
 
-	@Column(name = "TENTATIVE_START_DATE")
-	private Date tentativeStartDate;
+	@Column(name = "PLANNED_START_DATE")
+	private Date plannedStartDate;
 
-	@Column(name = "TENTATIVE_END_DATE")
-	private Date tentativeEndDate;
+	@Column(name = "PLANNED_END_DATE")
+	private Date plannedEndDate;
 
 	@Column(name = "ACTUAL_START_DATE")
 	private Date actualStartDate;
 
 	@Column(name = "ACTUAL_END_DATE")
 	private Date actualEndDate;
+
+	@Column(name = "MAX_PROGRESS_NUMBER", nullable = false)
+	private Integer maxProgressStatus;
 
 	@ManyToOne
 	@JoinColumn(name = "PREDECESSOR_ID", referencedColumnName = "STORY_ID")
@@ -76,6 +73,10 @@ public class UserStory {
 	@ManyToOne
 	@JoinColumn(name = "PRIORITY_ID", referencedColumnName = "PRIORITY_ID")
 	private PriorityMaster priority; // maps to FD_PRIORITY_MASTER
+
+	@OneToMany(mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<Task> tasks;
 
 	@Column(name = "STORY_POINTS")
 	private Integer storyPoints;

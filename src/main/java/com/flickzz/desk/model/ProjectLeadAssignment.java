@@ -2,6 +2,8 @@ package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "PROJECT_LEAD_ASSIGNMENT")
+@Table(name = "FD_PROJECT_LEAD_ASSIGNMENT")
 public class ProjectLeadAssignment {
 
 	@Id
@@ -37,6 +39,7 @@ public class ProjectLeadAssignment {
 	private CompanyMaster company; // maps to FD_COMPANY_MASTER
 
 	@ManyToOne
+	@JsonBackReference
 	@JoinColumn(name = "STORY_ID", referencedColumnName = "STORY_ID", nullable = false)
 	private UserStory userStory; // maps to FD_USER_STORY
 

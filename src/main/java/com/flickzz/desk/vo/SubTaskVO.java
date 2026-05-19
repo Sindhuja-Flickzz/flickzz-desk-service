@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.io.*;
+import java.util.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -17,12 +14,13 @@ public class SubTaskVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private Long subTaskId;
 	private TaskVO taskId;
-	private ProgressStatusVO progressId;
+	private ProgressStatusVO progress;
+	private Integer maxProgress;
 	private AgentMasterVO agentId;
 	private String title;
 	private String description;
-	private Date tentativeStartDate;
-	private Date tentativeEndDate;
+	private Date plannedStartDate;
+	private Date plannedEndDate;
 	private Date actualStartDate;
 	private Date actualEndDate;
 	private Boolean isActive;

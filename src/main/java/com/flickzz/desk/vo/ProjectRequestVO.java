@@ -7,24 +7,18 @@ import lombok.*;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class ProjectVO implements Serializable {
+@NoArgsConstructor
+public class ProjectRequestVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private Long projectId;
-	private CompanyMasterVO company;
-	private String projectCode;
 	private String projectName;
 	private String projectDesc;
+	private Long orgId;
 	private List<EpicVO> epics;
-	private Date plannedStartDate;
-	private Date plannedEndDate;
-	private Date actualStartDate;
-	private Date actualEndDate;
-	private Boolean isActive;
-	private Boolean isSaved;
-	private Boolean isSubmitted;
+	private boolean isSave;
+	private boolean isSubmit;
 	private String createdBy;
 	private String updatedBy;
 }

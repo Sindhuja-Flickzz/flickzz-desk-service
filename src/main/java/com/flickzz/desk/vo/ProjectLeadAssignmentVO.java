@@ -15,9 +15,11 @@ public class ProjectLeadAssignmentVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private Long assignmentId;
-	private CompanyMasterVO companyId;
-	private UserStoryVO storyId;
+	private CompanyMasterVO company;
+	private UserStoryVO story;
 	private Boolean isActive;
 	private String createdBy;
 	private String updatedBy;
+	// For request purpose
+	private Long companyId;
 }

@@ -1,25 +1,12 @@
 package com.flickzz.desk.model;
 
-import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.*;
+import java.util.*;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
 @Builder
@@ -37,11 +24,14 @@ public class Epic {
 
 	@ManyToOne
 	@JoinColumn(name = "PROJECT_ID", referencedColumnName = "PROJECT_ID")
-	@JsonManagedReference
+	@JsonBackReference
 	private Project project; // maps to FD_PROJECT
 
 	@Column(name = "EPIC_NAME", nullable = false)
 	private String epicName;
+
+	@Column(name = "EPIC_DESC")
+	private String epicDesc;
 
 	@Column(name = "EPIC_SEQUENCE", nullable = false)
 	private Integer epicSequence;
@@ -50,11 +40,24 @@ public class Epic {
 	@JoinColumn(name = "PROGRESS_ID", referencedColumnName = "PROGRESS_ID", nullable = false)
 	private ProgressStatus progressStatus; // maps to FD_PROGRESS_STATUS
 
-	@Column(name = "START_DATE")
-	private Date startDate;
+	@Column(name = "PLANNED_START_DATE")
+	private Date plannedStartDate;
 
-	@Column(name = "END_DATE")
-	private Date endDate;
+	@Column(name = "PLANNED_END_DATE")
+	private Date plannedEndDate;
+
+	@Column(name = "ACTUAL_START_DATE")
+	private Date actualStartDate;
+
+	@Column(name = "ACTUAL_END_DATE")
+	private Date actualEndDate;
+
+	@Column(name = "MAX_PROGRESS_NUMBER", nullable = false)
+	private Integer maxProgressStatus;
+
+	@OneToMany(mappedBy = "epic", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<UserStory> userStories;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

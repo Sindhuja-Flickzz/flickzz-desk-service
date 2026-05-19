@@ -1,65 +1,16 @@
 package com.flickzz.desk.mapper;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.stream.*;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.*;
+import org.springframework.security.crypto.bcrypt.*;
+import org.springframework.security.crypto.password.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.config.FlickzzDeskConstants;
-import com.flickzz.desk.model.AgentMaster;
-import com.flickzz.desk.model.AgentSkillsMapping;
-import com.flickzz.desk.model.BusinessService;
-import com.flickzz.desk.model.CalendarHoliday;
-import com.flickzz.desk.model.CalendarMaster;
-import com.flickzz.desk.model.CalendarType;
-import com.flickzz.desk.model.CalendarWorkday;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.EnquiryInfo;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.ImpactMaster;
-import com.flickzz.desk.model.LanguageMaster;
-import com.flickzz.desk.model.LoginMaster;
-import com.flickzz.desk.model.PlantMaster;
-import com.flickzz.desk.model.PriorityMaster;
-import com.flickzz.desk.model.RequestConfig;
-import com.flickzz.desk.model.ServiceOffering;
-import com.flickzz.desk.model.SkillMaster;
-import com.flickzz.desk.model.StateMaster;
-import com.flickzz.desk.model.User;
-import com.flickzz.desk.vo.AgentMasterVO;
-import com.flickzz.desk.vo.AgentSkillsMappingVO;
-import com.flickzz.desk.vo.BusinessServiceRequestVO;
-import com.flickzz.desk.vo.BusinessServiceVO;
-import com.flickzz.desk.vo.CalendarHolidayVO;
-import com.flickzz.desk.vo.CalendarMasterRequestVO;
-import com.flickzz.desk.vo.CalendarMasterVO;
-import com.flickzz.desk.vo.CalendarTypeVO;
-import com.flickzz.desk.vo.CalendarWorkdayVO;
-import com.flickzz.desk.vo.CityMasterVO;
-import com.flickzz.desk.vo.CompanyMasterRequestVO;
-import com.flickzz.desk.vo.CompanyMasterVO;
-import com.flickzz.desk.vo.CountryMasterVO;
-import com.flickzz.desk.vo.EnquiryInfoVO;
-import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
-import com.flickzz.desk.vo.EnquiryRegistrationVO;
-import com.flickzz.desk.vo.ImpactMasterVO;
-import com.flickzz.desk.vo.ImpactRequestVO;
-import com.flickzz.desk.vo.LanguageMasterVO;
-import com.flickzz.desk.vo.PlantMasterVO;
-import com.flickzz.desk.vo.PriorityMasterVO;
-import com.flickzz.desk.vo.PriorityRequestVO;
-import com.flickzz.desk.vo.RegisterLoginRequestVO;
-import com.flickzz.desk.vo.RequestConfigVO;
-import com.flickzz.desk.vo.ServiceOfferingVO;
-import com.flickzz.desk.vo.SkillMasterVO;
-import com.flickzz.desk.vo.StateMasterVO;
-import com.flickzz.desk.vo.UserVO;
+import com.flickzz.desk.config.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.vo.*;
 
 @Component
 public class CommonMapper {
@@ -71,6 +22,9 @@ public class CommonMapper {
 
 	public User registerRequesttoUser(RegisterLoginRequestVO request, String rawPassword, CountryMaster country,
 			CityMaster city, LanguageMaster language) {
+		if (request == null) {
+			return null;
+		}
 		return User.builder().firstName(request.getFirstname()).lastName(request.getLastname())
 				.middleName(request.getMiddlename()).email(request.getEmail()).userName(request.getEmail())
 				.password(passwordEncoder().encode(rawPassword))
@@ -81,6 +35,9 @@ public class CommonMapper {
 	}
 
 	public LoginMaster userToLoginMaster(User user) {
+		if (user == null) {
+			return null;
+		}
 		return LoginMaster.builder().userName(user.getUserName()).password(user.getPassword()).role(user.getRole())
 				.createdBy(user.getCreatedBy()).user(user).build();
 	}
@@ -134,6 +91,9 @@ public class CommonMapper {
 
 	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, String createdBy,
 			CalendarMaster entity) {
+		if (calendarHolidayList == null) {
+			return Collections.emptyList();
+		}
 		return calendarHolidayList.stream().map(h -> {
 			CalendarHoliday holiday = CalendarHoliday.builder().holidayDate(h.getHolidayDate())
 					.description(h.getDescription()).calendarMaster(entity).createdBy(createdBy).updatedBy(createdBy)
@@ -143,6 +103,9 @@ public class CommonMapper {
 	}
 
 	public List<CalendarWorkday> toCalendarWorkDay(List<String> workDayList, String createdBy, CalendarMaster entity) {
+		if (workDayList == null) {
+			return Collections.emptyList();
+		}
 		return workDayList.stream().map(workingDay -> {
 			CalendarWorkday workday = CalendarWorkday.builder().workday(workingDay).calendarMaster(entity)
 					.createdBy(createdBy).updatedBy(createdBy).build();
@@ -235,6 +198,9 @@ public class CommonMapper {
 	}
 
 	public PriorityMaster toPriorityMaster(PriorityRequestVO vo, CompanyMaster companyMaster) {
+		if (vo == null) {
+			return null;
+		}
 		return PriorityMaster.builder().priorityId(vo.getPriorityId()).priorityName(vo.getPriorityName())
 				.organization(companyMaster).rank(vo.getRank()).colorCode(vo.getColorCode())
 				.responseSla(vo.getResponseSla()).resolutionSla(vo.getResolutionSla()).isActive(vo.getIsActive())
@@ -242,6 +208,9 @@ public class CommonMapper {
 	}
 
 	public PriorityMasterVO toPriorityMasterVo(PriorityMaster entity) {
+		if (entity == null) {
+			return null;
+		}
 		return PriorityMasterVO.builder().priorityId(entity.getPriorityId()).priorityName(entity.getPriorityName())
 				.organization(toCompanyMasterVO(entity.getOrganization())).rank(entity.getRank())
 				.colorCode(entity.getColorCode()).responseSla(entity.getResponseSla())
@@ -354,6 +323,9 @@ public class CommonMapper {
 	}
 
 	public ImpactMaster toImpactMaster(ImpactRequestVO request, CompanyMaster companyMaster) {
+		if (request == null) {
+			return null;
+		}
 		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
 				.organization(companyMaster).impactLevel(request.getImpactLevel())
 				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
@@ -433,4 +405,194 @@ public class CommonMapper {
 				.company(toCompanyMasterVO(entity.getCompany())).isActive(entity.getIsActive())
 				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
 	}
+
+	public Project toProject(ProjectRequestVO request, CompanyMaster company) {
+		if (request == null) {
+			return null;
+		}
+
+		return Project.builder().company(company).projectName(request.getProjectName())
+				.projectDesc(request.getProjectName()).projectDesc(request.getProjectDesc())
+				.projectCode(request.getProjectName().toUpperCase().replaceAll("\\s+", "_")).isSaved(request.isSave())
+				.isSubmited(request.isSubmit()).createdBy(request.getCreatedBy()).build();
+	}
+
+	public ProgressStatusVO toProgressStatusVO(ProgressStatus progressStatus) {
+		if (progressStatus == null) {
+			return null;
+		}
+		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId())
+				.companyId(toCompanyMasterVO(progressStatus.getCompany()))
+				.progressName(progressStatus.getProgressName()).progressSequence(progressStatus.getProgressSequence())
+				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy()).build();
+	}
+
+	public EpicVO toEpicVO(Epic epic) {
+		if (epic == null) {
+			return null;
+		}
+		// Create a minimal ProjectVO to avoid circular reference
+		ProjectVO projectVO = ProjectVO.builder().projectId(epic.getProject().getProjectId()).build();
+
+		return EpicVO.builder().epicId(epic.getEpicId()).project(projectVO).epicName(epic.getEpicName())
+				.epicDesc(epic.getEpicDesc()).epicSequence(epic.getEpicSequence())
+				.progress(toProgressStatusVO(epic.getProgressStatus())).plannedStartDate(epic.getPlannedStartDate())
+				.plannedEndDate(epic.getPlannedEndDate())
+				.userStories(
+						epic.getUserStories() != null ? epic.getUserStories().stream().map(this::toUserStoryVO).toList()
+								: null)
+				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy()).updatedBy(epic.getUpdatedBy()).build();
+	}
+
+	public UserStoryVO toUserStoryVO(UserStory userStory) {
+		if (userStory == null) {
+			return null;
+		}
+		// Create a minimal EpicVO to avoid circular reference
+		EpicVO epicVO = EpicVO.builder().epicId(userStory.getEpic().getEpicId()).build();
+
+		return UserStoryVO.builder().storyId(userStory.getStoryId()).epicId(epicVO)
+				.progress(toProgressStatusVO(userStory.getProgressStatus())).storyCode(userStory.getStoryCode())
+				.title(userStory.getTitle()).description(userStory.getDescription())
+				.storySequence(userStory.getStorySequence()).agentId(toAgentMasterVO(userStory.getAgent()))
+				.plannedStartDate(userStory.getPlannedStartDate()).plannedEndDate(userStory.getPlannedEndDate())
+				.actualStartDate(userStory.getActualStartDate()).actualEndDate(userStory.getActualEndDate())
+				.predecessorId(userStory.getPredecessor() != null ? userStory.getPredecessor().getStoryId() : null)
+				.leads(userStory.getProjectLeadAssignments() != null
+						? userStory.getProjectLeadAssignments().stream().map(this::toProjectLeadAssignmentVO).toList()
+						: null)
+				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
+				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
+				.updatedBy(userStory.getUpdatedBy()).build();
+	}
+
+	public ProjectLeadAssignmentVO toProjectLeadAssignmentVO(ProjectLeadAssignment pla) {
+		if (pla == null) {
+			return null;
+		}
+		// Create a minimal UserStoryVO to avoid circular reference
+		UserStoryVO userStoryVO = UserStoryVO.builder().storyId(pla.getUserStory().getStoryId()).build();
+
+		return ProjectLeadAssignmentVO.builder().assignmentId(pla.getAssignmentId())
+				.company(toCompanyMasterVO(pla.getCompany())).story(userStoryVO).isActive(pla.getIsActive())
+				.createdBy(pla.getCreatedBy()).updatedBy(pla.getUpdatedBy()).build();
+	}
+
+	public ProjectVO toProjectVO(Project project) {
+		if (project == null) {
+			return null;
+		}
+		return ProjectVO.builder().projectId(project.getProjectId()).company(toCompanyMasterVO(project.getCompany()))
+				.projectCode(project.getProjectCode()).projectName(project.getProjectName())
+				.projectDesc(project.getProjectDesc())
+				.epics(project.getEpics() != null ? project.getEpics().stream().map(this::toEpicVO).toList() : null)
+				.plannedStartDate(project.getPlannedStartDate()).plannedEndDate(project.getPlannedEndDate())
+				.isActive(project.getIsActive()).createdBy(project.getCreatedBy()).updatedBy(project.getUpdatedBy())
+				.isSaved(project.getIsSaved()).isSubmitted(project.getIsSubmited()).build();
+	}
+
+	public Epic toEpic(EpicVO epicVO, Project project, ProgressStatus defaultProgressStatus, int maxProgressStatus,
+			String createdBy) {
+		if (epicVO == null) {
+			return null;
+		}
+		return Epic.builder().epicName(epicVO.getEpicName()).epicDesc(epicVO.getEpicDesc())
+				.epicSequence(epicVO.getEpicSequence()).progressStatus(defaultProgressStatus)
+				.maxProgressStatus(maxProgressStatus).project(project).createdBy(createdBy).build();
+	}
+
+	public ProjectVO toNoBackRefProjectVO(Project project) {
+		if (project == null) {
+			return null;
+		}
+		return ProjectVO.builder().projectId(project.getProjectId()).company(toCompanyMasterVO(project.getCompany()))
+				.projectCode(project.getProjectCode()).projectName(project.getProjectName())
+				.projectDesc(project.getProjectDesc())
+				.epics(project.getEpics() != null ? project.getEpics().stream().map(this::toNoBackRefEpicVO).toList()
+						: null)
+				.plannedStartDate(project.getPlannedStartDate()).plannedEndDate(project.getPlannedEndDate())
+				.isActive(project.getIsActive()).createdBy(project.getCreatedBy()).updatedBy(project.getUpdatedBy())
+				.build();
+	}
+
+	public EpicVO toNoBackRefEpicVO(Epic epic) {
+		if (epic == null) {
+			return null;
+		}
+		// Create a minimal ProjectVO to avoid circular reference
+		ProjectVO projectVO = ProjectVO.builder().projectId(epic.getProject().getProjectId()).build();
+
+		return EpicVO.builder().epicId(epic.getEpicId()).project(null).epicName(epic.getEpicName())
+				.epicDesc(epic.getEpicDesc()).epicSequence(epic.getEpicSequence())
+				.progress(toNoBackRefProgressStatusVO(epic.getProgressStatus()))
+				.maxProgress(epic.getMaxProgressStatus()).plannedStartDate(epic.getPlannedStartDate())
+				.plannedEndDate(epic.getPlannedEndDate())
+				.userStories(epic.getUserStories() != null
+						? epic.getUserStories().stream().map(this::toNoBackRefUserStoryVO).toList()
+						: null)
+				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy()).updatedBy(epic.getUpdatedBy()).build();
+	}
+
+	public ProgressStatusVO toNoBackRefProgressStatusVO(ProgressStatus progressStatus) {
+		if (progressStatus == null) {
+			return null;
+		}
+		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId()).companyId(null)
+				.progressName(progressStatus.getProgressName()).progressSequence(progressStatus.getProgressSequence())
+				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy()).build();
+	}
+
+	public UserStoryVO toNoBackRefUserStoryVO(UserStory userStory) {
+		if (userStory == null) {
+			return null;
+		}
+
+		return UserStoryVO.builder().storyId(userStory.getStoryId()).epicId(null)
+				.progress(toNoBackRefProgressStatusVO(userStory.getProgressStatus()))
+				.maxProgress(userStory.getMaxProgressStatus()).storyCode(userStory.getStoryCode())
+				.title(userStory.getTitle()).description(userStory.getDescription())
+				.tasks(userStory.getTasks() != null
+						? userStory.getTasks().stream().map(this::toNoBackRefTaskVO).toList()
+						: null)
+				.storySequence(userStory.getStorySequence()).agentId(toAgentMasterVO(userStory.getAgent()))
+				.plannedStartDate(userStory.getPlannedStartDate()).plannedEndDate(userStory.getPlannedEndDate())
+				.actualStartDate(userStory.getActualStartDate()).actualEndDate(userStory.getActualEndDate())
+				.predecessorId(userStory.getPredecessor() != null ? userStory.getPredecessor().getStoryId() : null)
+				.leads(userStory.getProjectLeadAssignments() != null ? userStory.getProjectLeadAssignments().stream()
+						.map(this::toNoBackRefProjectLeadAssignmentVO).toList() : null)
+				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
+				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
+				.updatedBy(userStory.getUpdatedBy()).build();
+	}
+
+	public TaskVO toNoBackRefTaskVO(Task task) {
+		if (task == null) {
+			return null;
+		}
+
+		return TaskVO.builder().title(task.getTitle()).description(task.getDescription())
+				.plannedStartDate(task.getPlannedStartDate()).plannedEndDate(task.getPlannedEndDate()).build();
+	}
+
+	public ProjectLeadAssignmentVO toNoBackRefProjectLeadAssignmentVO(ProjectLeadAssignment pla) {
+		if (pla == null) {
+			return null;
+		}
+		return ProjectLeadAssignmentVO.builder().assignmentId(pla.getAssignmentId())
+				.company(toNoBackRefCompanyMasterVO(pla.getCompany())).story(null).isActive(pla.getIsActive())
+				.createdBy(pla.getCreatedBy()).updatedBy(pla.getUpdatedBy()).build();
+	}
+
+	public CompanyMasterVO toNoBackRefCompanyMasterVO(CompanyMaster entity) {
+		if (entity == null) {
+			return null;
+		}
+		return CompanyMasterVO.builder().companyId(entity.getCompanyId()).companyName(entity.getCompanyName())
+				.phoneCode(entity.getPhoneCode()).registeredNumber(entity.getRegisteredNumber()).country(null)
+				.state(null).city(null).addressLine1(entity.getAddressLine1()).addressLine2(entity.getAddressLine2())
+				.pinCode(entity.getPinCode()).isActive(entity.getIsActive()).createdBy(entity.getCreatedBy())
+				.uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
+				.updatedBy(entity.getUpdatedBy()).build();
+	}
+
 }

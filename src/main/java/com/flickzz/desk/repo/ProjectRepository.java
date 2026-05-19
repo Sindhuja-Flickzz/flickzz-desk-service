@@ -1,10 +1,16 @@
 package com.flickzz.desk.repo;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.*;
 
-import com.flickzz.desk.model.Project;
+import org.springframework.data.jpa.repository.*;
+import org.springframework.stereotype.*;
+
+import com.flickzz.desk.model.*;
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+
+	Optional<Project> findByProjectNameAndCompanyCompanyIdAndIsActive(String projectName, Long orgId, Boolean active);
+
+	List<Project> findByCompanyCompanyIdAndIsActive(String orgId, Boolean active);
 }
