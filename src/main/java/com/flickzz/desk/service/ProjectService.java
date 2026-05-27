@@ -139,23 +139,22 @@ public class ProjectService {
 			}
 			project.setEpics(epics);
 
-			// Save project with all nested entities
-			project = projectRepository.save(project);
-
-			// Handle predecessors
-			for (Epic epic : project.getEpics()) {
-				for (UserStory us : epic.getUserStories()) {
-					UserStoryVO usVO = findUserStoryVO(request, us.getStoryCode());
+			// Wire predecessors before persisting so the self-reference is not transient
+			for (EpicVO epicVO : request.getEpics()) {
+				for (UserStoryVO usVO : epicVO.getUserStories()) {
 					if (usVO != null && usVO.getMappingPredecessorId() != null
 							&& !usVO.getMappingPredecessorId().equals(0L)) {
+						UserStory userStory = storyMap.get(usVO.getMappingStoryId());
 						UserStory predecessor = storyMap.get(usVO.getMappingPredecessorId().toString());
-						if (predecessor != null) {
-							us.setPredecessor(predecessor);
-							userStoryRepository.save(us);
+						if (userStory != null && predecessor != null) {
+							userStory.setPredecessor(predecessor);
 						}
 					}
 				}
 			}
+
+			// Save project with all nested entities
+			project = projectRepository.save(project);
 
 			// Return ProjectVO
 			return mapper.toProjectVO(project);
@@ -339,33 +338,67 @@ public class ProjectService {
 				epic.setUserStories(userStories);
 				epics.add(epic);
 			}
-			project.setEpics(epics);
+			project.getEpics().addAll(epics);
 
-			// Save project with all nested entities
-			project = projectRepository.save(project);
-
-			// Handle predecessors
-			for (Epic epic : project.getEpics()) {
-				for (UserStory us : epic.getUserStories()) {
-					UserStoryVO usVO = findUserStoryVO(request, us.getStoryCode());
+			// Wire predecessors before persisting so the self-reference is not transient
+			for (EpicVO epicVO : request.getEpics()) {
+				for (UserStoryVO usVO : epicVO.getUserStories()) {
 					if (usVO != null && usVO.getMappingPredecessorId() != null
 							&& !usVO.getMappingPredecessorId().equals(0L)) {
+						UserStory userStory = storyMap.get(usVO.getMappingStoryId());
 						UserStory predecessor = storyMap.get(usVO.getMappingPredecessorId().toString());
-						if (predecessor != null) {
-							us.setPredecessor(predecessor);
-							userStoryRepository.save(us);
+						if (userStory != null && predecessor != null) {
+							userStory.setPredecessor(predecessor);
 						}
 					}
 				}
 			}
+
+			project.setIsSaved(request.isSave());
+			project.setIsSubmited(request.isSubmit());
+			// Save project with all nested entities
+			project = projectRepository.save(project);
 
 			// Return ProjectVO
 			return mapper.toProjectVO(project);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createProject method in ProjectService", e);
+			log.error("Exception in updateProject method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public ProgressStatusVO createProgresstatus(ProgressStatusRequestVO request) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			if (request == null || request.getOrgId() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), COMPANY));
+			}
+
+			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActive(request.getOrgId(),
+					ACTIVE);
+			if (company.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
+			}
+
+			int maxSequence = progressStatusRepository.findMaxProgressStatus(request.getOrgId());
+
+			ProgressStatus progressStatus = ProgressStatus.builder().company(company.get())
+					.progressName(request.getProgressName()).progressSequence(maxSequence + 1)
+					.colorCode(request.getColorCode()).createdBy(request.getCreatedBy()).build();
+
+			progressStatus = progressStatusRepository.save(progressStatus);
+
+			return mapper.toProgressStatusVO(progressStatus);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in createProgresstatus method in ProjectService", e);
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		} finally {
+			log.debug(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 }

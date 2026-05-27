@@ -8,7 +8,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProgressStatusVO implements Serializable {
+public class ProgressStatusRequestVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	private Long progressId;
@@ -17,5 +17,6 @@ public class ProgressStatusVO implements Serializable {
 	private Integer progressSequence;
 	private String colorCode;
 	private String updatedBy;
-
+	private String createdBy;
+	private Long orgId;
 }

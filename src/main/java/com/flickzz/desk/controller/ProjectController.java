@@ -46,27 +46,7 @@ public class ProjectController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
 	}
 
-//	@GetMapping("/get/{agentName}")
-//	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByName(@PathVariable String agentName) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
-//
-//		AgentMasterVO response = projectService.getAgentInfoByName(agentName);
-//
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
-//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-//	}
-//
-//	@GetMapping("/email/{agentName}")
-//	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String agentName) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
-//
-//		AgentMasterVO response = projectService.getAgentInfoByEmail(agentName);
-//
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
-//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-//	}
-
-	@PostMapping("/update")
+	@PutMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateProject(@RequestBody ProjectRequestVO request) {
 		log.debug(generateLog(ENTRY, this.getClass().getName()));
 
@@ -106,14 +86,15 @@ public class ProjectController {
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PROJECT), response);
 	}
-//
-//	@GetMapping("/skills/{agentId}")
-//	public ResponseEntity<FlickzzDeskResponse> getAgentSkills(@PathVariable String agentId) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
-//
-//		List<AgentSkillsMappingVO> response = projectService.getAgentSkills(agentId);
-//
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
-//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-//	}
+
+	@PostMapping("/status/create")
+	public ResponseEntity<FlickzzDeskResponse> createProgresstatus(@RequestBody ProgressStatusRequestVO request)
+			throws Exception {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		ProgressStatusVO respVO = projectService.createProgresstatus(request);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), PROJECT), respVO);
+	}
 }

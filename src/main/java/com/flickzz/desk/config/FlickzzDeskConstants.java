@@ -1,5 +1,7 @@
 package com.flickzz.desk.config;
 
+import java.util.*;
+
 public class FlickzzDeskConstants {
 
 	public static final String ROLE_ADMIN = "Admin";
@@ -16,6 +18,7 @@ public class FlickzzDeskConstants {
 	public static final String SKILL = "Skill";
 	public static final String AGENT = "Agent";
 	public static final String COMPANY = "Company";
+	public static final String COMPANY_ROLE = "Company Role";
 	public static final String COUNTRY = "Country";
 	public static final String STATE = "State";
 	public static final String CITY = "City";
@@ -39,6 +42,8 @@ public class FlickzzDeskConstants {
 	public static final String COMPANY_NAME = "Company name";
 	public static final String PLANT_NAME = "Plant name";
 	public static final String SKILL_NAME = "Skill name";
+	public static final String WORK_ITEM = "Work item";
+	public static final String FIELD_TYPE = "Field Type";
 	public static final String AGENT_NAME = "Agent name";
 	public static final String PROJECT_NAME = "Project name";
 	public static final String PROGRESS_STATUS = "Progress status";
@@ -64,4 +69,7 @@ public class FlickzzDeskConstants {
 	public static final String PASSWORD = "Password";
 
 	public static final String LEAD_COMPANY = "Lead company";
+	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),
+			Map.entry("Request Item", "RITM"), Map.entry("EPIC", "EPIC"), Map.entry("USER_STORY", "STORY"),
+			Map.entry("TASK", "TASK"), Map.entry("SUB_TASK", "STSK"));
 }

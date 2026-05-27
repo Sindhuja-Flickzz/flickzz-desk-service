@@ -422,9 +422,9 @@ public class CommonMapper {
 			return null;
 		}
 		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId())
-				.companyId(toCompanyMasterVO(progressStatus.getCompany()))
-				.progressName(progressStatus.getProgressName()).progressSequence(progressStatus.getProgressSequence())
-				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy()).build();
+				.company(toCompanyMasterVO(progressStatus.getCompany())).progressName(progressStatus.getProgressName())
+				.progressSequence(progressStatus.getProgressSequence()).colorCode(progressStatus.getColorCode())
+				.updatedBy(progressStatus.getUpdatedBy()).build();
 	}
 
 	public EpicVO toEpicVO(Epic epic) {
@@ -507,7 +507,8 @@ public class CommonMapper {
 		}
 		return ProjectVO.builder().projectId(project.getProjectId()).company(toCompanyMasterVO(project.getCompany()))
 				.projectCode(project.getProjectCode()).projectName(project.getProjectName())
-				.projectDesc(project.getProjectDesc())
+				.projectDesc(project.getProjectDesc()).isSaved(project.getIsSaved())
+				.isSubmitted(project.getIsSubmited())
 				.epics(project.getEpics() != null ? project.getEpics().stream().map(this::toNoBackRefEpicVO).toList()
 						: null)
 				.plannedStartDate(project.getPlannedStartDate()).plannedEndDate(project.getPlannedEndDate())
@@ -537,7 +538,7 @@ public class CommonMapper {
 		if (progressStatus == null) {
 			return null;
 		}
-		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId()).companyId(null)
+		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId()).company(null)
 				.progressName(progressStatus.getProgressName()).progressSequence(progressStatus.getProgressSequence())
 				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy()).build();
 	}
@@ -595,4 +596,32 @@ public class CommonMapper {
 				.updatedBy(entity.getUpdatedBy()).build();
 	}
 
+	public CompanyRoleVO toCompanyRoleVO(CompanyRole role) {
+		if (role == null) {
+			return null;
+		}
+		return CompanyRoleVO.builder().roleId(role.getRoleId()).company(toNoBackRefCompanyMasterVO(role.getCompany()))
+				.mappedCompany(toNoBackRefCompanyMasterVO(role.getMappedCompany()))
+				.isServiceProvider(role.getIsServiceProvider()).isRequestor(role.getIsRequestor())
+				.isBoth(role.getIsBoth()).isActive(role.getIsActive()).createdBy(role.getCreatedBy())
+				.updatedBy(role.getUpdatedBy()).build();
+	}
+
+	public WorkItemVO toWorkItemVO(WorkItem workItem) {
+		if (workItem == null) {
+			return null;
+		}
+		return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel())
+				.isActive(workItem.getIsActive()).createdBy(workItem.getCreatedBy()).updatedBy(workItem.getUpdatedBy())
+				.build();
+	}
+
+	public FieldTypeVO toFieldTypeVO(FieldType fieldType) {
+		if (fieldType == null) {
+			return null;
+		}
+		return FieldTypeVO.builder().typeId(fieldType.getTypeId()).code(fieldType.getCode()).label(fieldType.getLabel())
+				.isActive(fieldType.getIsActive()).createdBy(fieldType.getCreatedBy())
+				.updatedBy(fieldType.getUpdatedBy()).build();
+	}
 }
