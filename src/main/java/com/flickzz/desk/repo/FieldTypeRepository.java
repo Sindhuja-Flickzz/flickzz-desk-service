@@ -11,4 +11,6 @@ import com.flickzz.desk.model.*;
 public interface FieldTypeRepository extends JpaRepository<FieldType, Long> {
 
 	List<FieldType> findByIsActive(Boolean active);
+
+	Optional<FieldType> findByTypeIdAndIsActive(Long typeId, boolean active);
 }

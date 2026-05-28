@@ -624,4 +624,39 @@ public class CommonMapper {
 				.isActive(fieldType.getIsActive()).createdBy(fieldType.getCreatedBy())
 				.updatedBy(fieldType.getUpdatedBy()).build();
 	}
+
+	public TemplateDetailsVO toTemplateDetailsVO(TemplateDetails entity) {
+		if (entity == null) {
+			return null;
+		}
+		return TemplateDetailsVO.builder().templateId(entity.getTemplateId()).templateName(entity.getTemplateName())
+				.workItemId(entity.getWorkItem().getItemId()).company(toCompanyMasterVO(entity.getCompany()))
+				.templateDetails(entity.getFields() != null
+						? entity.getFields().stream().map(this::toTemplateDetailFieldVO).toList()
+						: null)
+				.isActive(entity.getIsActive()).createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy())
+				.build();
+	}
+
+	public com.flickzz.desk.vo.TemplateDetailFieldVO toTemplateDetailFieldVO(TemplateDetailField field) {
+		if (field == null) {
+			return null;
+		}
+		return TemplateDetailFieldVO.builder().fieldId(field.getFieldId()).fieldName(field.getFieldName())
+				.fieldTypeId(field.getFieldType().getTypeId()).mandatory(field.getMandatory())
+				.fieldSequence(field.getFieldSequence()).isActive(field.getIsActive())
+				.options(field.getOptions() != null
+						? field.getOptions().stream().map(this::toTemplateFieldOptionVO).toList()
+						: null)
+				.build();
+	}
+
+	public com.flickzz.desk.vo.TemplateFieldOptionVO toTemplateFieldOptionVO(TemplateFieldOption option) {
+		if (option == null) {
+			return null;
+		}
+		return TemplateFieldOptionVO.builder().optionId(option.getOptionId()).label(option.getLabel())
+				.value(option.getValue()).defaultSelected(option.getDefaultSelected())
+				.optionSequence(option.getOptionSequence()).isActive(option.getIsActive()).build();
+	}
 }
