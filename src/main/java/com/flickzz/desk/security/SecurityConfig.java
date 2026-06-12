@@ -56,7 +56,9 @@ public class SecurityConfig {
 		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		final CorsConfiguration config = new CorsConfiguration();
 		config.setAllowCredentials(true);
-		config.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+		config.setAllowedOrigins(
+				List.of("http://localhost:4200", "https://flickzz-desk-service-production.up.railway.app",
+						"https://flickzz-desk-ui-production.up.railway.app"));
 		config.setAllowedHeaders(Arrays.asList(ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, "x-user-id"));
 		config.setAllowedMethods(Arrays.asList(GET.name(), POST.name(), DELETE.name(), PUT.name(), PATCH.name()));
 		source.registerCorsConfiguration("/**", config);
