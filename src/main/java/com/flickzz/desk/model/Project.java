@@ -1,28 +1,12 @@
 package com.flickzz.desk.model;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
+import java.time.*;
+import java.util.*;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Data
 @Builder
@@ -51,15 +35,29 @@ public class Project {
 	@Column(name = "PROJECT_DESC")
 	private String projectDesc;
 
-	@Column(name = "START_DATE")
-	private Date startDate;
+	@Column(name = "PLANNED_START_DATE")
+	private Date plannedStartDate;
 
-	@Column(name = "END_DATE")
-	private Date endDate;
+	@Column(name = "PLANNED_END_DATE")
+	private Date plannedEndDate;
+
+	@Column(name = "ACTUAL_START_DATE")
+	private Date actualStartDate;
+
+	@Column(name = "ACTUAL_END_DATE")
+	private Date actualEndDate;
 
 	@OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private List<Epic> epics;
+
+	@Builder.Default
+	@Column(name = "IS_SAVED")
+	private Boolean isSaved = false;
+
+	@Builder.Default
+	@Column(name = "IS_SUBMITED")
+	private Boolean isSubmited = false;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

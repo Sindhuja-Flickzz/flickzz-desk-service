@@ -100,3 +100,18 @@ VALUES
 ('MR', 'Marathi'),
 ('GU', 'Gujarati'),
 ('PA', 'Punjabi');
+
+-- Bulk insert for FD_WORK_ITEMS
+INSERT INTO FD_WORK_ITEMS (CODE, LABEL, CREATED_BY) VALUES
+('TASK', 'Task', 'ADMIN'),
+('SUBTASK', 'Subtask', 'ADMIN'),
+('EPIC', 'Epic', 'ADMIN'),
+('STORY', 'Story', 'ADMIN');
+
+-- Bulk insert for FD_FIELD_TYPES
+INSERT INTO FD_FIELD_TYPES (CODE, LABEL, CREATED_BY) VALUES
+('TEXTAREA', 'TEXTAREA', 'ADMIN'),
+('DROPDOWN', 'DROPDOWN', 'ADMIN'),
+('CHECKBOX', 'CHECKBOX', 'ADMIN'),
+('MULTISELECT', 'MULTISELECT', 'ADMIN')
+

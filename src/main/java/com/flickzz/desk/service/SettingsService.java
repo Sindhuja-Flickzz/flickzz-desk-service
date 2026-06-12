@@ -1,28 +1,20 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.BusinessService;
-import com.flickzz.desk.model.ServiceOffering;
-import com.flickzz.desk.repo.BusinessServiceRepository;
-import com.flickzz.desk.repo.ServiceOfferingRepository;
-import com.flickzz.desk.vo.BusinessServiceRequestVO;
-import com.flickzz.desk.vo.BusinessServiceVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class SettingsService {
@@ -34,6 +26,12 @@ public class SettingsService {
 
 	@Autowired
 	private ServiceOfferingRepository serviceOfferingRepository;
+
+	@Autowired
+	private WorkItemRepository workItemRepository;
+
+	@Autowired
+	private FieldTypeRepository fieldTypeRepository;
 
 	@Autowired
 	private CommonMapper mapper;
@@ -150,6 +148,30 @@ public class SettingsService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in deleteBusinessService method in SettingsService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<WorkItemVO> listWorkItems(String orgId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			return workItemRepository.findByIsActive(ACTIVE).stream().map(mapper::toWorkItemVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in listWorkItems method in SettingsService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<FieldTypeVO> listFieldTypes(String orgId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			return fieldTypeRepository.findByIsActive(ACTIVE).stream().map(mapper::toFieldTypeVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in listFieldTypes method in SettingsService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

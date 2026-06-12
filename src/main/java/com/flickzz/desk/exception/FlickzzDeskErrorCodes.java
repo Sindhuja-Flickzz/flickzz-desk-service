@@ -20,7 +20,8 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 	EXPIRED_LINK("FD-110", "Link Expired", "Link Expired! Please raise enquiry again."),
 	INVALID_PASSWORD("FD-111", "Invalid Password",
 			"Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character."),
-	INVALID_TEXT("FD-112", "Invalid Text", "Invalid %s. Please verify!");
+	INVALID_TEXT("FD-112", "Invalid Text", "Invalid %s. Please verify!"),
+	SET_TEXT("FD-113", "Set Text", "Set %s to proceed further!");
 
 	private String code;
 	private String title;

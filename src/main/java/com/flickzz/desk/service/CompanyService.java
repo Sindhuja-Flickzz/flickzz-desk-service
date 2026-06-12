@@ -1,40 +1,21 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY_NAME;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CURRENCY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.REGISTERED_NUMBER;
-import static com.flickzz.desk.config.FlickzzDeskConstants.STATE;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.StateMaster;
-import com.flickzz.desk.repo.CityMasterRepository;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.CountryMasterRepository;
-import com.flickzz.desk.repo.StateMasterRepository;
-import com.flickzz.desk.vo.CompanyMasterRequestVO;
-import com.flickzz.desk.vo.CompanyMasterVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class CompanyService {
@@ -52,6 +33,9 @@ public class CompanyService {
 
 	@Autowired
 	CityMasterRepository cityMasterRepository;
+
+	@Autowired
+	CompanyRoleRepository companyRoleRepository;
 
 	@Autowired
 	private CommonMapper mapper;
@@ -191,6 +175,18 @@ public class CompanyService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in listCompanies method in CompanyService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<CompanyRoleVO> listServiceProviderList(String orgId) {
+		log.debug(generateLog("listServiceProviderList", this.getClass().getName()));
+		try {
+			return companyRoleRepository.findByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+					.filter(role -> role.getIsServiceProvider() || role.getIsBoth())
+					.map(role -> mapper.toCompanyRoleVO(role)).collect(Collectors.toList());
+		} catch (Exception e) {
+			log.error("Exception in listServiceProviderList method in CompanyService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

@@ -1,34 +1,20 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.BUSINESS_SERVICE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
-import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.*;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 
-import java.util.List;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
 
-import com.flickzz.desk.config.FlickzzDeskResponse;
-import com.flickzz.desk.service.SettingsService;
-import com.flickzz.desk.vo.BusinessServiceRequestVO;
-import com.flickzz.desk.vo.BusinessServiceVO;
+import com.flickzz.desk.config.*;
+import com.flickzz.desk.service.*;
+import com.flickzz.desk.vo.*;
 
 @CrossOrigin
 @RestController
@@ -92,5 +78,27 @@ public class SettingsController {
 
 		log.debug(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), BUSINESS_SERVICE));
+	}
+
+	@GetMapping("work/item/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> listWorkItems(@PathVariable String orgId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<WorkItemVO> response = settingsService.listWorkItems(orgId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), WORK_ITEM),
+				response);
+	}
+
+	@GetMapping("field/type/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> listFieldTypes(@PathVariable String orgId) {
+		log.debug(generateLog(ENTRY, this.getClass().getName()));
+
+		List<FieldTypeVO> response = settingsService.listFieldTypes(orgId);
+
+		log.debug(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), FIELD_TYPE),
+				response);
 	}
 }
