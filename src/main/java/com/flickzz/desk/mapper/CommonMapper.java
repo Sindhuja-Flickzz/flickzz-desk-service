@@ -571,8 +571,28 @@ public class CommonMapper {
 			return null;
 		}
 
-		return TaskVO.builder().title(task.getTitle()).description(task.getDescription())
-				.plannedStartDate(task.getPlannedStartDate()).plannedEndDate(task.getPlannedEndDate()).build();
+		return TaskVO.builder().title(task.getTitle()).description(task.getDescription()).taskId(task.getTaskId())
+				.progress(toNoBackRefProgressStatusVO(task.getProgressStatus())).taskSequence(task.getTaskSequence())
+				.agentId(toAgentMasterVO(task.getAgent())).maxProgress(task.getMaxProgressStatus())
+				.plannedStartDate(task.getPlannedStartDate()).plannedEndDate(task.getPlannedEndDate())
+				.actualStartDate(task.getActualStartDate()).actualEndDate(task.getActualEndDate())
+				.subTasks(task.getSubTasks() != null
+						? task.getSubTasks().stream().map(this::toNoBackRefSubTaskVO).toList()
+						: null)
+				.build();
+	}
+
+	public SubTaskVO toNoBackRefSubTaskVO(SubTask subTask) {
+		if (subTask == null) {
+			return null;
+		}
+
+		return SubTaskVO.builder().title(subTask.getTitle()).description(subTask.getDescription())
+				.subTaskId(subTask.getSubTaskId()).progress(toNoBackRefProgressStatusVO(subTask.getProgressStatus()))
+				.agentId(toAgentMasterVO(subTask.getAgent())).maxProgress(subTask.getMaxProgressStatus())
+				.plannedStartDate(subTask.getPlannedStartDate()).plannedEndDate(subTask.getPlannedEndDate())
+				.actualStartDate(subTask.getActualStartDate()).actualEndDate(subTask.getActualEndDate())
+				.createdBy(subTask.getCreatedBy()).build();
 	}
 
 	public ProjectLeadAssignmentVO toNoBackRefProjectLeadAssignmentVO(ProjectLeadAssignment pla) {

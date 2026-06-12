@@ -25,6 +25,7 @@ public class FlickzzDeskConstants {
 	public static final String PRIORITY = "Priority";
 	public static final String LANGUAGE = "Language";
 	public static final String PROJECT = "Project";
+	public static final String EPIC = "Epic";
 	public static final String PROJECT_ID = "Project Id";
 	public static final String TIME_ZONE = "Current time of timezone";
 	public static final String BUSINESS_SERVICE = "Business Service";
