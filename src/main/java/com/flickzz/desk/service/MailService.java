@@ -12,6 +12,7 @@ import org.springframework.mail.javamail.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.*;
 
+import jakarta.annotation.*;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 
@@ -28,8 +29,23 @@ public class MailService {
 	@Value("${application.baseUrl}")
 	private String baseUrl;
 
+	@Value("${spring.mail.host:NOT_FOUND}")
+	private String host;
+
+	@Value("${spring.mail.port:-1}")
+	private int port;
+
+	@Value("${spring.mail.username:NOT_FOUND}")
+	private String username;
+
 	public MailService(JavaMailSender mailSender) {
 		this.mailSender = mailSender;
+	}
+
+	@PostConstruct
+	public void init() {
+		log.info("MailService initialized with host: {}, port: {}, username: {}", this.getClass().getName(), host, port,
+				username);
 	}
 
 	public void sendTemporaryPasswordEmail(String toEmail, String firstName, String temporaryPassword) {
@@ -77,7 +93,7 @@ public class MailService {
 		try {
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
-			helper.setFrom(fromAddress);
+			helper.setFrom(this.fromAddress);
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(body, true); // true = HTML
@@ -93,10 +109,11 @@ public class MailService {
 	private void sendSimpleEmail(String toEmail, String subject, String text) {
 		try {
 			SimpleMailMessage message = new SimpleMailMessage();
-			message.setFrom(fromAddress);
+			message.setFrom(this.fromAddress);
 			message.setTo(toEmail);
 			message.setSubject(subject);
 			message.setText(text);
+			log.info("About to send simple email to {}", toEmail);
 			mailSender.send(message);
 			log.info("Mail Sent Successfully");
 		} catch (Exception e) {
@@ -114,7 +131,7 @@ public class MailService {
 
 			helper = new MimeMessageHelper(mimeMessage, true);
 
-			helper.setFrom(fromAddress);
+			helper.setFrom(this.fromAddress);
 			helper.setTo(toEmail);
 			helper.setText(text);
 			helper.setSubject(subject);
