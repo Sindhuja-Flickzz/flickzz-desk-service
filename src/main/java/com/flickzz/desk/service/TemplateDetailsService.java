@@ -47,7 +47,7 @@ public class TemplateDetailsService {
 
 	@Transactional
 	public TemplateDetailsVO createTemplateDetails(TemplateDetailsRequestVO request) {
-		log.debug(generateLog("createTemplateDetails", this.getClass().getName()));
+		log.info(generateLog("createTemplateDetails", this.getClass().getName()));
 		try {
 			// Validate request
 			if (request == null || request.getTemplateName() == null) {
@@ -144,7 +144,7 @@ public class TemplateDetailsService {
 
 	@Transactional
 	public TemplateDetailsVO updateTemplateDetails(TemplateDetailsRequestVO request) {
-		log.debug(generateLog("updateTemplateDetails", this.getClass().getName()));
+		log.info(generateLog("updateTemplateDetails", this.getClass().getName()));
 		try {
 			// Validate request
 			if (request == null || request.getTemplateId() == null) {
@@ -232,7 +232,7 @@ public class TemplateDetailsService {
 	}
 
 	public List<TemplateDetailsVO> listTemplateDetails(Long companyId) {
-		log.debug(generateLog("listTemplateDetails", this.getClass().getName()));
+		log.info(generateLog("listTemplateDetails", this.getClass().getName()));
 		try {
 			if (companyId == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -260,7 +260,7 @@ public class TemplateDetailsService {
 	}
 
 	public TemplateDetailsVO getTemplateDetail(Long templateId) {
-		log.debug(generateLog("getTemplateDetail", this.getClass().getName()));
+		log.info(generateLog("getTemplateDetail", this.getClass().getName()));
 		try {
 			if (templateId == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -285,7 +285,7 @@ public class TemplateDetailsService {
 
 	@Transactional
 	public void deleteTemplateDetails(Long templateId, Long companyId) {
-		log.debug(generateLog("deleteTemplateDetails", this.getClass().getName()));
+		log.info(generateLog("deleteTemplateDetails", this.getClass().getName()));
 		try {
 			if (templateId == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,

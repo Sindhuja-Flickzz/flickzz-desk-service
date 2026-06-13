@@ -44,51 +44,51 @@ public class ImpactController {
 
 	@PostMapping("create")
 	public ResponseEntity<FlickzzDeskResponse> createImpact(@RequestBody ImpactRequestVO request) throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		ImpactMasterVO respVO = impactService.createImpact(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), IMPACT), respVO);
 	}
 
 	@GetMapping("/{impactId}")
 	public ResponseEntity<FlickzzDeskResponse> getImpactInfo(@PathVariable String impactId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		ImpactMasterVO response = impactService.getImpactInfo(impactId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), IMPACT), response);
 	}
 
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateImpact(@RequestBody ImpactRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		ImpactMasterVO response = impactService.updateImpact(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), IMPACT), response);
 	}
 
 	@DeleteMapping("/delete/{impactId}")
 	public ResponseEntity<FlickzzDeskResponse> deleteImpact(@PathVariable String impactId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		impactService.deleteImpact(impactId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PRIORITY));
 	}
 
 	@GetMapping("/list/{orgId}")
 	public ResponseEntity<FlickzzDeskResponse> getImpactList(@PathVariable String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<ImpactMasterVO> response = impactService.getImpactList(orgId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
 }

@@ -45,84 +45,84 @@ public class CalendarController {
 
 	@PostMapping("/create")
 	public ResponseEntity<FlickzzDeskResponse> createCalendar(@RequestBody CalendarMasterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		CalendarMasterVO response = calendarService.createCalendar(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), CALENDAR),
 				response);
 	}
 
 	@GetMapping("/{calendarCode}")
 	public ResponseEntity<FlickzzDeskResponse> getCalendarInfo(@PathVariable String calendarCode) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		CalendarMasterVO response = calendarService.getCalendarInfo(calendarCode);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
 	}
 
 	@PostMapping("/update/{calendarCode}")
 	public ResponseEntity<FlickzzDeskResponse> updateCalendar(@RequestBody CalendarMasterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		CalendarMasterVO response = calendarService.updateCalendar(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), CALENDAR),
 				response);
 	}
 
 	@DeleteMapping("/delete/{calendarCode}")
 	public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		calendarService.deleteCalendar(calendarCode);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR));
 	}
 
 	@GetMapping("/list/{orgId}")
 	public ResponseEntity<FlickzzDeskResponse> listCalendars(@PathVariable String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CalendarMasterVO> response = calendarService.listCalendars(orgId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR), response);
 	}
 
 	@PostMapping("/type/create")
 	public ResponseEntity<FlickzzDeskResponse> createCalendarType(@RequestBody CalendarMasterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CalendarTypeVO> response = calendarService.createCalendarType(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), CALENDAR_TYPE),
 				response);
 	}
 
 	@DeleteMapping("/type/delete/{calendarTypeId}")
 	public ResponseEntity<FlickzzDeskResponse> deleteCalendarType(@PathVariable String calendarTypeId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		calendarService.deleteCalendarType(calendarTypeId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR_TYPE));
 	}
 
 	@GetMapping("/type/list/{orgId}")
 	public ResponseEntity<FlickzzDeskResponse> listCalendarTypes(@PathVariable String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CalendarTypeVO> response = calendarService.listCalendarTypes(orgId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CALENDAR_TYPE),
 				response);
 	}

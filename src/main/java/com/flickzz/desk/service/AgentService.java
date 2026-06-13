@@ -1,65 +1,22 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACCESS_ID;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.AGENT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.AGENT_NAME;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.LANGUAGE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.MAIL_ID;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PHONE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_ADMIN_AGENT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_AGENT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateTemporaryPassword;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.security.crypto.password.*;
+import org.springframework.stereotype.*;
+import org.springframework.transaction.annotation.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.AgentMaster;
-import com.flickzz.desk.model.AgentSkillsMapping;
-import com.flickzz.desk.model.CalendarMaster;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.LanguageMaster;
-import com.flickzz.desk.model.LoginMaster;
-import com.flickzz.desk.model.SkillMaster;
-import com.flickzz.desk.model.User;
-import com.flickzz.desk.repo.AgentMasterRepository;
-import com.flickzz.desk.repo.AgentSkillsMappingRepository;
-import com.flickzz.desk.repo.CalendarMasterRepository;
-import com.flickzz.desk.repo.CityMasterRepository;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.CountryMasterRepository;
-import com.flickzz.desk.repo.EnquiryRegistrationRepository;
-import com.flickzz.desk.repo.LanguageMasterRepository;
-import com.flickzz.desk.repo.LoginMasterRepository;
-import com.flickzz.desk.repo.SkillMasterRepository;
-import com.flickzz.desk.repo.UserRepository;
-import com.flickzz.desk.vo.AgentMasterVO;
-import com.flickzz.desk.vo.AgentRequestVO;
-import com.flickzz.desk.vo.AgentSkillsMappingVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class AgentService {
@@ -110,7 +67,7 @@ public class AgentService {
 
 	@Transactional
 	public AgentMasterVO createAgent(AgentRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getAgentName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -204,7 +161,7 @@ public class AgentService {
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 
-//			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
+			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
 
 			return mapper.toAgentMasterVO(agentMaster);
 		} catch (FlickzzDeskException e) {
@@ -216,7 +173,7 @@ public class AgentService {
 	}
 
 	public AgentMasterVO getAgentInfo(String agentId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<AgentMaster> agentMaster = agentMasterRepository.findById(Long.valueOf(agentId));
 			if (agentMaster == null) {
@@ -232,7 +189,7 @@ public class AgentService {
 	}
 
 	public AgentMasterVO getAgentInfoByName(String agentName) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentName(agentName);
 			agentMaster.ifPresent(agent -> {
@@ -248,7 +205,7 @@ public class AgentService {
 	}
 
 	public AgentMasterVO updateAgent(AgentRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<AgentMaster> existing = agentMasterRepository.findById(request.getAgentId());
 			if (existing == null) {
@@ -316,7 +273,7 @@ public class AgentService {
 	}
 
 	public void deleteAgent(String agentId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<AgentMaster> existing = agentMasterRepository.findById(Long.valueOf(agentId));
 			if (existing == null) {
@@ -332,7 +289,7 @@ public class AgentService {
 	}
 
 	public List<AgentMasterVO> getAgentList(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return agentMasterRepository.findAllByOrganization_CompanyId(Long.valueOf(orgId)).stream()
 					.map(mapper::toAgentMasterVO).toList();
@@ -343,7 +300,7 @@ public class AgentService {
 	}
 
 	public List<AgentSkillsMappingVO> getAgentSkills(String agentId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			List<AgentSkillsMapping> agentMaster = agentSkillsMappingRepository
 					.findByAgentAgentId(Long.valueOf(agentId));
@@ -360,7 +317,7 @@ public class AgentService {
 	}
 
 	public AgentMasterVO getAgentInfoByEmail(String agentName) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			AgentMaster agentMaster = agentMasterRepository.findByMailId(agentName)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,

@@ -48,84 +48,84 @@ public class FlickzzDeskController {
 
 	@PostMapping("verify")
 	public ResponseEntity<FlickzzDeskResponse> verifyCode(@RequestBody VerificationRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		RegisterLoginResponseVO respVO = flickzzDeskService.verifyCode(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(REGISTRATION_SUCCESS, getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN),
 				respVO);
 	}
 
 	@PostMapping("login")
 	public ResponseEntity<FlickzzDeskResponse> userLogin(@RequestBody RegisterLoginRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		RegisterLoginResponseVO respVO = flickzzDeskService.userLogin(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(REGISTRATION_SUCCESS, getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN),
 				respVO);
 	}
 
 	@PostMapping("refresh")
 	public ResponseEntity<FlickzzDeskResponse> authRefresh(@RequestBody CommonRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		LoginResponseVO respVO = flickzzDeskService.authRefresh(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(TOKEN_SUCCESS, TOKEN_SUCCESS.getDescription(), respVO);
 	}
 
 	@PostMapping("/logoutAll")
 	public ResponseEntity<FlickzzDeskResponse> logoutAll(@RequestBody CommonRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		flickzzDeskService.logoutAllUsers(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(LOGOUT_ALL_SUCCESS,
 				getDescription(LOGOUT_ALL_SUCCESS.getDescription(), request.getUsername()));
 	}
 
 	@PostMapping("reset/password")
 	public ResponseEntity<FlickzzDeskResponse> resetPassword(@RequestBody RegisterLoginRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		flickzzDeskService.resetPassword(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(PASSWORD_RESET_SUCCESS, PASSWORD_RESET_SUCCESS.getDescription());
 	}
 
 	@GetMapping("user/list")
 	public ResponseEntity<FlickzzDeskResponse> getUserList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<UserVO> respVO = flickzzDeskService.getUserList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), USER_LIST), respVO);
 	}
 
 	@GetMapping("user/info/{userEmail}")
 	public ResponseEntity<FlickzzDeskResponse> getUserInfo(@PathVariable String userEmail) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		UserVO respVO = flickzzDeskService.getUserInfo(userEmail);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 	}
 
 //	@PostMapping("profile/update")
 //	public ResponseEntity<FlickzzDeskResponse> updateProfile(@RequestBody UserVO request) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //
 //		UserVO respVO = flickzzDeskService.updateProfile(request);
 //
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		log.info(generateLog(EXIT, this.getClass().getName()));
 //		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 //	}
 }

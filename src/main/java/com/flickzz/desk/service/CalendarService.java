@@ -34,7 +34,7 @@ public class CalendarService {
 	private CommonMapper mapper;
 
 	public CalendarMasterVO createCalendar(CalendarMasterRequestVO request) {
-		log.debug(generateLog("createCalendar", this.getClass().getName()));
+		log.info(generateLog("createCalendar", this.getClass().getName()));
 		try {
 			if (request == null || request.getCalendarCode() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -81,7 +81,7 @@ public class CalendarService {
 	}
 
 	public CalendarMasterVO getCalendarInfo(String calendarCode) {
-		log.debug(generateLog("getCalendarInfo", this.getClass().getName()));
+		log.info(generateLog("getCalendarInfo", this.getClass().getName()));
 		try {
 			if (calendarCode == null) {
 				throw new FlickzzDeskException(INVALID_FIELD, CALENDAR_CODE);
@@ -100,7 +100,7 @@ public class CalendarService {
 	}
 
 	public CalendarMasterVO updateCalendar(CalendarMasterRequestVO request) {
-		log.debug(generateLog("updateCalendar", this.getClass().getName()));
+		log.info(generateLog("updateCalendar", this.getClass().getName()));
 		try {
 			if (request == null || request.getCalendarCode() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD, CALENDAR_CODE);
@@ -159,7 +159,7 @@ public class CalendarService {
 	}
 
 	public void deleteCalendar(String calendarCode) {
-		log.debug(generateLog("deleteCalendar", this.getClass().getName()));
+		log.info(generateLog("deleteCalendar", this.getClass().getName()));
 		try {
 			CalendarMaster existing = calendarMasterRepository.findByCalendarCode(calendarCode)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -175,7 +175,7 @@ public class CalendarService {
 	}
 
 	public List<CalendarMasterVO> listCalendars(String orgId) {
-		log.debug(generateLog("listCalendars", this.getClass().getName()));
+		log.info(generateLog("listCalendars", this.getClass().getName()));
 		try {
 			return calendarMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
 					.map(mapper::toCalendarMasterVO).toList();
@@ -188,7 +188,7 @@ public class CalendarService {
 	}
 
 	public List<CalendarTypeVO> createCalendarType(CalendarMasterRequestVO request) {
-		log.debug(generateLog("createCalendarType", this.getClass().getName()));
+		log.info(generateLog("createCalendarType", this.getClass().getName()));
 		try {
 			if (request == null || request.getCalendarTypeList() == null || request.getCalendarTypeList().size() == 0) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -219,7 +219,7 @@ public class CalendarService {
 	}
 
 	public void deleteCalendarType(String calendarTypeId) {
-		log.debug(generateLog("deleteCalendarType", this.getClass().getName()));
+		log.info(generateLog("deleteCalendarType", this.getClass().getName()));
 		try {
 			CalendarType calendarType = calendarTypeRepository.findById(Long.valueOf(calendarTypeId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -235,7 +235,7 @@ public class CalendarService {
 	}
 
 	public List<CalendarTypeVO> listCalendarTypes(String orgId) {
-		log.debug(generateLog("listCalendarTypes", this.getClass().getName()));
+		log.info(generateLog("listCalendarTypes", this.getClass().getName()));
 		try {
 			return calendarTypeRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
 					.map(mapper::toCalendarTypeVO).toList();

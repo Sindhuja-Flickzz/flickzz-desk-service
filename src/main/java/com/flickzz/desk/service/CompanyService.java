@@ -41,7 +41,7 @@ public class CompanyService {
 	private CommonMapper mapper;
 
 	public CompanyMasterVO createCompany(CompanyMasterRequestVO request) {
-		log.debug(generateLog("createCompany", this.getClass().getName()));
+		log.info(generateLog("createCompany", this.getClass().getName()));
 		try {
 			if (request == null || request.getCompanyName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -89,7 +89,7 @@ public class CompanyService {
 	}
 
 	public CompanyMasterVO getCompanyInfo(String companyId) {
-		log.debug(generateLog("getCompanyInfo", this.getClass().getName()));
+		log.info(generateLog("getCompanyInfo", this.getClass().getName()));
 		try {
 			CompanyMaster entity = companyMasterRepository.findById(Long.valueOf(companyId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -104,7 +104,7 @@ public class CompanyService {
 	}
 
 	public CompanyMasterVO updateCompany(CompanyMasterRequestVO request) {
-		log.debug(generateLog("updateCompany", this.getClass().getName()));
+		log.info(generateLog("updateCompany", this.getClass().getName()));
 		try {
 			if (request == null || request.getCompanyId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -151,7 +151,7 @@ public class CompanyService {
 	}
 
 	public void deleteCompany(String companyId) {
-		log.debug(generateLog("deleteCompany", this.getClass().getName()));
+		log.info(generateLog("deleteCompany", this.getClass().getName()));
 		try {
 			CompanyMaster existing = companyMasterRepository
 					.findById(companyId != null ? Long.valueOf(companyId) : null)
@@ -168,7 +168,7 @@ public class CompanyService {
 	}
 
 	public List<CompanyMasterVO> listCompanies() {
-		log.debug(generateLog("listCompanies", this.getClass().getName()));
+		log.info(generateLog("listCompanies", this.getClass().getName()));
 		try {
 			return companyMasterRepository.findByIsActive(ACTIVE).stream().map(mapper::toCompanyMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -180,7 +180,7 @@ public class CompanyService {
 	}
 
 	public List<CompanyRoleVO> listServiceProviderList(String orgId) {
-		log.debug(generateLog("listServiceProviderList", this.getClass().getName()));
+		log.info(generateLog("listServiceProviderList", this.getClass().getName()));
 		try {
 			return companyRoleRepository.findByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
 					.filter(role -> role.getIsServiceProvider() || role.getIsBoth())

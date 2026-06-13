@@ -44,51 +44,51 @@ public class SkillsController {
 	@PostMapping("create")
 	public ResponseEntity<FlickzzDeskResponse> createSkills(@RequestBody List<SkillRequestVO> request)
 			throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<SkillMasterVO> respVO = skillsService.createSkills(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), SKILL), respVO);
 	}
 
 	@GetMapping("/{skillId}")
 	public ResponseEntity<FlickzzDeskResponse> getSkillInfo(@PathVariable String skillId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		SkillMasterVO response = skillsService.getSkillInfo(skillId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), SKILL), response);
 	}
 
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateSkill(@RequestBody SkillRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		SkillMasterVO response = skillsService.updateSkill(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), SKILL), response);
 	}
 
 	@DeleteMapping("/delete/{skillId}")
 	public ResponseEntity<FlickzzDeskResponse> deleteSkill(@PathVariable String skillId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		skillsService.deleteSkill(skillId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), SKILL));
 	}
 
 	@GetMapping("/list/{orgId}")
 	public ResponseEntity<FlickzzDeskResponse> getSkillList(@PathVariable String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<SkillMasterVO> response = skillsService.getSkillList(orgId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), SKILL), response);
 	}
 }

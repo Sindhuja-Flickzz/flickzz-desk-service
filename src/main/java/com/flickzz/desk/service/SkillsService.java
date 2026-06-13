@@ -44,7 +44,7 @@ public class SkillsService {
 	CommonMapper mapper;
 
 	public List<SkillMasterVO> createSkills(List<SkillRequestVO> skills) {
-		log.debug(generateLog("createSkills", this.getClass().getName()));
+		log.info(generateLog("createSkills", this.getClass().getName()));
 		try {
 			if (skills.size() == 0) {
 				throw new FlickzzDeskException(NO_DATA, NO_DATA.getDescription());
@@ -84,7 +84,7 @@ public class SkillsService {
 	}
 
 	public SkillMasterVO getSkillInfo(String skillId) {
-		log.debug(generateLog("getSkillInfo", this.getClass().getName()));
+		log.info(generateLog("getSkillInfo", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -99,7 +99,7 @@ public class SkillsService {
 	}
 
 	public SkillMasterVO updateSkill(SkillRequestVO request) {
-		log.debug(generateLog("updateSkill", this.getClass().getName()));
+		log.info(generateLog("updateSkill", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(request.getSkillId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -116,7 +116,7 @@ public class SkillsService {
 	}
 
 	public void deleteSkill(String skillId) {
-		log.debug(generateLog("deleteSkill", this.getClass().getName()));
+		log.info(generateLog("deleteSkill", this.getClass().getName()));
 		try {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -132,7 +132,7 @@ public class SkillsService {
 	}
 
 	public List<SkillMasterVO> getSkillList(String orgId) {
-		log.debug(generateLog("getSkillList", this.getClass().getName()));
+		log.info(generateLog("getSkillList", this.getClass().getName()));
 		try {
 			return skillMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
 					.map(skill -> mapper.toSkillMasterVo(skill)).toList();

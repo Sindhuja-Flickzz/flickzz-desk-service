@@ -54,7 +54,7 @@ public class PlantService {
 	private CommonMapper mapper;
 
 	public PlantMasterVO createPlant(PlantMasterRequestVO request) {
-		log.debug(generateLog("createPlant", this.getClass().getName()));
+		log.info(generateLog("createPlant", this.getClass().getName()));
 		try {
 			if (request == null || request.getPlantName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -95,7 +95,7 @@ public class PlantService {
 	}
 
 	public PlantMasterVO getPlantInfo(String plantId) {
-		log.debug(generateLog("getPlantInfo", this.getClass().getName()));
+		log.info(generateLog("getPlantInfo", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> plantMaster = plantMasterRepository.findById(Long.valueOf(plantId));
 			if (plantMaster == null) {
@@ -111,7 +111,7 @@ public class PlantService {
 	}
 
 	public PlantMasterVO updatePlant(PlantMasterRequestVO request) {
-		log.debug(generateLog("updatePlant", this.getClass().getName()));
+		log.info(generateLog("updatePlant", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> existing = plantMasterRepository.findById(request.getPlantId());
 			if (existing == null) {
@@ -146,7 +146,7 @@ public class PlantService {
 	}
 
 	public void deletePlant(String plantId) {
-		log.debug(generateLog("deletePlant", this.getClass().getName()));
+		log.info(generateLog("deletePlant", this.getClass().getName()));
 		try {
 			Optional<PlantMaster> existing = plantMasterRepository.findByPlantId(Long.valueOf(plantId));
 			if (existing == null) {
@@ -164,7 +164,7 @@ public class PlantService {
 	}
 
 	public List<PlantMasterVO> getPlantList(String orgId) {
-		log.debug(generateLog("getPlantList", this.getClass().getName()));
+		log.info(generateLog("getPlantList", this.getClass().getName()));
 		try {
 			return plantMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
 					.map(plant -> mapper.toPlantMasterVO(plant)).toList();
