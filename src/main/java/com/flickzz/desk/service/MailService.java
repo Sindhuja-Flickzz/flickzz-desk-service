@@ -1,19 +1,23 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
-import java.io.*;
-
-import org.slf4j.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.core.io.*;
-import org.springframework.mail.*;
-import org.springframework.mail.javamail.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.util.*;
+import org.springframework.util.StringUtils;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class MailService {
@@ -32,6 +36,7 @@ public class MailService {
 		this.mailSender = mailSender;
 	}
 
+	@Async
 	public void sendTemporaryPasswordEmail(String toEmail, String firstName, String temporaryPassword) {
 		log.info(generateLog("sendTemporaryPasswordEmail", this.getClass().getName()));
 		if (!StringUtils.hasText(toEmail)) {
@@ -50,6 +55,7 @@ public class MailService {
 		sendSimpleEmail(toEmail, subject, body);
 	}
 
+	@Async
 	public void sendEnquiryLink(String toEmail, String userName, String token) {
 		log.info(generateLog("sendEnquiryLink", this.getClass().getName()));
 
@@ -106,7 +112,8 @@ public class MailService {
 	}
 
 	// Send mail with attachment
-	public String sendMailWithAttachment(String toEmail, String subject, String text) {
+	@Async
+	public CompletableFuture<String> sendMailWithAttachment(String toEmail, String subject, String text) {
 
 		MimeMessage mimeMessage = mailSender.createMimeMessage();
 		MimeMessageHelper helper;
@@ -126,11 +133,11 @@ public class MailService {
 
 			mailSender.send(mimeMessage);
 
-			return "Mail Sent Successfully";
+			return CompletableFuture.completedFuture("Mail Sent Successfully");
 
 		} catch (MessagingException e) {
 
-			return "Error while sending mail";
+			return CompletableFuture.failedFuture(new RuntimeException("Error while sending mail", e));
 		}
 	}
 }
