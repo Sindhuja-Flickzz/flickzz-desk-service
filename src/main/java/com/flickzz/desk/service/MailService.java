@@ -12,7 +12,6 @@ import org.springframework.mail.javamail.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.*;
 
-import jakarta.annotation.*;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 
@@ -29,23 +28,8 @@ public class MailService {
 	@Value("${application.baseUrl}")
 	private String baseUrl;
 
-	@Value("${spring.mail.host:NOT_FOUND}")
-	private String host;
-
-	@Value("${spring.mail.port:-1}")
-	private int port;
-
-	@Value("${spring.mail.username:NOT_FOUND}")
-	private String username;
-
 	public MailService(JavaMailSender mailSender) {
 		this.mailSender = mailSender;
-	}
-
-	@PostConstruct
-	public void init() {
-		log.info("MailService initialized with host: {}, port: {}, username: {}", this.getClass().getName(), host, port,
-				username);
 	}
 
 	public void sendTemporaryPasswordEmail(String toEmail, String firstName, String temporaryPassword) {
@@ -62,7 +46,7 @@ public class MailService {
 				+ "If you did not request this account, please contact support.%n%n" + "Thank you,%nFlickzz Desk Team",
 				displayName, temporaryPassword);
 
-		log.info(generateLog("Generated temporary password email", this.getClass().getName()));
+		log.info("Generated temporary password email");
 		sendSimpleEmail(toEmail, subject, body);
 	}
 
@@ -84,7 +68,7 @@ public class MailService {
 				+ "Note: This link is valid for 3 hours only.<br><br>"
 				+ "If you did not expect this email, please ignore it.<br><br>" + "Thank you,<br>Flickzz Desk Team",
 				userName, enquiryLink);
-		log.info(generateLog("Generated enquiry verification email", this.getClass().getName()));
+		log.info("Generated enquiry verification email");
 		sendHtmlEmail(toEmail, subject, body);
 	}
 
@@ -97,9 +81,9 @@ public class MailService {
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(body, true); // true = HTML
-			log.info(generateLog("About to send HTML email to " + toEmail, this.getClass().getName()));
+			log.info("About to send HTML email to " + toEmail);
 			mailSender.send(mimeMessage);
-			log.info(generateLog("HTML email sent successfully to " + toEmail, this.getClass().getName()));
+			log.info("HTML email sent successfully to " + toEmail);
 		} catch (MessagingException e) {
 			log.error("Error while sending HTML email", e);
 		}
