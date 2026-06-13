@@ -42,33 +42,33 @@ public class EnquiryController {
 
 	@PostMapping("/register")
 	public ResponseEntity<FlickzzDeskResponse> enquiryRegister(@RequestBody EnquiryRegisterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		enquiryService.enquiryRegister(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(REGISTRATION_SUCCESS,
 				getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN));
 	}
 
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updateEnquiry(@RequestBody EnquiryRegisterRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		enquiryService.updateEnquiry(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(REGISTRATION_SUCCESS,
 				getDescription(REGISTRATION_SUCCESS.getDescription(), LOGIN));
 	}
 
 	@GetMapping("/verify")
 	public ResponseEntity<FlickzzDeskResponse> verifyEnquiry(@RequestParam String token) throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		EnquiryInfoVO respVO = enquiryService.verifyEnquiry(token);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(ENQUIRY_VERIFICATION_SUCCESS, ENQUIRY_VERIFICATION_SUCCESS.getDescription(),
 				respVO);
 	}
@@ -76,33 +76,33 @@ public class EnquiryController {
 	@PostMapping("/submit-secure")
 	public ResponseEntity<FlickzzDeskResponse> submitEnquiry(@RequestBody EnquiryRequestVO enquiryInfoVO)
 			throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		enquiryService.submitEnquiry(enquiryInfoVO);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), ENTRY));
 	}
 
 	@GetMapping("/company/{userEmail}")
 	public ResponseEntity<FlickzzDeskResponse> getCompanyInfoByUserEmail(@PathVariable String userEmail)
 			throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		EnquiryRegistrationVO respVO = enquiryService.getCompanyInfoByUserEmail(userEmail);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), ENTRY), respVO);
 	}
 
 	@GetMapping("/{userEmail}")
 	public ResponseEntity<FlickzzDeskResponse> getEnquiriesByUserEmail(@PathVariable String userEmail)
 			throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		EnquiryRegistrationVO respVO = enquiryService.getEnquiriesByUserEmail(userEmail);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), ENTRY), respVO);
 	}
 }

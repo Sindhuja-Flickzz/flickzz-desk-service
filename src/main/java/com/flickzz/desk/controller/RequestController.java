@@ -38,11 +38,11 @@ public class RequestController {
 
 	@GetMapping("/number/{requestType}")
 	public ResponseEntity<FlickzzDeskResponse> getRequestNumber(@PathVariable String requestType) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		String requestNumber = requestService.getRequestNumber(requestType);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_NUMBER),
 				requestNumber);
 	}
@@ -50,11 +50,11 @@ public class RequestController {
 //	@PostMapping("/config/create")
 //	public ResponseEntity<FlickzzDeskResponse> createRequestConfig(
 //			@RequestBody RequestConfigRequestVO requestConfigVO) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //
 //		RequestConfigVO createdConfig = requestService.createRequestConfig(requestConfigVO);
 //
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		log.info(generateLog(EXIT, this.getClass().getName()));
 //		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
 //				createdConfig);
 //	}
@@ -62,11 +62,11 @@ public class RequestController {
 //	@PostMapping("/config/update")
 //	public ResponseEntity<FlickzzDeskResponse> updateRequestConfig(
 //			@RequestBody RequestConfigRequestVO requestConfigVO) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //
 //		RequestConfigVO updatedConfig = requestService.updateRequestConfig(requestConfigVO);
 //
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		log.info(generateLog(EXIT, this.getClass().getName()));
 //		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
 //				updatedConfig);
 //	}
@@ -74,33 +74,33 @@ public class RequestController {
 //	@GetMapping("/config/{requestType}/{plantId}")
 //	public ResponseEntity<FlickzzDeskResponse> getRequestConfig(@PathVariable String requestType,
 //			@PathVariable Long plantId) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //
 //		RequestConfigVO requestConfig = requestService.getRequestConfig(requestType, plantId);
 //
-//		log.debug(generateLog(EXIT, this.getClass().getName()));
+//		log.info(generateLog(EXIT, this.getClass().getName()));
 //		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
 //				requestConfig);
 //	}
 
 	@GetMapping("/config/list")
 	public ResponseEntity<FlickzzDeskResponse> getAllRequestConfigs() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<RequestConfigVO> requestConfigs = requestService.getAllRequestConfigs();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG),
 				requestConfigs);
 	}
 
 	@DeleteMapping("/config/delete/{configId}")
 	public ResponseEntity<FlickzzDeskResponse> deleteRequestConfig(@PathVariable Long configId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		requestService.deleteRequestConfig(configId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), REQUEST_CONFIG));
 	}
 }

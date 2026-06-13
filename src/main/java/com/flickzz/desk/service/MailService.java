@@ -1,19 +1,19 @@
 package com.flickzz.desk.service;
 
-import java.io.File;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import java.io.*;
+
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.core.io.*;
+import org.springframework.mail.*;
+import org.springframework.mail.javamail.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
 
 @Service
 public class MailService {
@@ -21,18 +21,19 @@ public class MailService {
 	private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
 	private final JavaMailSender mailSender;
-	private final String fromAddress;
+
+	@Value("${app.mail.from}")
+	private String fromAddress;
 
 	@Value("${application.baseUrl}")
 	private String baseUrl;
 
-	public MailService(JavaMailSender mailSender,
-			@Value("${app.mail.from:noreply@flickzzdesk.com}") String fromAddress) {
+	public MailService(JavaMailSender mailSender) {
 		this.mailSender = mailSender;
-		this.fromAddress = fromAddress;
 	}
 
 	public void sendTemporaryPasswordEmail(String toEmail, String firstName, String temporaryPassword) {
+		log.info(generateLog("sendTemporaryPasswordEmail", this.getClass().getName()));
 		if (!StringUtils.hasText(toEmail)) {
 			throw new IllegalArgumentException("Destination email address must be provided");
 		}
@@ -45,10 +46,13 @@ public class MailService {
 				+ "If you did not request this account, please contact support.%n%n" + "Thank you,%nFlickzz Desk Team",
 				displayName, temporaryPassword);
 
+		log.info(generateLog("Generated temporary password email", this.getClass().getName()));
 		sendSimpleEmail(toEmail, subject, body);
 	}
 
 	public void sendEnquiryLink(String toEmail, String userName, String token) {
+		log.info(generateLog("sendEnquiryLink", this.getClass().getName()));
+
 		if (!StringUtils.hasText(toEmail)) {
 			throw new IllegalArgumentException("Destination email address must be provided");
 		}
@@ -64,11 +68,12 @@ public class MailService {
 				+ "Note: This link is valid for 3 hours only.<br><br>"
 				+ "If you did not expect this email, please ignore it.<br><br>" + "Thank you,<br>Flickzz Desk Team",
 				userName, enquiryLink);
-
+		log.info(generateLog("Generated enquiry verification email", this.getClass().getName()));
 		sendHtmlEmail(toEmail, subject, body);
 	}
 
 	private void sendHtmlEmail(String toEmail, String subject, String body) {
+		log.info(generateLog("sendHtmlEmail", this.getClass().getName()));
 		try {
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
@@ -76,8 +81,9 @@ public class MailService {
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(body, true); // true = HTML
-
+			log.info(generateLog("About to send HTML email to " + toEmail, this.getClass().getName()));
 			mailSender.send(mimeMessage);
+			log.info(generateLog("HTML email sent successfully to " + toEmail, this.getClass().getName()));
 		} catch (MessagingException e) {
 			log.error("Error while sending HTML email", e);
 		}
@@ -94,8 +100,7 @@ public class MailService {
 			mailSender.send(message);
 			log.info("Mail Sent Successfully");
 		} catch (Exception e) {
-
-			log.error("Error while sending mail");
+			log.error("Error while sending mail", e);
 		}
 	}
 

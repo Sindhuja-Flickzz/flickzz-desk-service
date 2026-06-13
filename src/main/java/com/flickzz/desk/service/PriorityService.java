@@ -47,7 +47,7 @@ public class PriorityService {
 	CommonMapper mapper;
 
 	public PriorityMasterVO createPriority(PriorityRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getPriorityName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -87,7 +87,7 @@ public class PriorityService {
 	}
 
 	public PriorityMasterVO getPriorityInfo(String priorityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<PriorityMaster> priorityMaster = priorityMasterRepository.findById(Long.valueOf(priorityId));
 			if (priorityMaster == null) {
@@ -105,7 +105,7 @@ public class PriorityService {
 	}
 
 	public PriorityMasterVO updatePriority(PriorityRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<PriorityMaster> existing = priorityMasterRepository.findById(request.getPriorityId());
 			if (existing == null) {
@@ -148,7 +148,7 @@ public class PriorityService {
 	}
 
 	public void deletePriority(String priorityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<PriorityMaster> existing = priorityMasterRepository.findById(Long.valueOf(priorityId));
 			if (existing == null) {
@@ -165,7 +165,7 @@ public class PriorityService {
 	}
 
 	public List<PriorityMasterVO> getPriorityList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return priorityMasterRepository.findAll().stream().map(priority -> mapper.toPriorityMasterVo(priority))
 					.toList();

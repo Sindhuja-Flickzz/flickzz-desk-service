@@ -43,112 +43,112 @@ public class CommonController {
 
 	@GetMapping("country/{countryId}")
 	public ResponseEntity<FlickzzDeskResponse> getCountyInfo(@PathVariable String countryId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		CountryMasterVO response = commonService.getCountyInfo(countryId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 
 	@GetMapping("country/list")
 	public ResponseEntity<FlickzzDeskResponse> getCountyList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CountryMasterVO> response = commonService.getCountyList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 
 	@GetMapping("state/{countryId}")
 	public ResponseEntity<FlickzzDeskResponse> getStateListOfCountry(@PathVariable String countryId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<StateMasterVO> response = commonService.getStateListOfCountry(countryId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 
 	@GetMapping("city/{cityId}")
 	public ResponseEntity<FlickzzDeskResponse> getCityInfo(@PathVariable String cityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		CityMasterVO response = commonService.getCityInfo(cityId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
 	}
 
 	@GetMapping("city/country/list/{countryId}")
 	public ResponseEntity<FlickzzDeskResponse> getCityListOfCountry(@PathVariable String countryId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CityMasterVO> response = commonService.getCityListOfCountry(countryId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
 	}
 
 	@GetMapping("city/state/list/{stateId}")
 	public ResponseEntity<FlickzzDeskResponse> getCityListOfState(@PathVariable String stateId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CityMasterVO> response = commonService.getCityListOfState(stateId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
 	}
 
 	@GetMapping("city/list")
 	public ResponseEntity<FlickzzDeskResponse> getCityList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<CityMasterVO> response = commonService.getCityList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), CITY), response);
 	}
 
 	@GetMapping("language/{languageId}")
 	public ResponseEntity<FlickzzDeskResponse> getLanguageInfo(@PathVariable String languageId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		LanguageMasterVO response = commonService.getLanguageInfo(languageId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LANGUAGE), response);
 	}
 
 	@GetMapping("language/list")
 	public ResponseEntity<FlickzzDeskResponse> getLanguageList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<LanguageMasterVO> response = commonService.getLanguageList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LANGUAGE), response);
 	}
 
 	@GetMapping("getTime")
 	public ResponseEntity<FlickzzDeskResponse> getCurrentTimeOfTimezone(@RequestParam String timezone) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		String response = commonService.getCurrentTimeOfTimezone(timezone);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), TIME_ZONE),
 				response);
 	}
 
 	@GetMapping("state/list")
 	public ResponseEntity<FlickzzDeskResponse> getAllStateList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<StateMasterVO> response = commonService.getAllStateList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
 }

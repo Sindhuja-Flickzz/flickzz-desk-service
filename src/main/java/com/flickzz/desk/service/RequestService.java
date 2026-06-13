@@ -35,7 +35,7 @@ public class RequestService {
 	private CommonMapper mapper;
 
 	public String getRequestNumber(String requestType) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			// Logic to generate request number based on request type
 			// This is a placeholder implementation and should be replaced with actual logic
@@ -50,7 +50,7 @@ public class RequestService {
 	}
 
 //	public RequestConfigVO createRequestConfig(RequestConfigRequestVO request) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //		try {
 //
 //			PlantMaster plant = plantMasterRepository.findByPlantId(request.getPlantId())
@@ -79,7 +79,7 @@ public class RequestService {
 //	}
 //
 //	public RequestConfigVO getRequestConfig(String requestType, Long plantId) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //		try {
 //			RequestConfig requestConfig = requestConfigRepository
 //					.findByRequestTypeAndPlant_PlantId(requestType, plantId)
@@ -97,7 +97,7 @@ public class RequestService {
 //	}
 //
 //	public RequestConfigVO updateRequestConfig(RequestConfigRequestVO requestConfigVO) {
-//		log.debug(generateLog(ENTRY, this.getClass().getName()));
+//		log.info(generateLog(ENTRY, this.getClass().getName()));
 //		try {
 //			RequestConfig existingConfig = requestConfigRepository
 //					.findByRequestTypeAndPlant_PlantId(requestConfigVO.getRequestType(), requestConfigVO.getPlantId())
@@ -122,7 +122,7 @@ public class RequestService {
 //	}
 
 	public List<RequestConfigVO> getAllRequestConfigs() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			List<RequestConfig> requestConfigs = requestConfigRepository.findAll();
 			return mapper.toRequestConfigVOList(requestConfigs);
@@ -135,7 +135,7 @@ public class RequestService {
 	}
 
 	public void deleteRequestConfig(Long configId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			RequestConfig existingConfig = requestConfigRepository.findById(configId)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,

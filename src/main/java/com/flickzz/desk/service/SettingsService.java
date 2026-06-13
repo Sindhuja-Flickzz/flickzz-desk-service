@@ -37,7 +37,7 @@ public class SettingsService {
 	private CommonMapper mapper;
 
 	public BusinessServiceVO createBusinessService(BusinessServiceRequestVO businessServiceRequestVO) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (businessServiceRequestVO == null || businessServiceRequestVO.getServiceName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -72,7 +72,7 @@ public class SettingsService {
 	}
 
 	public BusinessServiceVO updateBusinessService(BusinessServiceRequestVO businessServiceRequestVO) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (businessServiceRequestVO == null || businessServiceRequestVO.getServiceId() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -111,7 +111,7 @@ public class SettingsService {
 	}
 
 	public List<BusinessServiceVO> listBusinessServices() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return businessServiceRepository.findAll().stream().map(mapper::toBusinessServiceVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -123,7 +123,7 @@ public class SettingsService {
 	}
 
 	public BusinessServiceVO getBusinessServiceInfo(String serviceId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			BusinessService existing = businessServiceRepository.findByServiceId(Long.valueOf(serviceId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -138,7 +138,7 @@ public class SettingsService {
 	}
 
 	public void deleteBusinessService(String serviceId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			BusinessService existing = businessServiceRepository.findByServiceId(Long.valueOf(serviceId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -153,7 +153,7 @@ public class SettingsService {
 	}
 
 	public List<WorkItemVO> listWorkItems(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return workItemRepository.findByIsActive(ACTIVE).stream().map(mapper::toWorkItemVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -165,7 +165,7 @@ public class SettingsService {
 	}
 
 	public List<FieldTypeVO> listFieldTypes(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return fieldTypeRepository.findByIsActive(ACTIVE).stream().map(mapper::toFieldTypeVO).toList();
 		} catch (FlickzzDeskException e) {

@@ -39,7 +39,7 @@ public class ProjectService {
 
 	@Transactional
 	public ProjectVO createProject(ProjectRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getProjectName() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -179,7 +179,7 @@ public class ProjectService {
 	}
 
 	public List<ProjectVO> getProjectList(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 
 			return projectRepository.findByCompanyCompanyIdAndIsActive(orgId, ACTIVE).stream()
@@ -188,12 +188,12 @@ public class ProjectService {
 			log.error("Exception in getProjectList method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 
 	public ProjectVO getProjectInfo(String projectId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<Project> projectOpt = projectRepository.findById(Long.valueOf(projectId));
 			if (!projectOpt.isPresent()) {
@@ -207,12 +207,12 @@ public class ProjectService {
 			log.error("Exception in getProjectInfo method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 
 	public List<ProgressStatusVO> getProgressStatusList(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			return progressStatusRepository
 					.findByCompanyCompanyIdAndIsActiveOrderByProgressSequenceAsc(Long.valueOf(orgId), ACTIVE).stream()
@@ -223,12 +223,12 @@ public class ProjectService {
 			log.error("Exception in getProjectInfo method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 
 	public void deleteProject(String projectId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Project project = projectRepository.findById(Long.valueOf(projectId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -239,12 +239,12 @@ public class ProjectService {
 			log.error("Exception in deleteProject method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 
 	public ProjectVO updateProject(ProjectRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getProjectId() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -370,7 +370,7 @@ public class ProjectService {
 	}
 
 	public ProgressStatusVO createProgresstatus(ProgressStatusRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getOrgId() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), COMPANY));
@@ -398,7 +398,7 @@ public class ProjectService {
 			log.error("Exception in createProgresstatus method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 }

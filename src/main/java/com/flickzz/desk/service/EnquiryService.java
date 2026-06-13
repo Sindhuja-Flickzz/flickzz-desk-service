@@ -1,48 +1,22 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY_NAME;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_ADMIN;
-import static com.flickzz.desk.config.FlickzzDeskConstants.USERNAME_OR_EMAIL;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateUniversalId;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.EXPIRED_LINK;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_PASSWORD;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_TOKEN;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.time.*;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.security.crypto.password.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.EnquiryInfo;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.StateMaster;
-import com.flickzz.desk.repo.CityMasterRepository;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.CountryMasterRepository;
-import com.flickzz.desk.repo.EnquiryInfoRepository;
-import com.flickzz.desk.repo.EnquiryRegistrationRepository;
-import com.flickzz.desk.repo.StateMasterRepository;
-import com.flickzz.desk.vo.EnquiryInfoVO;
-import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
-import com.flickzz.desk.vo.EnquiryRegistrationVO;
-import com.flickzz.desk.vo.EnquiryRequestVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class EnquiryService {
@@ -80,7 +54,7 @@ public class EnquiryService {
 	private String uidPrefix;
 
 	public void enquiryRegister(EnquiryRegisterRequestVO request) {
-		log.debug(generateLog("enquiryRegister", this.getClass().getName()));
+		log.info(generateLog("enquiryRegister", this.getClass().getName()));
 		try {
 			enquiryRegistrationRepository.findByEmailAndIsActive(request.getEmail(), ACTIVE).ifPresent(er -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
@@ -119,7 +93,7 @@ public class EnquiryService {
 	}
 
 	public void updateEnquiry(EnquiryRegisterRequestVO request) {
-		log.debug(generateLog("updateEnquiry", this.getClass().getName()));
+		log.info(generateLog("updateEnquiry", this.getClass().getName()));
 		try {
 			EnquiryRegistration exitingRegistration = enquiryRegistrationRepository
 					.findByEnquiryIdAndIsActive(request.getEnquiryId(), ACTIVE)
@@ -159,7 +133,7 @@ public class EnquiryService {
 	}
 
 	private void handleEnquiry(EnquiryRegistration enquiry) {
-		log.debug(generateLog("handleEnquiry", this.getClass().getName()));
+		log.info(generateLog("handleEnquiry", this.getClass().getName()));
 		try {
 			// Generate token
 			String token = UUID.randomUUID().toString();
@@ -172,15 +146,16 @@ public class EnquiryService {
 			// Send email
 			mailService.sendEnquiryLink(enquiry.getEmail(), enquiry.getUserName(), token);
 		} catch (FlickzzDeskException e) {
+			log.error("FlickzzDeskException in handleEnquiry method in EnquiryService: {}", e.getMessage());
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in handleEnquiry method in EnquiryService");
+			log.error("Exception in handleEnquiry method in EnquiryService: {}", e.getMessage());
 		}
 
 	}
 
 	public EnquiryInfoVO verifyEnquiry(String token) {
-		log.debug(generateLog("verifyEnquiry", this.getClass().getName()));
+		log.info(generateLog("verifyEnquiry", this.getClass().getName()));
 		try {
 			EnquiryInfo enquiryInfo = enquiryInfoRepository.findByToken(token).orElseThrow(
 					() -> new FlickzzDeskException(INVALID_TOKEN, getDescription(INVALID_TOKEN.getDescription())));
@@ -198,7 +173,7 @@ public class EnquiryService {
 	}
 
 	public void submitEnquiry(EnquiryRequestVO request) {
-		log.debug(generateLog("submitEnquiry", this.getClass().getName()));
+		log.info(generateLog("submitEnquiry", this.getClass().getName()));
 		try {
 			EnquiryInfo enquiryInfo = enquiryInfoRepository.findByToken(request.getToken()).orElseThrow(
 					() -> new FlickzzDeskException(INVALID_TOKEN, getDescription(INVALID_TOKEN.getDescription())));
@@ -225,7 +200,7 @@ public class EnquiryService {
 	}
 
 	public EnquiryRegistrationVO getEnquiriesByUserEmail(String userEmail) {
-		log.debug(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
+		log.info(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
 		try {
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
 					.findByEmailAndIsActive(userEmail, ACTIVE)
@@ -242,7 +217,7 @@ public class EnquiryService {
 	}
 
 	public EnquiryRegistrationVO getCompanyInfoByUserEmail(String userEmail) {
-		log.debug(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
+		log.info(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
 		try {
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository.findByEmail(userEmail)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,

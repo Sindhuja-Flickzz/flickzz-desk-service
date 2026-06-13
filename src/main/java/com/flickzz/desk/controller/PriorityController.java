@@ -43,52 +43,52 @@ public class PriorityController {
 
 	@PostMapping("create")
 	public ResponseEntity<FlickzzDeskResponse> createPriority(@RequestBody PriorityRequestVO request) throws Exception {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		PriorityMasterVO respVO = priorityService.createPriority(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), PRIORITY), respVO);
 	}
 
 	@GetMapping("/{priorityId}")
 	public ResponseEntity<FlickzzDeskResponse> getPriorityInfo(@PathVariable String priorityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		PriorityMasterVO response = priorityService.getPriorityInfo(priorityId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
 
 	@PostMapping("/update")
 	public ResponseEntity<FlickzzDeskResponse> updatePriority(@RequestBody PriorityRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		PriorityMasterVO response = priorityService.updatePriority(request);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), PRIORITY),
 				response);
 	}
 
 	@DeleteMapping("/delete/{priorityId}")
 	public ResponseEntity<FlickzzDeskResponse> deletePriority(@PathVariable String priorityId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		priorityService.deletePriority(priorityId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PRIORITY));
 	}
 
 	@GetMapping("/list")
 	public ResponseEntity<FlickzzDeskResponse> getPriorityList() {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<PriorityMasterVO> response = priorityService.getPriorityList();
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
 	}
 }

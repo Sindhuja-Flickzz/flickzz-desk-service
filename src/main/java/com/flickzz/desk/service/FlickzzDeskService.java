@@ -71,7 +71,7 @@ public class FlickzzDeskService {
 	private PasswordEncoder passwordEncoder;
 
 	public RegisterLoginResponseVO verifyCode(VerificationRequestVO verificationRequestVO) {
-		log.debug(generateLog("verifyCode", this.getClass().getName()));
+		log.info(generateLog("verifyCode", this.getClass().getName()));
 		try {
 			User user = userRepository.findByUserName(verificationRequestVO.getEmail())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -97,7 +97,7 @@ public class FlickzzDeskService {
 	}
 
 	public RegisterLoginResponseVO userLogin(RegisterLoginRequestVO request) {
-		log.debug(generateLog("userLogin", this.getClass().getName()));
+		log.info(generateLog("userLogin", this.getClass().getName()));
 		try {
 
 			if (request.getEmail() == null || request.getEmail().isEmpty()) {
@@ -154,7 +154,7 @@ public class FlickzzDeskService {
 	}
 
 	public LoginResponseVO authRefresh(CommonRequestVO request) {
-		log.debug(generateLog("authRefresh", this.getClass().getName()));
+		log.info(generateLog("authRefresh", this.getClass().getName()));
 		LoginResponseVO responseVO = new LoginResponseVO();
 		try {
 			Auth auth = refreshTokenService.validateRefreshToken(request.getRefreshToken());
@@ -173,7 +173,7 @@ public class FlickzzDeskService {
 	}
 
 	public void logoutUser(CommonRequestVO request) {
-		log.debug(generateLog("logoutUser", this.getClass().getName()));
+		log.info(generateLog("logoutUser", this.getClass().getName()));
 		try {
 			refreshTokenService.revokeRefreshToken(request.getRefreshToken());
 		} catch (FlickzzDeskException e) {
@@ -185,7 +185,7 @@ public class FlickzzDeskService {
 	}
 
 	public void logoutAllUsers(CommonRequestVO request) {
-		log.debug(generateLog("logoutAllUsers", this.getClass().getName()));
+		log.info(generateLog("logoutAllUsers", this.getClass().getName()));
 		try {
 			String username = request.getUsername();
 			User user = userRepository.findByUserName(username)
@@ -201,7 +201,7 @@ public class FlickzzDeskService {
 	}
 
 	public void resetPassword(RegisterLoginRequestVO request) {
-		log.debug(generateLog("resetPassword", this.getClass().getName()));
+		log.info(generateLog("resetPassword", this.getClass().getName()));
 		try {
 			User user = userRepository.findByUserName(request.getEmail())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
@@ -222,7 +222,7 @@ public class FlickzzDeskService {
 	}
 
 	public List<UserVO> getUserList() {
-		log.debug(generateLog("getUserList", this.getClass().getName()));
+		log.info(generateLog("getUserList", this.getClass().getName()));
 		try {
 			var users = userRepository.findAllByIsActive(ACTIVE);
 			return mapper.usersToUserVO(users);
@@ -235,7 +235,7 @@ public class FlickzzDeskService {
 	}
 
 	public UserVO getUserInfo(String userEmail) {
-		log.debug(generateLog("getUserInfo", this.getClass().getName()));
+		log.info(generateLog("getUserInfo", this.getClass().getName()));
 		try {
 			User user = userRepository.findByUserName(userEmail)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,

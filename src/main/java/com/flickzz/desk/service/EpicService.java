@@ -28,7 +28,7 @@ public class EpicService {
 	private CommonMapper mapper;
 
 	public EpicVO getEpicInfo(String epicId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<Epic> epic = epicRepository.findById(Long.valueOf(epicId));
 			if (!epic.isPresent()) {
@@ -41,7 +41,7 @@ public class EpicService {
 			log.error("Exception in getEpicInfo method in ProjectService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		} finally {
-			log.debug(generateLog(EXIT, this.getClass().getName()));
+			log.info(generateLog(EXIT, this.getClass().getName()));
 		}
 	}
 }

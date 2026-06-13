@@ -53,7 +53,7 @@ public class CommonService {
 	private CommonMapper mapper;
 
 	public CountryMasterVO getCountyInfo(String countryId) {
-		log.debug(generateLog("getCountyInfo", this.getClass().getName()));
+		log.info(generateLog("getCountyInfo", this.getClass().getName()));
 		try {
 			Optional<CountryMaster> countryMaster = countryMasterRepository.findById(Long.valueOf(countryId));
 			if (countryMaster == null) {
@@ -70,7 +70,7 @@ public class CommonService {
 	}
 
 	public List<CountryMasterVO> getCountyList() {
-		log.debug(generateLog("getCountyList", this.getClass().getName()));
+		log.info(generateLog("getCountyList", this.getClass().getName()));
 		try {
 			return countryMasterRepository.findAll().stream().map(mapper::toCountryMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -82,7 +82,7 @@ public class CommonService {
 	}
 
 	public CityMasterVO getCityInfo(String cityId) {
-		log.debug(generateLog("getCityInfo", this.getClass().getName()));
+		log.info(generateLog("getCityInfo", this.getClass().getName()));
 		try {
 			Optional<CityMaster> cityMaster = cityMasterRepository.findById(Long.valueOf(cityId));
 			if (cityMaster == null) {
@@ -98,7 +98,7 @@ public class CommonService {
 	}
 
 	public List<CityMasterVO> getCityListOfCountry(String countryId) {
-		log.debug(generateLog("getCityListOfCountry", this.getClass().getName()));
+		log.info(generateLog("getCityListOfCountry", this.getClass().getName()));
 		try {
 			return cityMasterRepository.findByCountryCountryIdAndIsActive(Long.valueOf(countryId), ACTIVE).stream()
 					.map(mapper::toCityMasterVO).toList();
@@ -111,7 +111,7 @@ public class CommonService {
 	}
 
 	public List<CityMasterVO> getCityList() {
-		log.debug(generateLog("getCityList", this.getClass().getName()));
+		log.info(generateLog("getCityList", this.getClass().getName()));
 		try {
 			return cityMasterRepository.findAll().stream().map(mapper::toCityMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -123,7 +123,7 @@ public class CommonService {
 	}
 
 	public LanguageMasterVO getLanguageInfo(String languageId) {
-		log.debug(generateLog("getLanguageInfo", this.getClass().getName()));
+		log.info(generateLog("getLanguageInfo", this.getClass().getName()));
 		try {
 			return mapper.toLanguageMasterVO(languageMasterRepository.findById(Long.valueOf(languageId)).get());
 		} catch (FlickzzDeskException e) {
@@ -135,7 +135,7 @@ public class CommonService {
 	}
 
 	public List<LanguageMasterVO> getLanguageList() {
-		log.debug(generateLog("getLanguageList", this.getClass().getName()));
+		log.info(generateLog("getLanguageList", this.getClass().getName()));
 		try {
 			return languageMasterRepository.findAll().stream().map(mapper::toLanguageMasterVO).toList();
 		} catch (FlickzzDeskException e) {
@@ -147,7 +147,7 @@ public class CommonService {
 	}
 
 	public String getCurrentTimeOfTimezone(String timezone) {
-		log.debug(generateLog("getCurrentTimeOfTimezone", this.getClass().getName()));
+		log.info(generateLog("getCurrentTimeOfTimezone", this.getClass().getName()));
 		try {
 			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -161,7 +161,7 @@ public class CommonService {
 	}
 
 	public List<StateMasterVO> getStateListOfCountry(String countryId) {
-		log.debug(generateLog("getStateListOfCountry", this.getClass().getName()));
+		log.info(generateLog("getStateListOfCountry", this.getClass().getName()));
 		try {
 			return stateMasterRepository.findByCountry_CountryIdAndIsActive(Long.valueOf(countryId), ACTIVE).stream()
 					.map(state -> mapper.toStateMasterVO(state)).distinct().toList();
@@ -174,7 +174,7 @@ public class CommonService {
 	}
 
 	public List<CityMasterVO> getCityListOfState(String stateId) {
-		log.debug(generateLog("getCityListOfState", this.getClass().getName()));
+		log.info(generateLog("getCityListOfState", this.getClass().getName()));
 		try {
 			return cityMasterRepository.findByStateStateIdAndIsActive(Long.valueOf(stateId), ACTIVE).stream()
 					.map(city -> mapper.toCityMasterVO(city)).distinct().toList();
@@ -187,7 +187,7 @@ public class CommonService {
 	}
 
 	public List<StateMasterVO> getAllStateList() {
-		log.debug(generateLog("getAllStateList", this.getClass().getName()));
+		log.info(generateLog("getAllStateList", this.getClass().getName()));
 		try {
 			return stateMasterRepository.findAllByIsActive(ACTIVE).stream().map(state -> mapper.toStateMasterVO(state))
 					.distinct().toList();

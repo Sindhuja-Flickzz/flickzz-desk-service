@@ -26,11 +26,11 @@ public class EpicController {
 
 	@GetMapping("/{epicId}")
 	public ResponseEntity<FlickzzDeskResponse> getProjectInfo(@PathVariable String epicId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		EpicVO response = epicService.getEpicInfo(epicId);
 
-		log.debug(generateLog(EXIT, this.getClass().getName()));
+		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), EPIC), response);
 	}
 }

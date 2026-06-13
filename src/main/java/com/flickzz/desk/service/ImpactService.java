@@ -45,7 +45,7 @@ public class ImpactService {
 	CommonMapper mapper;
 
 	public ImpactMasterVO createImpact(ImpactRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (request == null || request.getImpactCode() == null) {
 				throw new FlickzzDeskException(INVALID_FIELD,
@@ -79,7 +79,7 @@ public class ImpactService {
 	}
 
 	public ImpactMasterVO getImpactInfo(String impactId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> impactMaster = impactMasterRepository.findById(Long.valueOf(impactId));
 			if (impactMaster == null) {
@@ -97,7 +97,7 @@ public class ImpactService {
 	}
 
 	public ImpactMasterVO updateImpact(ImpactRequestVO request) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> existing = impactMasterRepository.findById(request.getImpactId());
 			if (existing == null) {
@@ -122,7 +122,7 @@ public class ImpactService {
 	}
 
 	public void deleteImpact(String impactId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> existing = impactMasterRepository.findById(Long.valueOf(impactId));
 			if (existing == null) {
@@ -138,7 +138,7 @@ public class ImpactService {
 	}
 
 	public List<ImpactMasterVO> getImpactList(String orgId) {
-		log.debug(generateLog(ENTRY, this.getClass().getName()));
+		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (orgId == null || orgId.isEmpty() || Integer.valueOf(orgId) == 0) {
 				return impactMasterRepository.findAllByIsActive(ACTIVE).stream()
