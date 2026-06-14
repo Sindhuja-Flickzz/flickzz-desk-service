@@ -2,27 +2,24 @@ package com.flickzz.desk.service;
 
 import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 
-import java.io.*;
 import java.util.concurrent.*;
 
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
-import org.springframework.core.io.*;
-import org.springframework.mail.*;
-import org.springframework.mail.javamail.*;
 import org.springframework.scheduling.annotation.*;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.*;
 import org.springframework.util.*;
 
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
+import com.resend.*;
+import com.resend.core.exception.*;
+import com.resend.services.emails.model.*;
 
 @Service
 public class MailService {
 
 	private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
-	private final JavaMailSender mailSender;
+	private final Resend resend;
 
 	@Value("${app.mail.from}")
 	private String fromAddress;
@@ -30,8 +27,8 @@ public class MailService {
 	@Value("${application.baseUrl}")
 	private String baseUrl;
 
-	public MailService(JavaMailSender mailSender) {
-		this.mailSender = mailSender;
+	public MailService(Resend resend) {
+		this.resend = resend;
 	}
 
 	@Async
@@ -79,65 +76,49 @@ public class MailService {
 	private void sendHtmlEmail(String toEmail, String subject, String body) {
 		log.info(generateLog("sendHtmlEmail", this.getClass().getName()));
 		try {
-			MimeMessage mimeMessage = mailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-			helper.setFrom(new InternetAddress(this.fromAddress, "Flickzz Desk"));
-			helper.setTo(toEmail);
-			helper.setSubject(subject);
-			helper.setText(body, true); // true = HTML
-			log.info("About to send HTML email to " + toEmail);
-			log.info("Sending email from {}", this.fromAddress);
-			mailSender.send(mimeMessage);
-			log.info("HTML email sent successfully to " + toEmail);
-		} catch (MessagingException e) {
-			log.error("Error while sending HTML email", e);
-		} catch (UnsupportedEncodingException e) {
-			log.error("Error while sending HTML email UnsupportedEncodingException", e);
-		}
+			CreateEmailOptions options = CreateEmailOptions.builder().from(this.fromAddress).to(toEmail)
+					.subject(subject).html(body).build();
 
+			log.info("About to send HTML email to {}", toEmail);
+			log.info("Sending email from {}", this.fromAddress);
+			CreateEmailResponse response = resend.emails().send(options);
+			log.info("HTML email sent successfully to {}. Email ID: {}", toEmail, response.getId());
+		} catch (ResendException e) {
+			log.error("Error while sending HTML email via Resend API", e);
+		}
 	}
 
 	private void sendSimpleEmail(String toEmail, String subject, String text) {
 		try {
-			SimpleMailMessage message = new SimpleMailMessage();
-			message.setFrom(this.fromAddress);
-			message.setTo(toEmail);
-			message.setSubject(subject);
-			message.setText(text);
+			CreateEmailOptions options = CreateEmailOptions.builder().from(this.fromAddress).to(toEmail)
+					.subject(subject).text(text).build();
+
 			log.info("About to send simple email to {}", toEmail);
-			mailSender.send(message);
-			log.info("Mail Sent Successfully");
-		} catch (Exception e) {
-			log.error("Error while sending mail", e);
+			CreateEmailResponse response = resend.emails().send(options);
+			log.info("Mail sent successfully to {}. Email ID: {}", toEmail, response.getId());
+		} catch (ResendException e) {
+			log.error("Error while sending mail via Resend API", e);
 		}
 	}
 
 	// Send mail with attachment
+	// Note: Resend API v3 has limited attachment support. Consider using Resend's
+	// attachment endpoint
+	// or implementing multipart form data upload separately.
 	@Async
 	public CompletableFuture<String> sendMailWithAttachment(String toEmail, String subject, String text) {
-
-		MimeMessage mimeMessage = mailSender.createMimeMessage();
-		MimeMessageHelper helper;
-
 		try {
+			CreateEmailOptions options = CreateEmailOptions.builder().from(this.fromAddress).to(toEmail)
+					.subject(subject).text(text).build();
 
-			helper = new MimeMessageHelper(mimeMessage, true);
-
-			helper.setFrom(this.fromAddress);
-			helper.setTo(toEmail);
-			helper.setText(text);
-			helper.setSubject(subject);
-
-			FileSystemResource file = new FileSystemResource(new File(""));
-
-			helper.addAttachment(file.getFilename(), file);
-
-			mailSender.send(mimeMessage);
+			log.info("Sending email with attachment via Resend to {}", toEmail);
+			CreateEmailResponse response = resend.emails().send(options);
+			log.info("Email sent successfully. Email ID: {}", response.getId());
 
 			return CompletableFuture.completedFuture("Mail Sent Successfully");
 
-		} catch (MessagingException e) {
-
+		} catch (ResendException e) {
+			log.error("Error while sending mail via Resend API", e);
 			return CompletableFuture.failedFuture(new RuntimeException("Error while sending mail", e));
 		}
 	}
