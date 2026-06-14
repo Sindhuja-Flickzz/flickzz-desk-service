@@ -1,23 +1,21 @@
 package com.flickzz.desk.service;
 
-import java.io.File;
-import java.util.concurrent.CompletableFuture;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.scheduling.annotation.Async;
+import java.io.*;
+import java.util.concurrent.*;
+
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.core.io.*;
+import org.springframework.mail.*;
+import org.springframework.mail.javamail.*;
+import org.springframework.scheduling.annotation.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import org.springframework.util.*;
 
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
 
 @Service
 public class MailService {
@@ -82,16 +80,19 @@ public class MailService {
 		log.info(generateLog("sendHtmlEmail", this.getClass().getName()));
 		try {
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
-			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true);
-			helper.setFrom(this.fromAddress);
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			helper.setFrom(new InternetAddress(this.fromAddress, "Flickzz Desk"));
 			helper.setTo(toEmail);
 			helper.setSubject(subject);
 			helper.setText(body, true); // true = HTML
 			log.info("About to send HTML email to " + toEmail);
+			log.info("Sending email from {}", this.fromAddress);
 			mailSender.send(mimeMessage);
 			log.info("HTML email sent successfully to " + toEmail);
 		} catch (MessagingException e) {
 			log.error("Error while sending HTML email", e);
+		} catch (UnsupportedEncodingException e) {
+			log.error("Error while sending HTML email UnsupportedEncodingException", e);
 		}
 
 	}
