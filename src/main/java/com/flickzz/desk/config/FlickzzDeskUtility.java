@@ -1,13 +1,13 @@
 package com.flickzz.desk.config;
 
-import java.security.SecureRandom;
+import java.security.*;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.*;
+import org.springframework.security.core.context.*;
 
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.security.CustomUserDetails;
-import com.flickzz.desk.vo.RegisterLoginResponseVO;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.security.*;
+import com.flickzz.desk.vo.*;
 
 public class FlickzzDeskUtility {
 
@@ -51,12 +51,13 @@ public class FlickzzDeskUtility {
 	}
 
 	public static RegisterLoginResponseVO generateLoginResponse(String jwtToken, String refreshToken,
-			Boolean isEnquiryUser, Boolean mfaEnabled, CompanyMaster company, String userRole, String qrCodeImageUri) {
+			Boolean isEnquiryUser, Boolean mfaEnabled, CompanyMaster company, String userRole, String qrCodeImageUri,
+			Long userId) {
 		return RegisterLoginResponseVO.builder().accessToken(jwtToken != null ? jwtToken : "")
 				.refreshToken(refreshToken != null ? refreshToken : "").isEnquiryUser(isEnquiryUser)
 				.mfaEnabled(mfaEnabled).userOrgId(company != null ? company.getCompanyId() : 0)
 				.userOrgName(company != null ? company.getCompanyName() : "").userRole(userRole != null ? userRole : "")
-				.secretImageUri(qrCodeImageUri).build();
+				.secretImageUri(qrCodeImageUri).userId(userId).build();
 	}
 
 }

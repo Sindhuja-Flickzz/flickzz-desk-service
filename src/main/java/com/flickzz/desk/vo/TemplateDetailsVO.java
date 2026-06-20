@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -22,6 +19,8 @@ public class TemplateDetailsVO implements Serializable {
 	private CompanyMasterVO company;
 	private List<TemplateDetailFieldVO> templateDetails;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

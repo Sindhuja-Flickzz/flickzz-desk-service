@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.math.BigDecimal;
+import java.io.*;
+import java.math.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -21,6 +18,8 @@ public class ImpactRequestVO implements Serializable {
 	private BigDecimal slaMultiplier;
 	private Long orgId;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

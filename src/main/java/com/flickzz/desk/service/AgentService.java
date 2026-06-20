@@ -136,8 +136,8 @@ public class AgentService {
 			User newUser = User.builder().firstName(request.getAgentName()).email(request.getMailId())
 					.userName(request.getMailId()).email(request.getMailId()).registerId(request.getAccessId())
 					.phoneCode(request.getPhoneCode()).phoneNumber(request.getPhoneNumber()).country(country).city(city)
-					.language(language).createdBy(request.getCreatedBy()).password(passwordEncoder.encode(rawPassword))
-					.role(userRole).mfaEnabled(false).build();
+					.language(language).createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin())
+					.password(passwordEncoder.encode(rawPassword)).role(userRole).mfaEnabled(false).build();
 			userRepository.save(newUser);
 
 			LoginMaster loginMaster = mapper.userToLoginMaster(newUser);
@@ -145,7 +145,8 @@ public class AgentService {
 
 			AgentMaster agent = AgentMaster.builder().agentName(request.getAgentName()).mailId(request.getMailId())
 					.accessId(request.getAccessId()).organization(company.get()).calendarMaster(calendar.get())
-					.createdBy(request.getCreatedBy()).user(newUser).build();
+					.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).user(newUser)
+					.build();
 			AgentMaster agentMaster = agentMasterRepository.save(agent);
 
 			enquiryRegistration.ifPresent(enquiry -> {
@@ -157,7 +158,8 @@ public class AgentService {
 				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
 				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agentMaster).skill(skill.get())
 						.experienceYears(skillInfo.getExperienceYears())
-						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy()).build();
+						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy())
+						.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 
@@ -244,6 +246,7 @@ public class AgentService {
 			agent.setAgentName(request.getAgentName());
 			agent.setCalendarMaster(calendar.get());
 			agent.setUpdatedBy(request.getUpdatedBy());
+			agent.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
 			agentMasterRepository.save(agent);
 
 			User user = existing.get().getUser();
@@ -253,13 +256,15 @@ public class AgentService {
 			user.setPhoneNumber(request.getPhoneNumber());
 			user.setLanguage(language);
 			user.setUpdatedBy(request.getUpdatedBy());
+			user.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
 			userRepository.save(user);
 
 			request.getSkills().stream().forEach(skillInfo -> {
 				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(existing.get()).skill(skill.get())
+				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agent).skill(skill.get())
 						.experienceYears(skillInfo.getExperienceYears())
-						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy()).build();
+						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy())
+						.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 				agentSkillsMappingRepository.save(agentSkill);
 			});
 

@@ -19,6 +19,8 @@ public class ProjectRequestVO implements Serializable {
 	private List<EpicVO> epics;
 	private boolean isSave;
 	private boolean isSubmit;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

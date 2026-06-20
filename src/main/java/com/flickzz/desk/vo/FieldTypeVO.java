@@ -15,6 +15,8 @@ public class FieldTypeVO implements Serializable {
 	private String code;
 	private String label;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

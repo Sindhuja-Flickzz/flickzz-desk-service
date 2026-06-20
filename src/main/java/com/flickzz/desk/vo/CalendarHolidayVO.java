@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.Date;
+import java.io.*;
+import java.util.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -15,8 +12,10 @@ import lombok.NoArgsConstructor;
 public class CalendarHolidayVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private Date holidayDate;
-    private String description;
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
+	private String description;
+	private Boolean isActive;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

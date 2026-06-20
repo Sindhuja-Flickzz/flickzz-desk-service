@@ -1,11 +1,8 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
+import java.io.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -18,8 +15,10 @@ public class ProjectLeadAssignmentVO implements Serializable {
 	private CompanyMasterVO company;
 	private UserStoryVO story;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 	// For request purpose
 	private Long companyId;
 }

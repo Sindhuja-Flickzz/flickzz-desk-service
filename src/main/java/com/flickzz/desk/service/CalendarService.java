@@ -129,13 +129,17 @@ public class CalendarService {
 			existing.setWorkTo(request.getWorkTo());
 			existing.setTimezone(request.getTimezone());
 			existing.setUpdatedBy(request.getUpdatedBy());
+			existing.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
 
 			existing.getHolidays().clear();
 			if (request.getHolidays() != null) {
 				existing.getHolidays()
 						.addAll(request.getHolidays().stream()
 								.map(h -> CalendarHoliday.builder().holidayDate(h.getHolidayDate())
-										.description(h.getDescription()).calendarMaster(existing).build())
+										.description(h.getDescription()).calendarMaster(existing)
+										.createdBy(request.getCreatedBy()).updatedBy(request.getUpdatedBy())
+										.isCreatorAdmin(request.getIsCreatedByAdmin())
+										.isUpdaterAdmin(request.getIsUpdatedByAdmin()).build())
 								.toList());
 			}
 
@@ -143,7 +147,8 @@ public class CalendarService {
 			if (request.getWorkingDays() != null) {
 				existing.getWorkdays().addAll(request.getWorkingDays().stream().map(workingDay -> {
 					CalendarWorkday workday = CalendarWorkday.builder().workday(workingDay).calendarMaster(existing)
-							.createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
+							.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin())
+							.updatedBy(request.getCreatedBy()).isUpdaterAdmin(request.getIsUpdatedByAdmin()).build();
 					return workday;
 				}).toList());
 			}

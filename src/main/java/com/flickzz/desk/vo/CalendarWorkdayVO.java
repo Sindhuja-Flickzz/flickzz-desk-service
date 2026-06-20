@@ -1,21 +1,20 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
+import java.io.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarWorkdayVO implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private Long workdayId;
-    private String workday;   // e.g., "Monday"
-    private Boolean isActive;
-    private String createdBy;
-    private String updatedBy;
+	private static final long serialVersionUID = 1L;
+	private Long workdayId;
+	private String workday; // e.g., "Monday"
+	private Boolean isActive;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

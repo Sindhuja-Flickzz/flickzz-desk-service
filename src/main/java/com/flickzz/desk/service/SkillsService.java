@@ -1,33 +1,20 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SKILL_NAME;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.NO_DATA;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.SkillMaster;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.SkillMasterRepository;
-import com.flickzz.desk.vo.SkillMasterVO;
-import com.flickzz.desk.vo.SkillRequestVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class SkillsService {
@@ -69,7 +56,9 @@ public class SkillsService {
 						});
 
 				SkillMaster skillMaster = SkillMaster.builder().skillName(skill.getSkillName()).company(company)
-						.createdBy(skill.getCreatedBy()).build();
+						.createdBy(skill.getCreatedBy())
+						.isCreatorAdmin(skill.getIsCreatedByAdmin() != null ? skill.getIsCreatedByAdmin() : false)
+						.build();
 				skillMasterVOs.add(mapper.toSkillMasterVo(skillMasterRepository.save(skillMaster)));
 
 			});

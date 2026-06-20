@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.io.*;
+import java.time.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -23,8 +20,10 @@ public class CountryMasterVO implements Serializable {
 	private String currencyName;
 	private String timezone;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 }

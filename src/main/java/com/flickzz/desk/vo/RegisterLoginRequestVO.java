@@ -1,11 +1,8 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
+import java.io.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -26,6 +23,7 @@ public class RegisterLoginRequestVO implements Serializable {
 	private Long cityId;
 	private Long languageId;
 	private Boolean mfaEnabled;
-	private String createdBy;
+	private Long createdBy;
+	private Boolean isCreatedByAdmin;
 	private String oldPassword;
 }

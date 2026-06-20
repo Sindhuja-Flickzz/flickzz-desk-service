@@ -1,12 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -22,8 +19,10 @@ public class AgentRequestVO implements Serializable {
 	private String phoneCode;
 	private String phoneNumber;
 	private Long orgId;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 	private List<AgentSkillRequestVO> skills;
 	private Long calendarId;
 	private Long countryId;

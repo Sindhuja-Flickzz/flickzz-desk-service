@@ -85,8 +85,9 @@ public class ProjectService {
 			Map<String, UserStory> storyMap = new HashMap<>();
 
 			for (EpicVO epicVO : request.getEpics()) {
-				Epic epic = mapper.toEpic(epicVO, project, defaultProgressStatus, maxProgressStatus,
-						request.getCreatedBy());
+				Epic epic = mapper.toEpic(epicVO, project, defaultProgressStatus, maxProgressStatus);
+				epic.setCreatedBy(request.getCreatedBy());
+				epic.setIsCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false);
 
 				List<UserStory> userStories = new ArrayList<>();
 				int storySeq = 1;
@@ -98,7 +99,10 @@ public class ProjectService {
 							.storyCode(usVO.getMappingStoryId()).storySequence(storySeq++)
 							.progressStatus(defaultProgressStatus).maxProgressStatus(maxProgressStatus)
 							.plannedStartDate(usVO.getPlannedStartDate()).plannedEndDate(usVO.getPlannedEndDate())
-							.epic(epic).createdBy(request.getCreatedBy()).build();
+							.epic(epic).createdBy(request.getCreatedBy())
+							.isCreatorAdmin(
+									request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+							.build();
 
 					List<ProjectLeadAssignment> leads = new ArrayList<>();
 					for (ProjectLeadAssignmentVO leadVO : usVO.getLeads()) {
@@ -110,7 +114,8 @@ public class ProjectService {
 									getDescription(DOES_NOT_EXIST.getDescription(), LEAD_COMPANY) + companyId);
 						}
 						ProjectLeadAssignment pla = ProjectLeadAssignment.builder().company(leadCompany.get())
-								.userStory(userStory).createdBy(request.getCreatedBy()).build();
+								.userStory(userStory).createdBy(request.getCreatedBy())
+								.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 						leads.add(pla);
 					}
 					userStory.setProjectLeadAssignments(leads);
@@ -125,7 +130,11 @@ public class ProjectService {
 									.progressStatus(defaultProgressStatus).maxProgressStatus(maxProgressStatus)
 									.plannedStartDate(taskVO.getPlannedStartDate())
 									.plannedEndDate(taskVO.getPlannedEndDate()).userStory(userStory)
-									.createdBy(request.getCreatedBy()).build();
+									.createdBy(request.getCreatedBy())
+									.isCreatorAdmin(
+											request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
+													: false)
+									.build();
 							tasks.add(task);
 						}
 					}
@@ -286,8 +295,11 @@ public class ProjectService {
 
 			project.getEpics().clear();
 			for (EpicVO epicVO : request.getEpics()) {
-				Epic epic = mapper.toEpic(epicVO, project, defaultProgressStatus, maxProgressStatus,
-						request.getCreatedBy());
+				Epic epic = mapper.toEpic(epicVO, project, defaultProgressStatus, maxProgressStatus);
+				epic.setCreatedBy(request.getCreatedBy());
+				epic.setIsCreatorAdmin(request.getIsCreatedByAdmin() != null ? epicVO.getIsCreatedByAdmin() : false);
+				epic.setUpdatedBy(request.getUpdatedBy());
+				epic.setIsUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? epicVO.getIsUpdatedByAdmin() : false);
 
 				List<UserStory> userStories = new ArrayList<>();
 				int storySeq = 1;
@@ -299,7 +311,13 @@ public class ProjectService {
 							.storyCode(usVO.getMappingStoryId()).storySequence(storySeq++)
 							.progressStatus(defaultProgressStatus).maxProgressStatus(maxProgressStatus)
 							.plannedStartDate(usVO.getPlannedStartDate()).plannedEndDate(usVO.getPlannedEndDate())
-							.epic(epic).createdBy(request.getCreatedBy()).build();
+							.epic(epic).createdBy(request.getCreatedBy())
+							.isCreatorAdmin(
+									request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+							.updatedBy(request.getUpdatedBy())
+							.isUpdaterAdmin(
+									request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
+							.build();
 
 					List<ProjectLeadAssignment> leads = new ArrayList<>();
 					for (ProjectLeadAssignmentVO leadVO : usVO.getLeads()) {
@@ -311,7 +329,13 @@ public class ProjectService {
 									getDescription(DOES_NOT_EXIST.getDescription(), LEAD_COMPANY) + companyId);
 						}
 						ProjectLeadAssignment pla = ProjectLeadAssignment.builder().company(leadCompany.get())
-								.userStory(userStory).createdBy(request.getCreatedBy()).build();
+								.userStory(userStory).createdBy(request.getCreatedBy())
+								.isCreatorAdmin(
+										request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+								.updatedBy(request.getUpdatedBy())
+								.isUpdaterAdmin(
+										request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
+								.build();
 						leads.add(pla);
 					}
 					userStory.setProjectLeadAssignments(leads);
@@ -326,7 +350,15 @@ public class ProjectService {
 									.progressStatus(defaultProgressStatus).maxProgressStatus(maxProgressStatus)
 									.plannedStartDate(taskVO.getPlannedStartDate())
 									.plannedEndDate(taskVO.getPlannedEndDate()).userStory(userStory)
-									.createdBy(request.getCreatedBy()).build();
+									.createdBy(request.getCreatedBy())
+									.isCreatorAdmin(
+											request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
+													: false)
+									.updatedBy(request.getUpdatedBy())
+									.isUpdaterAdmin(
+											request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin()
+													: false)
+									.build();
 							tasks.add(task);
 						}
 					}

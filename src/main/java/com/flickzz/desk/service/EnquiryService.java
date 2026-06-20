@@ -1,22 +1,47 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.*;
-import static com.flickzz.desk.config.FlickzzDeskUtility.*;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
-import java.time.*;
-import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
-import org.slf4j.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.security.crypto.password.*;
-import org.springframework.stereotype.*;
-
-import com.flickzz.desk.exception.*;
-import com.flickzz.desk.mapper.*;
-import com.flickzz.desk.model.*;
-import com.flickzz.desk.repo.*;
-import com.flickzz.desk.vo.*;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY_NAME;
+import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_ADMIN;
+import static com.flickzz.desk.config.FlickzzDeskConstants.USERNAME_OR_EMAIL;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateUniversalId;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.EXPIRED_LINK;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_PASSWORD;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_TOKEN;
+import com.flickzz.desk.exception.FlickzzDeskException;
+import com.flickzz.desk.mapper.CommonMapper;
+import com.flickzz.desk.model.CityMaster;
+import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.model.CountryMaster;
+import com.flickzz.desk.model.EnquiryInfo;
+import com.flickzz.desk.model.EnquiryRegistration;
+import com.flickzz.desk.model.StateMaster;
+import com.flickzz.desk.repo.CityMasterRepository;
+import com.flickzz.desk.repo.CompanyMasterRepository;
+import com.flickzz.desk.repo.CountryMasterRepository;
+import com.flickzz.desk.repo.EnquiryInfoRepository;
+import com.flickzz.desk.repo.EnquiryRegistrationRepository;
+import com.flickzz.desk.repo.StateMasterRepository;
+import com.flickzz.desk.vo.EnquiryInfoVO;
+import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
+import com.flickzz.desk.vo.EnquiryRegistrationVO;
+import com.flickzz.desk.vo.EnquiryRequestVO;
 
 @Service
 public class EnquiryService {
@@ -76,12 +101,16 @@ public class EnquiryService {
 
 			CompanyMaster company = CompanyMaster.builder().companyName(request.getOrgName()).uid(universalId)
 					.employeeSize(request.getEmployeeSize()).registeredNumber(request.getPhoneNumber())
-					.phoneCode(request.getPhoneCode()).mail(request.getEmail()).country(country).isActive(true).build();
+					.phoneCode(request.getPhoneCode()).mail(request.getEmail()).country(country).isActive(true)
+					.isCreatorAdmin(true).createdBy(0L).build();
 			companyMasterRepository.save(company);
 
 			EnquiryRegistration enquiry = mapper.enquiryRegisterRequestToEnquiryRegistration(request, country,
 					ROLE_ADMIN, company);
 			enquiryRegistrationRepository.save(enquiry);
+
+			company.setCreatedBy(enquiry.getEnquiryId());
+			companyMasterRepository.save(company);
 
 			handleEnquiry(enquiry);
 		} catch (FlickzzDeskException e) {

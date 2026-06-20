@@ -1,13 +1,10 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
+import java.io.*;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -22,6 +19,7 @@ public class RegisterLoginResponseVO implements Serializable {
 	private String userRole;
 	private boolean isEnquiryUser;
 	private Long userOrgId;
+	private Long userId;
 	private String userOrgName;
 	private String secretImageUri;
 }

@@ -1,37 +1,20 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CALENDAR_CODE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT_NAME;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CalendarMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.PlantMaster;
-import com.flickzz.desk.repo.CalendarMasterRepository;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.CountryMasterRepository;
-import com.flickzz.desk.repo.PlantMasterRepository;
-import com.flickzz.desk.vo.PlantMasterRequestVO;
-import com.flickzz.desk.vo.PlantMasterVO;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class PlantService {
@@ -84,7 +67,8 @@ public class PlantService {
 					});
 
 			PlantMaster plant = PlantMaster.builder().plantName(request.getPlantName()).region(countryMaster.get())
-					.company(company).calendar(calendarMaster.get()).createdBy(request.getCreatedBy()).build();
+					.company(company).calendar(calendarMaster.get()).createdBy(request.getCreatedBy())
+					.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 			return mapper.toPlantMasterVO(plantMasterRepository.save(plant));
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -136,6 +120,7 @@ public class PlantService {
 			entity.setRegion(countryMaster.get());
 			entity.setCalendar(calendarMaster.get());
 			entity.setUpdatedBy(request.getUpdatedBy());
+			entity.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
 			return mapper.toPlantMasterVO(plantMasterRepository.save(existing.get()));
 		} catch (FlickzzDeskException e) {
 			throw e;
