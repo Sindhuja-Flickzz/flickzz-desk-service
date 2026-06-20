@@ -1,45 +1,24 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EMAIL;
-import static com.flickzz.desk.config.FlickzzDeskConstants.FD_USER;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PASSWORD;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLoginResponse;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INCORRECT_PASSWORD;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_TEXT;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.TFA_ERROR;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
+import java.util.*;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import org.slf4j.*;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.security.core.*;
+import org.springframework.security.crypto.password.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.exception.FlickzzDeskException;
-import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.AgentMaster;
-import com.flickzz.desk.model.Auth;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.User;
-import com.flickzz.desk.repo.AgentMasterRepository;
-import com.flickzz.desk.repo.EnquiryRegistrationRepository;
-import com.flickzz.desk.repo.UserRepository;
-import com.flickzz.desk.security.JwtUtil;
-import com.flickzz.desk.security.TwoFactorAuthenticationService;
-import com.flickzz.desk.vo.CommonRequestVO;
-import com.flickzz.desk.vo.LoginResponseVO;
-import com.flickzz.desk.vo.RegisterLoginRequestVO;
-import com.flickzz.desk.vo.RegisterLoginResponseVO;
-import com.flickzz.desk.vo.UserVO;
-import com.flickzz.desk.vo.VerificationRequestVO;
-import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import com.flickzz.desk.exception.*;
+import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.security.*;
+import com.flickzz.desk.vo.*;
+import com.warrenstrange.googleauth.*;
 
 @Service
 public class FlickzzDeskService {
@@ -87,7 +66,7 @@ public class FlickzzDeskService {
 			AgentMaster agent = agentMasterRepository.findByUser(user);
 			userRepository.save(user);
 			return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
-					agent != null ? agent.getOrganization() : null, user.getRole(), null);
+					agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
@@ -121,7 +100,8 @@ public class FlickzzDeskService {
 				var jwtToken = jwtUtil.generateToken(enquiryRegistration.getUserName());
 				var refreshToken = refreshTokenService.createRefreshToken(enquiryRegistration, false).getToken();
 				return generateLoginResponse(jwtToken, refreshToken, Boolean.TRUE, Boolean.TRUE,
-						enquiryRegistration.getCompany(), enquiryRegistration.getUserRole(), null);
+						enquiryRegistration.getCompany(), enquiryRegistration.getUserRole(), null,
+						enquiryRegistration.getEnquiryId());
 			}
 
 			var user = userRepository.findByUserNameAndIsActive(request.getEmail(), ACTIVE).orElseThrow(
@@ -136,7 +116,7 @@ public class FlickzzDeskService {
 				user.setSecret(key.getKey());
 				userRepository.save(user);
 				return generateLoginResponse(null, null, Boolean.FALSE, user.isMfaEnabled(), null, user.getRole(),
-						tfaService.generateQrCodeImageUri(key, user.getUserName()));
+						tfaService.generateQrCodeImageUri(key, user.getUserName()), user.getUserId());
 			}
 
 			AgentMaster agent = agentMasterRepository.findByUser(user);
@@ -144,7 +124,7 @@ public class FlickzzDeskService {
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
 			return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
-					agent != null ? agent.getOrganization() : null, user.getRole(), null);
+					agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
 		} catch (FlickzzDeskException | AuthenticationException e) {
 			throw e;
 		} catch (Exception e) {

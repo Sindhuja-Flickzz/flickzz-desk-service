@@ -24,6 +24,8 @@ public class SubTaskVO implements Serializable {
 	private Date actualStartDate;
 	private Date actualEndDate;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

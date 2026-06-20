@@ -1,29 +1,12 @@
 package com.flickzz.desk.model;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.*;
+import java.util.*;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.SequenceGenerator;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Data
@@ -85,17 +68,24 @@ public class Ticket {
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_TICKET_COMPANY"), nullable = false)
 	private CompanyMaster company;
 
-	@Column(name = "CREATED_BY", length = 100)
-	private String createdBy;
+	@Column(name = "CREATED_BY", nullable = false)
+	private Long createdBy;
+
+	@Column(name = "UPDATED_BY")
+	private Long updatedBy;
+
+	@Column(name = "IS_CREATOR_ADMIN", nullable = false)
+	private Boolean isCreatorAdmin;
+
+	@Builder.Default
+	@Column(name = "IS_UPDATER_ADMIN")
+	private Boolean isUpdaterAdmin = false;
 
 	@Column(name = "CREATED_AT")
-	private LocalDateTime createdAt = LocalDateTime.now();
-
-	@Column(name = "UPDATED_BY", length = 100)
-	private String updatedBy;
+	private LocalDateTime createdAt;
 
 	@Column(name = "UPDATED_AT")
-	private LocalDateTime updatedAt = LocalDateTime.now();
+	private LocalDateTime updatedAt;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

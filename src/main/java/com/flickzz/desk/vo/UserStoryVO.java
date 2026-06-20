@@ -31,8 +31,10 @@ public class UserStoryVO implements Serializable {
 	private PriorityMasterVO priorityId;
 	private Integer storyPoints;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 
 	// For request purpose
 	private String mappingStoryId;

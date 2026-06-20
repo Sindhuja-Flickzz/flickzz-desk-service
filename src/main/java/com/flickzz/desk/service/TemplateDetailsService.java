@@ -94,7 +94,11 @@ public class TemplateDetailsService {
 			// Create template entity
 			TemplateDetails entity = TemplateDetails.builder().templateName(request.getTemplateName())
 					.workItem(workItemOpt.get()).company(companyOpt.get()).isActive(true)
-					.createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
+					.createdBy(request.getCreatedBy())
+					.isCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+					.updatedBy(request.getCreatedBy())
+					.isUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
+					.build();
 
 			TemplateDetails savedEntity = templateDetailsRepository.save(entity);
 
@@ -112,7 +116,13 @@ public class TemplateDetailsService {
 					TemplateDetailField field = TemplateDetailField.builder().template(savedEntity)
 							.fieldName(fieldDetail.getFieldName()).fieldType(fieldTypeOpt.get())
 							.mandatory(Boolean.TRUE.equals(fieldDetail.getMandatory())).fieldSequence(fieldSequence++)
-							.isActive(true).createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
+							.isActive(true).createdBy(request.getCreatedBy())
+							.isCreatorAdmin(
+									request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+							.updatedBy(request.getCreatedBy())
+							.isUpdaterAdmin(
+									request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
+							.build();
 
 					TemplateDetailField savedField = templateDetailFieldRepository.save(field);
 
@@ -124,7 +134,14 @@ public class TemplateDetailsService {
 									.builder().field(savedField).label(option.getLabel()).value(option.getValue())
 									.defaultSelected(Boolean.TRUE.equals(option.getDefaultSelected()))
 									.optionSequence(optionSequence++).isActive(true).createdBy(request.getCreatedBy())
-									.updatedBy(request.getCreatedBy()).build();
+									.isCreatorAdmin(
+											request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
+													: false)
+									.updatedBy(request.getCreatedBy())
+									.isUpdaterAdmin(
+											request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin()
+													: false)
+									.build();
 
 							templateFieldOptionRepository.save(fieldOption);
 						}
@@ -171,9 +188,8 @@ public class TemplateDetailsService {
 			if (request.getTemplateName() != null) {
 				entity.setTemplateName(request.getTemplateName());
 			}
-			if (request.getUpdatedBy() != null) {
-				entity.setUpdatedBy(request.getUpdatedBy());
-			}
+			entity.setUpdatedBy(request.getUpdatedBy());
+			entity.setIsUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false);
 
 			TemplateDetails updatedEntity = templateDetailsRepository.save(entity);
 
@@ -201,7 +217,13 @@ public class TemplateDetailsService {
 					TemplateDetailField field = TemplateDetailField.builder().template(updatedEntity)
 							.fieldName(fieldDetail.getFieldName()).fieldType(fieldTypeOpt.get())
 							.mandatory(Boolean.TRUE.equals(fieldDetail.getMandatory())).fieldSequence(fieldSequence++)
-							.isActive(true).createdBy(request.getUpdatedBy()).updatedBy(request.getUpdatedBy()).build();
+							.isActive(true).createdBy(request.getUpdatedBy())
+							.isCreatorAdmin(
+									request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+							.updatedBy(request.getUpdatedBy())
+							.isUpdaterAdmin(
+									request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
+							.build();
 
 					TemplateDetailField savedField = templateDetailFieldRepository.save(field);
 					updatedEntity.getFields().add(savedField);
@@ -213,6 +235,12 @@ public class TemplateDetailsService {
 									.builder().field(savedField).label(option.getLabel()).value(option.getValue())
 									.defaultSelected(Boolean.TRUE.equals(option.getDefaultSelected()))
 									.optionSequence(optionSequence++).isActive(true).createdBy(request.getUpdatedBy())
+									.isCreatorAdmin(
+											request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
+													: false)
+									.isUpdaterAdmin(
+											request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin()
+													: false)
 									.updatedBy(request.getUpdatedBy()).build();
 
 							templateFieldOptionRepository.save(fieldOption);

@@ -1,11 +1,8 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
+import java.io.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -18,6 +15,8 @@ public class ServiceOfferingVO implements Serializable {
 	private BusinessServiceVO serviceId; // reference to FD_BUSINESS_SERVICE
 	private String offeringName;
 	private Boolean isActive;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

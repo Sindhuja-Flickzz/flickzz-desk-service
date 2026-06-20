@@ -1,15 +1,11 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -30,7 +26,9 @@ public class CalendarMasterRequestVO implements Serializable {
 	private String workFrom;
 	private String workTo;
 	private String timezone;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 	private List<String> calendarTypeList;
 }

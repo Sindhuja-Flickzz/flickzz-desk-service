@@ -16,6 +16,7 @@ public class ProgressStatusVO implements Serializable {
 	private String progressName;
 	private Integer progressSequence;
 	private String colorCode;
-	private String updatedBy;
+	private Long updatedBy;
+	private Boolean isUpdatedByAdmin;
 
 }

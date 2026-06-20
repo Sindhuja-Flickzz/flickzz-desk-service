@@ -46,11 +46,18 @@ public class SkillMaster {
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
 
-	@Column(name = "CREATED_BY", length = 50)
-	private String createdBy;
+	@Column(name = "CREATED_BY", nullable = false)
+	private Long createdBy;
 
-	@Column(name = "UPDATED_BY", length = 50)
-	private String updatedBy;
+	@Column(name = "UPDATED_BY")
+	private Long updatedBy;
+
+	@Column(name = "IS_CREATOR_ADMIN", nullable = false)
+	private Boolean isCreatorAdmin;
+
+	@Builder.Default
+	@Column(name = "IS_UPDATER_ADMIN")
+	private Boolean isUpdaterAdmin = false;
 
 	@Column(name = "CREATED_AT")
 	private LocalDateTime createdAt;

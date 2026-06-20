@@ -1,20 +1,14 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.*;
+import org.springframework.stereotype.*;
 
-import com.flickzz.desk.model.Auth;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.User;
-import com.flickzz.desk.repo.AuthRepository;
-import com.flickzz.desk.repo.EnquiryRegistrationRepository;
-import com.flickzz.desk.repo.UserRepository;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
 
 @Service
 public class RefreshTokenService {
@@ -45,7 +39,8 @@ public class RefreshTokenService {
 		fDAuth.setUser(fDUser);
 		fDAuth.setExpiresAt(new Date(System.currentTimeMillis() + duration * 1000));
 		fDAuth.setToken(UUID.randomUUID().toString());
-		fDAuth.setCreatedBy(fDUser.getRole());
+		fDAuth.setCreatedBy(fDUser.getUserId());
+		fDAuth.setIsCreatorAdmin(Boolean.TRUE);
 
 		return authRepository.save(fDAuth);
 	}
@@ -62,8 +57,8 @@ public class RefreshTokenService {
 		fDAuth.setEnquiryRegistration(enquiryRegistration);
 		fDAuth.setExpiresAt(new Date(System.currentTimeMillis() + duration * 1000));
 		fDAuth.setToken(UUID.randomUUID().toString());
-		fDAuth.setCreatedBy(enquiryRegistration.getUserRole());
-
+		fDAuth.setCreatedBy(enquiryRegistration.getEnquiryId());
+		fDAuth.setIsCreatorAdmin(Boolean.TRUE);
 		return authRepository.save(fDAuth);
 	}
 

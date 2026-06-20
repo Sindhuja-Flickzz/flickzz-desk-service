@@ -31,7 +31,7 @@ public class CommonMapper {
 				.role(request.getRole() != null ? request.getRole() : FlickzzDeskConstants.ROLE_ADMIN)
 				.phoneCode(request.getPhoneCode()).phoneNumber(request.getPhoneNumber()).country(country).city(city)
 				.language(language).registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
-				.createdBy(request.getCreatedBy()).build();
+				.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 	}
 
 	public LoginMaster userToLoginMaster(User user) {
@@ -39,7 +39,7 @@ public class CommonMapper {
 			return null;
 		}
 		return LoginMaster.builder().userName(user.getUserName()).password(user.getPassword()).role(user.getRole())
-				.createdBy(user.getCreatedBy()).user(user).build();
+				.createdBy(user.getCreatedBy()).isCreatorAdmin(user.getIsCreatorAdmin()).user(user).build();
 	}
 
 	public CalendarMasterVO toCalendarMasterVO(CalendarMaster calendar) {
@@ -57,7 +57,8 @@ public class CommonMapper {
 				.holidays(calendar.getHolidays() == null ? null
 						: calendar.getHolidays().stream().filter(CalendarHoliday::isActive)
 								.map(this::toCalendarHolidayVO).toList())
-				.createdBy(calendar.getCreatedBy()).updatedBy(calendar.getUpdatedBy()).build();
+				.createdBy(calendar.getCreatedBy()).isCreatedByAdmin(calendar.getIsCreatorAdmin())
+				.updatedBy(calendar.getUpdatedBy()).isUpdatedByAdmin(calendar.getIsUpdaterAdmin()).build();
 	}
 
 	public CalendarWorkdayVO toCalendarWorkdayVO(CalendarWorkday workday) {
@@ -65,8 +66,9 @@ public class CommonMapper {
 			return null;
 		}
 		return CalendarWorkdayVO.builder().workdayId(workday.getWorkdayId()).workday(workday.getWorkday())
-				.isActive(workday.getIsActive()).createdBy(workday.getCreatedBy()).updatedBy(workday.getUpdatedBy())
-				.build();
+				.isActive(workday.getIsActive()).createdBy(workday.getCreatedBy())
+				.isCreatedByAdmin(workday.getIsCreatorAdmin()).updatedBy(workday.getUpdatedBy())
+				.isUpdatedByAdmin(workday.getIsUpdaterAdmin()).build();
 	}
 
 	public CalendarHolidayVO toCalendarHolidayVO(CalendarHoliday holiday) {
@@ -74,8 +76,9 @@ public class CommonMapper {
 			return null;
 		}
 		return CalendarHolidayVO.builder().holidayDate(holiday.getHolidayDate()).description(holiday.getDescription())
-				.isActive(holiday.getIsActive()).createdBy(holiday.getCreatedBy()).updatedBy(holiday.getUpdatedBy())
-				.build();
+				.isActive(holiday.getIsActive()).createdBy(holiday.getCreatedBy())
+				.isCreatedByAdmin(holiday.getIsCreatorAdmin()).updatedBy(holiday.getUpdatedBy())
+				.isUpdatedByAdmin(holiday.getIsUpdaterAdmin()).build();
 	}
 
 	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request, CalendarType calendarType,
@@ -86,29 +89,33 @@ public class CommonMapper {
 		return CalendarMaster.builder().calendarCode(request.getCalendarCode()).calendarType(calendarType)
 				.company(company).validFrom(request.getValidFrom()).validTo(request.getValidTo())
 				.workFrom(request.getWorkFrom()).workTo(request.getWorkTo()).timezone(request.getTimezone())
-				.createdBy(request.getCreatedBy()).updatedBy(request.getUpdatedBy()).build();
+				.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin())
+				.updatedBy(request.getUpdatedBy()).isUpdaterAdmin(request.getIsUpdatedByAdmin()).build();
 	}
 
-	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, String createdBy,
+	public List<CalendarHoliday> toCalendarHolidayEntity(List<CalendarHolidayVO> calendarHolidayList, Long createdBy,
 			CalendarMaster entity) {
 		if (calendarHolidayList == null) {
 			return Collections.emptyList();
 		}
 		return calendarHolidayList.stream().map(h -> {
 			CalendarHoliday holiday = CalendarHoliday.builder().holidayDate(h.getHolidayDate())
-					.description(h.getDescription()).calendarMaster(entity).createdBy(createdBy).updatedBy(createdBy)
-					.build();
+					.description(h.getDescription()).calendarMaster(entity).createdBy(createdBy)
+					.isCreatorAdmin(h.getIsCreatedByAdmin()).updatedBy(createdBy)
+					.isUpdaterAdmin(h.getIsUpdatedByAdmin()).build();
 			return holiday;
 		}).toList();
 	}
 
-	public List<CalendarWorkday> toCalendarWorkDay(List<String> workDayList, String createdBy, CalendarMaster entity) {
+	public List<CalendarWorkday> toCalendarWorkDay(List<String> workDayList, Long createdBy, CalendarMaster entity) {
 		if (workDayList == null) {
 			return Collections.emptyList();
 		}
 		return workDayList.stream().map(workingDay -> {
 			CalendarWorkday workday = CalendarWorkday.builder().workday(workingDay).calendarMaster(entity)
-					.createdBy(createdBy).updatedBy(createdBy).build();
+					.createdBy(createdBy)
+					.isCreatorAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+					.updatedBy(createdBy).build();
 			return workday;
 		}).toList();
 	}
@@ -122,7 +129,10 @@ public class CommonMapper {
 				.employeeSize(request.getEmployeeSize()).registeredNumber(request.getRegisteredNumber())
 				.pinCode(request.getPinCode()).country(country).state(stateMaster).city(cityMaster)
 				.addressLine1(request.getAddressLine1()).addressLine2(request.getAddressLine2()).mail(request.getMail())
-				.createdBy(request.getCreatedBy()).updatedBy(request.getCreatedBy()).build();
+				.createdBy(request.getCreatedBy())
+				.isCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+				.updatedBy(request.getCreatedBy())
+				.isUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false).build();
 	}
 
 	public CompanyMasterVO toCompanyMasterVO(CompanyMaster entity) {
@@ -134,8 +144,11 @@ public class CommonMapper {
 				.country(toCountryMasterVO(entity.getCountry())).state(toStateMasterVO(entity.getState()))
 				.city(toCityMasterVO(entity.getCity())).addressLine1(entity.getAddressLine1())
 				.addressLine2(entity.getAddressLine2()).pinCode(entity.getPinCode()).isActive(entity.getIsActive())
-				.createdBy(entity.getCreatedBy()).uid(entity.getUid()).employeeSize(entity.getEmployeeSize())
-				.mail(entity.getMail()).updatedBy(entity.getUpdatedBy()).build();
+				.createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+				.uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
+				.updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public PlantMasterVO toPlantMasterVO(PlantMaster entity) {
@@ -145,8 +158,11 @@ public class CommonMapper {
 		return PlantMasterVO.builder().plantId(entity.getPlantId()).plantName(entity.getPlantName())
 				.region(toCountryMasterVO(entity.getRegion())).calendar(toCalendarMasterVO(entity.getCalendar()))
 				.company(entity.getCompany() != null ? toCompanyMasterVO(entity.getCompany()) : null)
-				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).isActive(entity.getIsActive())
-				.build();
+				.createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+				.updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false)
+				.isActive(entity.getIsActive()).build();
 	}
 
 	public CountryMasterVO toCountryMasterVO(CountryMaster country) {
@@ -163,7 +179,10 @@ public class CommonMapper {
 			return null;
 		}
 		return SkillMasterVO.builder().skillId(save.getSkillId()).skillName(save.getSkillName())
-				.isActive(save.getIsActive()).createdBy(save.getCreatedBy()).updatedBy(save.getUpdatedBy()).build();
+				.isActive(save.getIsActive()).createdBy(save.getCreatedBy())
+				.isCreatedByAdmin(save.getIsCreatorAdmin() != null ? save.getIsCreatorAdmin() : false)
+				.updatedBy(save.getUpdatedBy())
+				.isUpdatedByAdmin(save.getIsUpdaterAdmin() != null ? save.getIsUpdaterAdmin() : false).build();
 	}
 
 	public AgentMasterVO toAgentMasterVO(AgentMaster agent) {
@@ -204,7 +223,10 @@ public class CommonMapper {
 		return PriorityMaster.builder().priorityId(vo.getPriorityId()).priorityName(vo.getPriorityName())
 				.organization(companyMaster).rank(vo.getRank()).colorCode(vo.getColorCode())
 				.responseSla(vo.getResponseSla()).resolutionSla(vo.getResolutionSla()).isActive(vo.getIsActive())
-				.createdBy(vo.getCreatedBy()).updatedBy(vo.getUpdatedBy()).build();
+				.createdBy(vo.getCreatedBy())
+				.isCreatorAdmin(vo.getIsCreatedByAdmin() != null ? vo.getIsCreatedByAdmin() : false)
+				.updatedBy(vo.getUpdatedBy())
+				.isUpdaterAdmin(vo.getIsUpdatedByAdmin() != null ? vo.getIsUpdatedByAdmin() : false).build();
 	}
 
 	public PriorityMasterVO toPriorityMasterVo(PriorityMaster entity) {
@@ -215,7 +237,10 @@ public class CommonMapper {
 				.organization(toCompanyMasterVO(entity.getOrganization())).rank(entity.getRank())
 				.colorCode(entity.getColorCode()).responseSla(entity.getResponseSla())
 				.resolutionSla(entity.getResolutionSla()).isActive(entity.getIsActive())
-				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
+				.createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+				.updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public List<UserVO> usersToUserVO(List<User> users) {
@@ -229,8 +254,9 @@ public class CommonMapper {
 						.phoneCode(user.getPhoneCode()).phoneNumber(user.getPhoneNumber())
 						.country(toCountryMasterVO(user.getCountry())).city(toCityMasterVO(user.getCity()))
 						.language(toLanguageMasterVO(user.getLanguage())).mfaEnabled(user.isMfaEnabled())
-						.isActive(user.getIsActive()).createdBy(user.getCreatedBy()).updatedBy(user.getUpdatedBy())
-						.build())
+						.isActive(user.getIsActive()).createdBy(user.getCreatedBy())
+						.isCreatedByAdmin(user.getIsCreatorAdmin()).updatedBy(user.getUpdatedBy())
+						.isUpdatedByAdmin(user.getIsUpdaterAdmin()).build())
 				.collect(Collectors.toList());
 	}
 
@@ -241,7 +267,11 @@ public class CommonMapper {
 		return CityMasterVO.builder().cityId(cityMaster.getCityId()).cityName(cityMaster.getCityName())
 				.cityCode(cityMaster.getCityCode()).country(toCountryMasterVO(cityMaster.getCountry()))
 				.state(toStateMasterVO(cityMaster.getState())).isActive(cityMaster.getIsActive())
-				.createdBy(cityMaster.getCreatedBy()).updatedBy(cityMaster.getUpdatedBy()).build();
+				.createdBy(cityMaster.getCreatedBy())
+				.isCreatedByAdmin(cityMaster.getIsCreatorAdmin() != null ? cityMaster.getIsCreatorAdmin() : false)
+				.updatedBy(cityMaster.getUpdatedBy())
+				.isUpdatedByAdmin(cityMaster.getIsUpdaterAdmin() != null ? cityMaster.getIsUpdaterAdmin() : false)
+				.build();
 	}
 
 	public StateMasterVO toStateMasterVO(StateMaster state) {
@@ -250,7 +280,10 @@ public class CommonMapper {
 		}
 		return StateMasterVO.builder().stateId(state.getStateId()).stateName(state.getStateName())
 				.stateCode(state.getStateCode()).country(toCountryMasterVO(state.getCountry()))
-				.isActive(state.getIsActive()).createdBy(state.getCreatedBy()).updatedBy(state.getUpdatedBy()).build();
+				.isActive(state.getIsActive()).createdBy(state.getCreatedBy())
+				.isCreatedByAdmin(state.getIsCreatorAdmin() != null ? state.getIsCreatorAdmin() : false)
+				.updatedBy(state.getUpdatedBy())
+				.isUpdatedByAdmin(state.getIsUpdaterAdmin() != null ? state.getIsUpdaterAdmin() : false).build();
 	}
 
 	public LanguageMasterVO toLanguageMasterVO(LanguageMaster languageMaster) {
@@ -260,7 +293,8 @@ public class CommonMapper {
 		return LanguageMasterVO.builder().languageId(languageMaster.getLanguageId())
 				.languageName(languageMaster.getLanguageName()).languageCode(languageMaster.getLanguageCode())
 				.isActive(languageMaster.getIsActive()).createdBy(languageMaster.getCreatedBy())
-				.updatedBy(languageMaster.getUpdatedBy()).build();
+				.isCreatedByAdmin(languageMaster.getIsCreatorAdmin()).updatedBy(languageMaster.getUpdatedBy())
+				.isUpdatedByAdmin(languageMaster.getIsUpdaterAdmin()).build();
 	}
 
 	public BusinessService toBusinessServiceEntity(BusinessServiceRequestVO businessServiceRequestVO) {
@@ -268,8 +302,12 @@ public class CommonMapper {
 			return null;
 		}
 		return BusinessService.builder().serviceName(businessServiceRequestVO.getServiceName())
-				.createdBy(businessServiceRequestVO.getCreatedBy()).updatedBy(businessServiceRequestVO.getCreatedBy())
-				.build();
+				.createdBy(businessServiceRequestVO.getCreatedBy())
+				.isCreatorAdmin(businessServiceRequestVO.getIsCreatedByAdmin() != null
+						? businessServiceRequestVO.getIsCreatedByAdmin()
+						: false)
+				.updatedBy(businessServiceRequestVO.getCreatedBy())
+				.isUpdaterAdmin(businessServiceRequestVO.getIsUpdatedByAdmin()).build();
 	}
 
 	public ServiceOffering toServiceOfferingEntity(ServiceOfferingVO so, BusinessService saved) {
@@ -277,7 +315,8 @@ public class CommonMapper {
 			return null;
 		}
 		return ServiceOffering.builder().offeringName(so.getOfferingName()).businessService(saved)
-				.createdBy(so.getCreatedBy()).updatedBy(so.getCreatedBy()).build();
+				.createdBy(so.getCreatedBy()).isCreatorAdmin(so.getIsCreatedByAdmin()).updatedBy(so.getCreatedBy())
+				.isUpdaterAdmin(so.getIsUpdatedByAdmin()).build();
 	}
 
 	public BusinessServiceVO toBusinessServiceVO(BusinessService entity) {
@@ -289,9 +328,13 @@ public class CommonMapper {
 						: entity.getServiceOfferings().stream()
 								.map(so -> ServiceOfferingVO.builder().offeringId(so.getOfferingId())
 										.offeringName(so.getOfferingName()).createdBy(so.getCreatedBy())
-										.updatedBy(so.getUpdatedBy()).build())
+										.isCreatedByAdmin(so.getIsCreatorAdmin())
+										.isUpdatedByAdmin(so.getIsUpdaterAdmin()).updatedBy(so.getUpdatedBy()).build())
 								.toList())
-				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
+				.createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+				.updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public RequestConfig toRequestConfigEntity(RequestConfigVO request, PlantMaster plant) {
@@ -301,7 +344,8 @@ public class CommonMapper {
 		return RequestConfig.builder().requestType(request.getRequestType()).requestPrefix(request.getRequestPrefix())
 				.revision(request.getRevision()).rangeFrom(request.getRangeFrom()).rangeTo(request.getRangeTo())
 				.calculateBackward(request.getCalculateBackward()).createdBy(request.getCreatedBy())
-				.updatedBy(request.getCreatedBy()).build();
+				.isCreatorAdmin(request.getIsCreatedByAdmin()).updatedBy(request.getCreatedBy())
+				.isUpdaterAdmin(request.getIsUpdatedByAdmin()).build();
 	}
 
 	public RequestConfigVO toRequestConfigVO(RequestConfig requestConfig) {
@@ -312,7 +356,8 @@ public class CommonMapper {
 				.requestType(requestConfig.getRequestType()).requestPrefix(requestConfig.getRequestPrefix())
 				.revision(requestConfig.getRevision()).rangeFrom(requestConfig.getRangeFrom())
 				.rangeTo(requestConfig.getRangeTo()).calculateBackward(requestConfig.getCalculateBackward())
-				.createdBy(requestConfig.getCreatedBy()).updatedBy(requestConfig.getUpdatedBy()).build();
+				.createdBy(requestConfig.getCreatedBy()).isCreatedByAdmin(requestConfig.getIsCreatorAdmin())
+				.updatedBy(requestConfig.getUpdatedBy()).isUpdatedByAdmin(requestConfig.getIsUpdaterAdmin()).build();
 	}
 
 	public List<RequestConfigVO> toRequestConfigVOList(List<RequestConfig> requestConfigs) {
@@ -329,7 +374,8 @@ public class CommonMapper {
 		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
 				.organization(companyMaster).impactLevel(request.getImpactLevel())
 				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
-				.updatedBy(request.getUpdatedBy()).build();
+				.isCreatorAdmin(request.getIsCreatedByAdmin()).updatedBy(request.getUpdatedBy())
+				.isUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false).build();
 	}
 
 	public ImpactMasterVO toImpactMasterVo(ImpactMaster save) {
@@ -339,7 +385,8 @@ public class CommonMapper {
 		return ImpactMasterVO.builder().impactId(save.getImpactId()).impactCode(save.getImpactCode())
 				.organization(toCompanyMasterVO(save.getOrganization())).impactLevel(save.getImpactLevel())
 				.slaMultiplier(save.getSlaMultiplier()).isActive(save.getIsActive()).createdBy(save.getCreatedBy())
-				.updatedBy(save.getUpdatedBy()).build();
+				.isCreatedByAdmin(save.getIsCreatorAdmin()).updatedBy(save.getUpdatedBy())
+				.isUpdatedByAdmin(save.getIsUpdaterAdmin() != null ? save.getIsUpdaterAdmin() : false).build();
 	}
 
 	public UserVO userToUserVO(User user) {
@@ -352,7 +399,10 @@ public class CommonMapper {
 				.phoneNumber(user.getPhoneNumber()).country(toCountryMasterVO(user.getCountry()))
 				.city(toCityMasterVO(user.getCity())).language(toLanguageMasterVO(user.getLanguage()))
 				.mfaEnabled(user.isMfaEnabled()).agent(toAgentMasterVO(user.getAgent())).isActive(user.getIsActive())
-				.createdBy(user.getCreatedBy()).updatedBy(user.getUpdatedBy()).build();
+				.createdBy(user.getCreatedBy())
+				.isCreatedByAdmin(user.getIsCreatorAdmin() != null ? user.getIsCreatorAdmin() : false)
+				.updatedBy(user.getUpdatedBy())
+				.isUpdatedByAdmin(user.getIsUpdaterAdmin() != null ? user.getIsUpdaterAdmin() : false).build();
 	}
 
 	public EnquiryRegistration enquiryRegisterRequestToEnquiryRegistration(EnquiryRegisterRequestVO request,
@@ -390,11 +440,14 @@ public class CommonMapper {
 				.city(toCityMasterVO(enquiryRegistration.getCity())).build();
 	}
 
-	public CalendarType toCalendarTypeEntity(String type, CompanyMaster company, String createBy) {
+	public CalendarType toCalendarTypeEntity(String type, CompanyMaster company, Long createBy) {
 		if (type == null) {
 			return null;
 		}
-		return CalendarType.builder().typeName(type).company(company).createdBy(createBy).updatedBy(createBy).build();
+		return CalendarType.builder().typeName(type).company(company).createdBy(createBy)
+				.isCreatorAdmin(company.getIsCreatorAdmin() != null ? company.getIsCreatorAdmin() : false)
+				.updatedBy(createBy)
+				.isUpdaterAdmin(company.getIsUpdaterAdmin() != null ? company.getIsUpdaterAdmin() : false).build();
 	}
 
 	public CalendarTypeVO toCalendarTypeVO(CalendarType entity) {
@@ -403,7 +456,10 @@ public class CommonMapper {
 		}
 		return CalendarTypeVO.builder().calendarTypeId(entity.getCalendarTypeId()).typeName(entity.getTypeName())
 				.company(toCompanyMasterVO(entity.getCompany())).isActive(entity.getIsActive())
-				.createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy()).build();
+				.createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+				.updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public Project toProject(ProjectRequestVO request, CompanyMaster company) {
@@ -414,7 +470,8 @@ public class CommonMapper {
 		return Project.builder().company(company).projectName(request.getProjectName())
 				.projectDesc(request.getProjectName()).projectDesc(request.getProjectDesc())
 				.projectCode(request.getProjectName().toUpperCase().replaceAll("\\s+", "_")).isSaved(request.isSave())
-				.isSubmited(request.isSubmit()).createdBy(request.getCreatedBy()).build();
+				.isSubmited(request.isSubmit()).createdBy(request.getCreatedBy())
+				.isCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false).build();
 	}
 
 	public ProgressStatusVO toProgressStatusVO(ProgressStatus progressStatus) {
@@ -424,7 +481,7 @@ public class CommonMapper {
 		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId())
 				.company(toCompanyMasterVO(progressStatus.getCompany())).progressName(progressStatus.getProgressName())
 				.progressSequence(progressStatus.getProgressSequence()).colorCode(progressStatus.getColorCode())
-				.updatedBy(progressStatus.getUpdatedBy()).build();
+				.updatedBy(progressStatus.getUpdatedBy()).isUpdatedByAdmin(progressStatus.getIsUpdaterAdmin()).build();
 	}
 
 	public EpicVO toEpicVO(Epic epic) {
@@ -441,7 +498,8 @@ public class CommonMapper {
 				.userStories(
 						epic.getUserStories() != null ? epic.getUserStories().stream().map(this::toUserStoryVO).toList()
 								: null)
-				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy()).updatedBy(epic.getUpdatedBy()).build();
+				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy()).isCreatedByAdmin(epic.getIsCreatorAdmin())
+				.isUpdatedByAdmin(epic.getIsUpdaterAdmin()).updatedBy(epic.getUpdatedBy()).build();
 	}
 
 	public UserStoryVO toUserStoryVO(UserStory userStory) {
@@ -463,6 +521,7 @@ public class CommonMapper {
 						: null)
 				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
 				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
+				.isCreatedByAdmin(userStory.getIsCreatorAdmin()).isUpdatedByAdmin(userStory.getIsUpdaterAdmin())
 				.updatedBy(userStory.getUpdatedBy()).build();
 	}
 
@@ -475,7 +534,9 @@ public class CommonMapper {
 
 		return ProjectLeadAssignmentVO.builder().assignmentId(pla.getAssignmentId())
 				.company(toCompanyMasterVO(pla.getCompany())).story(userStoryVO).isActive(pla.getIsActive())
-				.createdBy(pla.getCreatedBy()).updatedBy(pla.getUpdatedBy()).build();
+				.createdBy(pla.getCreatedBy())
+				.isCreatedByAdmin(pla.getIsCreatorAdmin() != null ? pla.getIsCreatorAdmin() : false)
+				.updatedBy(pla.getUpdatedBy()).isUpdatedByAdmin(pla.getIsUpdaterAdmin()).build();
 	}
 
 	public ProjectVO toProjectVO(Project project) {
@@ -487,18 +548,20 @@ public class CommonMapper {
 				.projectDesc(project.getProjectDesc())
 				.epics(project.getEpics() != null ? project.getEpics().stream().map(this::toEpicVO).toList() : null)
 				.plannedStartDate(project.getPlannedStartDate()).plannedEndDate(project.getPlannedEndDate())
-				.isActive(project.getIsActive()).createdBy(project.getCreatedBy()).updatedBy(project.getUpdatedBy())
+				.isActive(project.getIsActive()).createdBy(project.getCreatedBy())
+				.isCreatedByAdmin(project.getIsCreatorAdmin() != null ? project.getIsCreatorAdmin() : false)
+				.updatedBy(project.getUpdatedBy())
+				.isUpdatedByAdmin(project.getIsUpdaterAdmin() != null ? project.getIsUpdaterAdmin() : false)
 				.isSaved(project.getIsSaved()).isSubmitted(project.getIsSubmited()).build();
 	}
 
-	public Epic toEpic(EpicVO epicVO, Project project, ProgressStatus defaultProgressStatus, int maxProgressStatus,
-			String createdBy) {
+	public Epic toEpic(EpicVO epicVO, Project project, ProgressStatus defaultProgressStatus, int maxProgressStatus) {
 		if (epicVO == null) {
 			return null;
 		}
 		return Epic.builder().epicName(epicVO.getEpicName()).epicDesc(epicVO.getEpicDesc())
 				.epicSequence(epicVO.getEpicSequence()).progressStatus(defaultProgressStatus)
-				.maxProgressStatus(maxProgressStatus).project(project).createdBy(createdBy).build();
+				.maxProgressStatus(maxProgressStatus).project(project).build();
 	}
 
 	public ProjectVO toNoBackRefProjectVO(Project project) {
@@ -512,8 +575,9 @@ public class CommonMapper {
 				.epics(project.getEpics() != null ? project.getEpics().stream().map(this::toNoBackRefEpicVO).toList()
 						: null)
 				.plannedStartDate(project.getPlannedStartDate()).plannedEndDate(project.getPlannedEndDate())
-				.isActive(project.getIsActive()).createdBy(project.getCreatedBy()).updatedBy(project.getUpdatedBy())
-				.build();
+				.isActive(project.getIsActive()).createdBy(project.getCreatedBy())
+				.isCreatedByAdmin(project.getIsCreatorAdmin()).updatedBy(project.getUpdatedBy())
+				.isUpdatedByAdmin(project.getIsUpdaterAdmin() != null ? project.getIsUpdaterAdmin() : false).build();
 	}
 
 	public EpicVO toNoBackRefEpicVO(Epic epic) {
@@ -531,7 +595,10 @@ public class CommonMapper {
 				.userStories(epic.getUserStories() != null
 						? epic.getUserStories().stream().map(this::toNoBackRefUserStoryVO).toList()
 						: null)
-				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy()).updatedBy(epic.getUpdatedBy()).build();
+				.isActive(epic.getIsActive()).createdBy(epic.getCreatedBy())
+				.isCreatedByAdmin(epic.getIsCreatorAdmin() != null ? epic.getIsCreatorAdmin() : false)
+				.updatedBy(epic.getUpdatedBy())
+				.isUpdatedByAdmin(epic.getIsUpdaterAdmin() != null ? epic.getIsUpdaterAdmin() : false).build();
 	}
 
 	public ProgressStatusVO toNoBackRefProgressStatusVO(ProgressStatus progressStatus) {
@@ -540,7 +607,8 @@ public class CommonMapper {
 		}
 		return ProgressStatusVO.builder().progressId(progressStatus.getProgressId()).company(null)
 				.progressName(progressStatus.getProgressName()).progressSequence(progressStatus.getProgressSequence())
-				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy()).build();
+				.colorCode(progressStatus.getColorCode()).updatedBy(progressStatus.getUpdatedBy())
+				.isUpdatedByAdmin(progressStatus.getIsUpdaterAdmin()).build();
 	}
 
 	public UserStoryVO toNoBackRefUserStoryVO(UserStory userStory) {
@@ -563,6 +631,7 @@ public class CommonMapper {
 						.map(this::toNoBackRefProjectLeadAssignmentVO).toList() : null)
 				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
 				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
+				.isCreatedByAdmin(userStory.getIsCreatorAdmin()).isUpdatedByAdmin(userStory.getIsUpdaterAdmin())
 				.updatedBy(userStory.getUpdatedBy()).build();
 	}
 
@@ -592,7 +661,8 @@ public class CommonMapper {
 				.agentId(toAgentMasterVO(subTask.getAgent())).maxProgress(subTask.getMaxProgressStatus())
 				.plannedStartDate(subTask.getPlannedStartDate()).plannedEndDate(subTask.getPlannedEndDate())
 				.actualStartDate(subTask.getActualStartDate()).actualEndDate(subTask.getActualEndDate())
-				.createdBy(subTask.getCreatedBy()).build();
+				.createdBy(subTask.getCreatedBy())
+				.isCreatedByAdmin(subTask.getIsCreatorAdmin() != null ? subTask.getIsCreatorAdmin() : false).build();
 	}
 
 	public ProjectLeadAssignmentVO toNoBackRefProjectLeadAssignmentVO(ProjectLeadAssignment pla) {
@@ -601,7 +671,9 @@ public class CommonMapper {
 		}
 		return ProjectLeadAssignmentVO.builder().assignmentId(pla.getAssignmentId())
 				.company(toNoBackRefCompanyMasterVO(pla.getCompany())).story(null).isActive(pla.getIsActive())
-				.createdBy(pla.getCreatedBy()).updatedBy(pla.getUpdatedBy()).build();
+				.createdBy(pla.getCreatedBy()).isCreatedByAdmin(pla.getIsCreatorAdmin())
+				.isUpdatedByAdmin(pla.getIsUpdaterAdmin() != null ? pla.getIsUpdaterAdmin() : false)
+				.updatedBy(pla.getUpdatedBy()).build();
 	}
 
 	public CompanyMasterVO toNoBackRefCompanyMasterVO(CompanyMaster entity) {
@@ -612,8 +684,9 @@ public class CommonMapper {
 				.phoneCode(entity.getPhoneCode()).registeredNumber(entity.getRegisteredNumber()).country(null)
 				.state(null).city(null).addressLine1(entity.getAddressLine1()).addressLine2(entity.getAddressLine2())
 				.pinCode(entity.getPinCode()).isActive(entity.getIsActive()).createdBy(entity.getCreatedBy())
-				.uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
-				.updatedBy(entity.getUpdatedBy()).build();
+				.isCreatedByAdmin(entity.getIsCreatorAdmin()).uid(entity.getUid())
+				.employeeSize(entity.getEmployeeSize()).mail(entity.getMail()).updatedBy(entity.getUpdatedBy())
+				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public CompanyRoleVO toCompanyRoleVO(CompanyRole role) {
@@ -624,7 +697,8 @@ public class CommonMapper {
 				.mappedCompany(toNoBackRefCompanyMasterVO(role.getMappedCompany()))
 				.isServiceProvider(role.getIsServiceProvider()).isRequestor(role.getIsRequestor())
 				.isBoth(role.getIsBoth()).isActive(role.getIsActive()).createdBy(role.getCreatedBy())
-				.updatedBy(role.getUpdatedBy()).build();
+				.isCreatedByAdmin(role.getIsCreatorAdmin()).updatedBy(role.getUpdatedBy())
+				.isUpdatedByAdmin(role.getIsUpdaterAdmin() != null ? role.getIsUpdaterAdmin() : false).build();
 	}
 
 	public WorkItemVO toWorkItemVO(WorkItem workItem) {
@@ -632,8 +706,9 @@ public class CommonMapper {
 			return null;
 		}
 		return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel())
-				.isActive(workItem.getIsActive()).createdBy(workItem.getCreatedBy()).updatedBy(workItem.getUpdatedBy())
-				.build();
+				.isActive(workItem.getIsActive()).createdBy(workItem.getCreatedBy())
+				.isCreatedByAdmin(workItem.getIsCreatorAdmin()).isUpdatedByAdmin(workItem.getIsUpdaterAdmin())
+				.updatedBy(workItem.getUpdatedBy()).build();
 	}
 
 	public FieldTypeVO toFieldTypeVO(FieldType fieldType) {
@@ -642,6 +717,7 @@ public class CommonMapper {
 		}
 		return FieldTypeVO.builder().typeId(fieldType.getTypeId()).code(fieldType.getCode()).label(fieldType.getLabel())
 				.isActive(fieldType.getIsActive()).createdBy(fieldType.getCreatedBy())
+				.isCreatedByAdmin(fieldType.getIsCreatorAdmin()).isUpdatedByAdmin(fieldType.getIsUpdaterAdmin())
 				.updatedBy(fieldType.getUpdatedBy()).build();
 	}
 
@@ -654,8 +730,9 @@ public class CommonMapper {
 				.templateDetails(entity.getFields() != null
 						? entity.getFields().stream().map(this::toTemplateDetailFieldVO).toList()
 						: null)
-				.isActive(entity.getIsActive()).createdBy(entity.getCreatedBy()).updatedBy(entity.getUpdatedBy())
-				.build();
+				.isActive(entity.getIsActive()).createdBy(entity.getCreatedBy())
+				.isCreatedByAdmin(entity.getIsCreatorAdmin()).isUpdatedByAdmin(entity.getIsUpdaterAdmin())
+				.updatedBy(entity.getUpdatedBy()).build();
 	}
 
 	public com.flickzz.desk.vo.TemplateDetailFieldVO toTemplateDetailFieldVO(TemplateDetailField field) {

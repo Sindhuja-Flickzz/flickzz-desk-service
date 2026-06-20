@@ -25,6 +25,8 @@ public class ProjectVO implements Serializable {
 	private Boolean isActive;
 	private Boolean isSaved;
 	private Boolean isSubmitted;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }

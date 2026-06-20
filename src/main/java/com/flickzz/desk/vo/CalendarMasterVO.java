@@ -1,13 +1,9 @@
 package com.flickzz.desk.vo;
 
-import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
@@ -27,6 +23,8 @@ public class CalendarMasterVO implements Serializable {
 	private String timezone;
 	private Boolean isActive;
 	private CompanyMasterVO company;
-	private String createdBy;
-	private String updatedBy;
+	private Long createdBy;
+	private Long updatedBy;
+	private Boolean isCreatedByAdmin;
+	private Boolean isUpdatedByAdmin;
 }
