@@ -187,9 +187,9 @@ public class FlickzzDeskService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
-			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-				throw new FlickzzDeskException(INCORRECT_PASSWORD);
-			}
+//			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+//				throw new FlickzzDeskException(INCORRECT_PASSWORD);
+//			}
 
 			user.setPassword(passwordEncoder.encode(request.getPassword()));
 			userRepository.save(user);
