@@ -1,6 +1,7 @@
 package com.flickzz.desk.vo;
 
 import java.io.*;
+import java.util.*;
 
 import lombok.*;
 
@@ -27,4 +28,10 @@ public class CompanyMasterRequestVO implements Serializable {
 	private Long updatedBy;
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
+	private String bpUid;
+	private int callHorizonDays;
+	private Date validFrom;
+	private Date validTo;
+	private String refNumber;
+	private Date refDate;
 }

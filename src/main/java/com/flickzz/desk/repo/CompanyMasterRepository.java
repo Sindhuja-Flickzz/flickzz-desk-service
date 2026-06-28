@@ -1,12 +1,10 @@
 package com.flickzz.desk.repo;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.*;
 
-import com.flickzz.desk.model.CompanyMaster;
+import com.flickzz.desk.model.*;
 
 public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, Long> {
 	Optional<CompanyMaster> findByCompanyName(String companyName);
@@ -23,4 +21,6 @@ public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, Lo
 	Optional<CompanyMaster> findByCompanyId(Long companyId);
 
 	List<CompanyMaster> findByIsActive(Boolean active);
+
+	Optional<CompanyMaster> findByUidAndIsActive(String uid, Boolean active);
 }
