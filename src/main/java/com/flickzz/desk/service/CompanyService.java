@@ -182,7 +182,7 @@ public class CompanyService {
 	public List<BusinessPartnerVO> listServiceProviderList(String orgId) {
 		log.info(generateLog("listServiceProviderList", this.getClass().getName()));
 		try {
-			return companyRoleRepository.findByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+			return companyRoleRepository.findActivePartnersByCompany(Long.valueOf(orgId), ACTIVE).stream()
 					.filter(role -> role.getIsBoth()).map(role -> mapper.toCompanyRoleVO(role))
 					.collect(Collectors.toList());
 		} catch (Exception e) {
