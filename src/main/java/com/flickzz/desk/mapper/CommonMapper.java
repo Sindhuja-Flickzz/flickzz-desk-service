@@ -689,16 +689,19 @@ public class CommonMapper {
 				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
-	public CompanyRoleVO toCompanyRoleVO(CompanyRole role) {
+	public BusinessPartnerVO toCompanyRoleVO(BusinessPartner role) {
 		if (role == null) {
 			return null;
 		}
-		return CompanyRoleVO.builder().roleId(role.getRoleId()).company(toNoBackRefCompanyMasterVO(role.getCompany()))
+		return BusinessPartnerVO.builder().roleId(role.getRoleId())
+				.company(toNoBackRefCompanyMasterVO(role.getCompany()))
 				.mappedCompany(toNoBackRefCompanyMasterVO(role.getMappedCompany()))
 				.isServiceProvider(role.getIsServiceProvider()).isRequestor(role.getIsRequestor())
 				.isBoth(role.getIsBoth()).isActive(role.getIsActive()).createdBy(role.getCreatedBy())
 				.isCreatedByAdmin(role.getIsCreatorAdmin()).updatedBy(role.getUpdatedBy())
-				.isUpdatedByAdmin(role.getIsUpdaterAdmin() != null ? role.getIsUpdaterAdmin() : false).build();
+				.isUpdatedByAdmin(role.getIsUpdaterAdmin() != null ? role.getIsUpdaterAdmin() : false)
+				.callHorizon(role.getCallHorizon()).validFrom(role.getValidFrom()).validTo(role.getValidTo())
+				.refNo(role.getRefNo()).refDate(role.getRefDate()).build();
 	}
 
 	public WorkItemVO toWorkItemVO(WorkItem workItem) {

@@ -1,6 +1,7 @@
 package com.flickzz.desk.model;
 
 import java.time.*;
+import java.util.*;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,18 +11,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_COMPANY_ROLES", uniqueConstraints = {
-		@UniqueConstraint(name = "UQ_COMPANY_ROLE_MAPPING", columnNames = { "COMPANY_ID", "MAPPING_ID" }) })
-public class CompanyRole {
+@Table(name = "FD_BUSINESS_PARTNER", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_BUSINESS_PARTNER_MAPPING", columnNames = { "COMPANY_ID", "MAPPING_ID" }) })
+public class BusinessPartner {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "company_role_seq")
-	@SequenceGenerator(name = "company_role_seq", sequenceName = "COMPANY_ROLE_SEQ", allocationSize = 1)
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "business_partner_seq")
+	@SequenceGenerator(name = "business_partner_seq", sequenceName = "BUSINESS_PARTNER_SEQ", allocationSize = 1)
 	@Column(name = "ROLE_ID")
 	private Long roleId;
 
 	@ManyToOne
-	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_ROLE_COMPANY"), nullable = false)
+	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_BUSINESS_PARTNER_COMPANY"), nullable = false)
 	private CompanyMaster company;
 
 	@ManyToOne
@@ -39,6 +40,22 @@ public class CompanyRole {
 	@Builder.Default
 	@Column(name = "IS_BOTH")
 	private Boolean isBoth = false;
+
+	@Builder.Default
+	@Column(name = "CALL_HORIZON")
+	private Integer callHorizon = 0;
+
+	@Column(name = "VALID_FROM", nullable = false)
+	private Date validFrom;
+
+	@Column(name = "VALID_TO", nullable = false)
+	private Date validTo;
+
+	@Column(name = "REF_NO", length = 100)
+	private String refNo;
+
+	@Column(name = "REF_DATE")
+	private Date refDate;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

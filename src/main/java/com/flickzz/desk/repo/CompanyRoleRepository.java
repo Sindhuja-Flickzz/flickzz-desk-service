@@ -8,7 +8,10 @@ import org.springframework.stereotype.*;
 import com.flickzz.desk.model.*;
 
 @Repository
-public interface CompanyRoleRepository extends JpaRepository<CompanyRole, Long> {
+public interface CompanyRoleRepository extends JpaRepository<BusinessPartner, Long> {
 
-	List<CompanyRole> findByCompany_CompanyIdAndIsActive(Long valueOf, boolean active);
+	List<BusinessPartner> findByCompany_CompanyIdAndIsActive(Long valueOf, boolean active);
+
+	Optional<BusinessPartner> findByCompany_CompanyIdAndMappedCompany_CompanyIdAndIsActive(Long companyId, Long bpUid,
+			boolean isActive);
 }
