@@ -70,10 +70,6 @@ public class UserStory {
 	@JoinColumn(name = "PREDECESSOR_ID", referencedColumnName = "STORY_ID")
 	private UserStory predecessor; // self-reference
 
-	@ManyToOne
-	@JoinColumn(name = "PRIORITY_ID", referencedColumnName = "PRIORITY_ID")
-	private PriorityMaster priority; // maps to FD_PRIORITY_MASTER
-
 	@OneToMany(mappedBy = "userStory", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private List<Task> tasks;

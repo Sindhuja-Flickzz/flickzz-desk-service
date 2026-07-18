@@ -18,8 +18,8 @@ public class BusinessPartner {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "business_partner_seq")
 	@SequenceGenerator(name = "business_partner_seq", sequenceName = "BUSINESS_PARTNER_SEQ", allocationSize = 1)
-	@Column(name = "ROLE_ID")
-	private Long roleId;
+	@Column(name = "BUSINESS_PARTNER_ID")
+	private Long businessPartnerId;
 
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_BUSINESS_PARTNER_COMPANY"), nullable = false)
@@ -45,10 +45,10 @@ public class BusinessPartner {
 	@Column(name = "CALL_HORIZON")
 	private Integer callHorizon = 0;
 
-	@Column(name = "VALID_FROM", nullable = false)
+	@Column(name = "VALID_FROM")
 	private Date validFrom;
 
-	@Column(name = "VALID_TO", nullable = false)
+	@Column(name = "VALID_TO")
 	private Date validTo;
 
 	@Column(name = "REF_NO", length = 100)

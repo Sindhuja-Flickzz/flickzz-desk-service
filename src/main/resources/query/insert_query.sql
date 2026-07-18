@@ -115,3 +115,8 @@ INSERT INTO FD_FIELD_TYPES (CODE, LABEL, CREATED_BY) VALUES
 ('CHECKBOX', 'CHECKBOX', 'ADMIN'),
 ('MULTISELECT', 'MULTISELECT', 'ADMIN')
 
+---------------------------------------- 12/07/2026	----------------------------------------
+INSERT INTO FD_TICKET_TYPE_MASTER (TICKET_TYPE_NAME, IS_ACTIVE, CREATED_BY, IS_CREATOR_ADMIN) VALUES
+('Incident', TRUE, 1, TRUE),
+('Service Request', TRUE, 1, TRUE),
+('Change Request', TRUE, 1, TRUE);

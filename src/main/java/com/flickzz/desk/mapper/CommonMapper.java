@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.*;
 
 import org.springframework.context.annotation.*;
+import org.springframework.lang.*;
 import org.springframework.security.crypto.bcrypt.*;
 import org.springframework.security.crypto.password.*;
 import org.springframework.stereotype.*;
@@ -20,8 +21,9 @@ public class CommonMapper {
 		return new BCryptPasswordEncoder();
 	}
 
-	public User registerRequesttoUser(RegisterLoginRequestVO request, String rawPassword, CountryMaster country,
-			CityMaster city, LanguageMaster language) {
+	public User registerRequesttoUser(RegisterLoginRequestVO request,
+			@SuppressWarnings("deprecation") @NonNull String rawPassword, CountryMaster country, CityMaster city,
+			LanguageMaster language) {
 		if (request == null) {
 			return null;
 		}
@@ -214,33 +216,6 @@ public class CommonMapper {
 				.agent(toAgentMasterVO(agentSkillsMappings.getAgent()))
 				.experienceYears(agentSkillsMappings.getExperienceYears())
 				.experienceMonths(agentSkillsMappings.getExperienceMonths()).build();
-	}
-
-	public PriorityMaster toPriorityMaster(PriorityRequestVO vo, CompanyMaster companyMaster) {
-		if (vo == null) {
-			return null;
-		}
-		return PriorityMaster.builder().priorityId(vo.getPriorityId()).priorityName(vo.getPriorityName())
-				.organization(companyMaster).rank(vo.getRank()).colorCode(vo.getColorCode())
-				.responseSla(vo.getResponseSla()).resolutionSla(vo.getResolutionSla()).isActive(vo.getIsActive())
-				.createdBy(vo.getCreatedBy())
-				.isCreatorAdmin(vo.getIsCreatedByAdmin() != null ? vo.getIsCreatedByAdmin() : false)
-				.updatedBy(vo.getUpdatedBy())
-				.isUpdaterAdmin(vo.getIsUpdatedByAdmin() != null ? vo.getIsUpdatedByAdmin() : false).build();
-	}
-
-	public PriorityMasterVO toPriorityMasterVo(PriorityMaster entity) {
-		if (entity == null) {
-			return null;
-		}
-		return PriorityMasterVO.builder().priorityId(entity.getPriorityId()).priorityName(entity.getPriorityName())
-				.organization(toCompanyMasterVO(entity.getOrganization())).rank(entity.getRank())
-				.colorCode(entity.getColorCode()).responseSla(entity.getResponseSla())
-				.resolutionSla(entity.getResolutionSla()).isActive(entity.getIsActive())
-				.createdBy(entity.getCreatedBy())
-				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
-				.updatedBy(entity.getUpdatedBy())
-				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
 	public List<UserVO> usersToUserVO(List<User> users) {
@@ -519,10 +494,9 @@ public class CommonMapper {
 				.leads(userStory.getProjectLeadAssignments() != null
 						? userStory.getProjectLeadAssignments().stream().map(this::toProjectLeadAssignmentVO).toList()
 						: null)
-				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
-				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
-				.isCreatedByAdmin(userStory.getIsCreatorAdmin()).isUpdatedByAdmin(userStory.getIsUpdaterAdmin())
-				.updatedBy(userStory.getUpdatedBy()).build();
+				.storyPoints(userStory.getStoryPoints()).isActive(userStory.getIsActive())
+				.createdBy(userStory.getCreatedBy()).isCreatedByAdmin(userStory.getIsCreatorAdmin())
+				.isUpdatedByAdmin(userStory.getIsUpdaterAdmin()).updatedBy(userStory.getUpdatedBy()).build();
 	}
 
 	public ProjectLeadAssignmentVO toProjectLeadAssignmentVO(ProjectLeadAssignment pla) {
@@ -585,7 +559,7 @@ public class CommonMapper {
 			return null;
 		}
 		// Create a minimal ProjectVO to avoid circular reference
-		ProjectVO projectVO = ProjectVO.builder().projectId(epic.getProject().getProjectId()).build();
+//		ProjectVO projectVO = ProjectVO.builder().projectId(epic.getProject().getProjectId()).build();
 
 		return EpicVO.builder().epicId(epic.getEpicId()).project(null).epicName(epic.getEpicName())
 				.epicDesc(epic.getEpicDesc()).epicSequence(epic.getEpicSequence())
@@ -629,10 +603,9 @@ public class CommonMapper {
 				.predecessorId(userStory.getPredecessor() != null ? userStory.getPredecessor().getStoryId() : null)
 				.leads(userStory.getProjectLeadAssignments() != null ? userStory.getProjectLeadAssignments().stream()
 						.map(this::toNoBackRefProjectLeadAssignmentVO).toList() : null)
-				.priorityId(toPriorityMasterVo(userStory.getPriority())).storyPoints(userStory.getStoryPoints())
-				.isActive(userStory.getIsActive()).createdBy(userStory.getCreatedBy())
-				.isCreatedByAdmin(userStory.getIsCreatorAdmin()).isUpdatedByAdmin(userStory.getIsUpdaterAdmin())
-				.updatedBy(userStory.getUpdatedBy()).build();
+				.storyPoints(userStory.getStoryPoints()).isActive(userStory.getIsActive())
+				.createdBy(userStory.getCreatedBy()).isCreatedByAdmin(userStory.getIsCreatorAdmin())
+				.isUpdatedByAdmin(userStory.getIsUpdaterAdmin()).updatedBy(userStory.getUpdatedBy()).build();
 	}
 
 	public TaskVO toNoBackRefTaskVO(Task task) {
@@ -689,11 +662,11 @@ public class CommonMapper {
 				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
 	}
 
-	public BusinessPartnerVO toCompanyRoleVO(BusinessPartner role) {
+	public BusinessPartnerVO toBusinessPartnerVO(BusinessPartner role) {
 		if (role == null) {
 			return null;
 		}
-		return BusinessPartnerVO.builder().roleId(role.getRoleId())
+		return BusinessPartnerVO.builder().businessPartnerId(role.getBusinessPartnerId())
 				.company(toNoBackRefCompanyMasterVO(role.getCompany()))
 				.mappedCompany(toNoBackRefCompanyMasterVO(role.getMappedCompany()))
 				.isServiceProvider(role.getIsServiceProvider()).isRequestor(role.getIsRequestor())
@@ -759,4 +732,121 @@ public class CommonMapper {
 				.value(option.getValue()).defaultSelected(option.getDefaultSelected())
 				.optionSequence(option.getOptionSequence()).isActive(option.getIsActive()).build();
 	}
+
+	public TicketTypeMasterVO toTicketTypeMasterVo(TicketTypeMaster ticketType) {
+		if (ticketType == null) {
+			return null;
+		}
+		return TicketTypeMasterVO.builder().ticketTypeId(ticketType.getTicketTypeId())
+				.ticketTypeName(ticketType.getTicketTypeName()).isActive(ticketType.getIsActive())
+				.createdBy(ticketType.getCreatedBy())
+				.isCreatorAdmin(ticketType.getIsCreatorAdmin() != null ? ticketType.getIsCreatorAdmin() : false)
+				.updatedBy(ticketType.getUpdatedBy())
+				.isUpdaterAdmin(ticketType.getIsUpdaterAdmin() != null ? ticketType.getIsUpdaterAdmin() : false)
+				.build();
+	}
+
+	public BPConfigurationVO toBPConfigurationVO(BPConfiguration configurations) {
+		if (configurations == null) {
+			return null;
+		}
+		return BPConfigurationVO.builder().configurationId(configurations.getConfigurationId())
+				.businessPartner(toBusinessPartnerVO(configurations.getBusinessPartner()))
+				.isActive(configurations.getIsActive()).createdBy(configurations.getCreatedBy())
+				.isCreatorAdmin(configurations.getIsCreatorAdmin() != null ? configurations.getIsCreatorAdmin() : false)
+				.updatedBy(configurations.getUpdatedBy())
+				.isUpdaterAdmin(configurations.getIsUpdaterAdmin() != null ? configurations.getIsUpdaterAdmin() : false)
+				.build();
+	}
+
+	public BPPriority toBPPriority(BpConfigRequestVO request, BPConfiguration config, TicketTypeMaster ticketType) {
+
+		if (request == null) {
+			return null;
+		}
+		return BPPriority.builder().configuration(config).level(request.getLevel()).code(request.getCode())
+				.ticketType(ticketType).description(request.getDescription()).createdBy(request.getCreatedBy())
+				.updatedBy(request.getUpdatedBy()).build();
+	}
+
+	public BPPriorityVO toBPPriorityVo(BPPriority bpPriority) {
+		if (bpPriority == null) {
+			return null;
+		}
+		return BPPriorityVO.builder().priorityId(bpPriority.getPriorityId())
+				.configuration(toBPConfigurationVO(bpPriority.getConfiguration())).level(bpPriority.getLevel())
+				.code(bpPriority.getCode()).ticketType(toTicketTypeMasterVo(bpPriority.getTicketType()))
+				.description(bpPriority.getDescription()).isActive(bpPriority.getIsActive())
+				.createdBy(bpPriority.getCreatedBy()).updatedBy(bpPriority.getUpdatedBy()).build();
+	}
+
+	public BPSla toBPSla(BpConfigRequestVO request, BPConfiguration config, BPPriority bpPriority) {
+
+		if (request == null) {
+			return null;
+		}
+		return BPSla.builder().configuration(config).priority(bpPriority)
+				.firstResponseTime(request.getFirstResponseTime()).firstResponseTerm(request.getFirstResponseTerm())
+				.resolutionTime(request.getResolutionTime()).resolutionTerm(request.getResolutionTerm())
+				.updateFrequency(request.getUpdateFrequency()).updateFrequencyTerm(request.getUpdateFrequencyTerm())
+				.createdBy(request.getCreatedBy())
+				.updatedBy(request.getUpdatedBy() == null ? request.getCreatedBy() : request.getUpdatedBy()).build();
+	}
+
+	public BPSlaVO toBPSlaVo(BPSla bpSla) {
+
+		if (bpSla == null) {
+			return null;
+		}
+		return BPSlaVO.builder().slaId(bpSla.getSlaId()).configuration(toBPConfigurationVO(bpSla.getConfiguration()))
+				.priority(toBPPriorityVo(bpSla.getPriority())).firstResponseTime(bpSla.getFirstResponseTime())
+				.firstResponseTerm(bpSla.getFirstResponseTerm()).resolutionTime(bpSla.getResolutionTime())
+				.resolutionTerm(bpSla.getResolutionTerm()).updateFrequency(bpSla.getUpdateFrequency())
+				.updateFrequencyTerm(bpSla.getUpdateFrequencyTerm()).isActive(bpSla.getIsActive())
+				.createdBy(bpSla.getCreatedBy()).updatedBy(bpSla.getUpdatedBy()).build();
+	}
+
+	public BPCategory toBPCategory(BpConfigRequestVO request, BPConfiguration config) {
+
+		if (request == null) {
+			return null;
+		}
+		return BPCategory.builder().configuration(config).categoryName(request.getCategoryName())
+				.createdBy(request.getCreatedBy()).updatedBy(request.getUpdatedBy()).build();
+	}
+
+	public BPCategoryVO toBPCategoryVo(BPCategory bpCategory) {
+		if (bpCategory == null) {
+			return null;
+		}
+		List<BPSubCategoryVO> subCategories = null;
+		if (bpCategory.getSubCategories() != null && !bpCategory.getSubCategories().isEmpty()) {
+			subCategories = bpCategory.getSubCategories().stream().map(this::toNoBackRefBPSubCategoryVo).toList();
+		}
+		return BPCategoryVO.builder().categoryId(bpCategory.getCategoryId())
+				.configuration(toBPConfigurationVO(bpCategory.getConfiguration()))
+				.categoryName(bpCategory.getCategoryName()).isActive(bpCategory.getIsActive())
+				.createdBy(bpCategory.getCreatedBy()).updatedBy(bpCategory.getUpdatedBy()).subCategories(subCategories)
+				.build();
+	}
+
+	public BPSubCategoryVO toNoBackRefBPSubCategoryVo(BPSubCategory bpSubCategory) {
+		if (bpSubCategory == null) {
+			return null;
+		}
+		return BPSubCategoryVO.builder().subCategoryId(bpSubCategory.getSubCategoryId()).category(null)
+				.subCategoryName(bpSubCategory.getSubCategoryName()).isActive(bpSubCategory.getIsActive())
+				.createdBy(bpSubCategory.getCreatedBy()).updatedBy(bpSubCategory.getUpdatedBy()).build();
+	}
+
+	public BPSubCategoryVO toBPSubCategoryVo(BPSubCategory bpSubCategory) {
+		if (bpSubCategory == null) {
+			return null;
+		}
+		return BPSubCategoryVO.builder().subCategoryId(bpSubCategory.getSubCategoryId())
+				.category(toBPCategoryVo(bpSubCategory.getCategory()))
+				.subCategoryName(bpSubCategory.getSubCategoryName()).isActive(bpSubCategory.getIsActive())
+				.createdBy(bpSubCategory.getCreatedBy()).updatedBy(bpSubCategory.getUpdatedBy()).build();
+	}
+
 }

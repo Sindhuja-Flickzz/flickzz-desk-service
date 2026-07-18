@@ -35,7 +35,7 @@ public class CompanyService {
 	CityMasterRepository cityMasterRepository;
 
 	@Autowired
-	CompanyRoleRepository companyRoleRepository;
+	BusinessPartnerRepository businessPartnerRepository;
 
 	@Autowired
 	private CommonMapper mapper;
@@ -141,6 +141,16 @@ public class CompanyService {
 			existing.setAddressLine2(request.getAddressLine2());
 			existing.setEmployeeSize(request.getEmployeeSize());
 			existing.setUpdatedBy(request.getUpdatedBy());
+
+			BusinessPartner entity = new BusinessPartner();
+			entity.setCompany(existing);
+			entity.setMappedCompany(existing);
+			entity.setIsBoth(Boolean.TRUE);
+			entity.setCreatedBy(request.getUpdatedBy());
+			entity.setIsCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
+					: existing.getIsCreatorAdmin());
+			businessPartnerRepository.save(entity);
+
 			return mapper.toCompanyMasterVO(companyMasterRepository.save(existing));
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -179,12 +189,28 @@ public class CompanyService {
 		}
 	}
 
-	public List<BusinessPartnerVO> listServiceProviderList(String orgId) {
+	public List<BusinessPartnerVO> listServiceProviderList(Long orgId) {
 		log.info(generateLog("listServiceProviderList", this.getClass().getName()));
 		try {
-			return companyRoleRepository.findActivePartnersByCompany(Long.valueOf(orgId), ACTIVE).stream()
-					.filter(role -> role.getIsBoth()).map(role -> mapper.toCompanyRoleVO(role))
-					.collect(Collectors.toList());
+
+			List<BusinessPartner> businessPartners = businessPartnerRepository.findActivePartnersByCompany(orgId,
+					ACTIVE);
+
+			businessPartners = businessPartners.stream().map(bp -> {
+
+				if (bp.getMappedCompany() != null && orgId == bp.getMappedCompany().getCompanyId()) {
+
+					CompanyMaster temp = bp.getCompany();
+
+					bp.setCompany(bp.getMappedCompany());
+					bp.setMappedCompany(temp);
+				}
+
+				return bp;
+			}).toList();
+
+			return businessPartners.stream().filter(role -> role.getIsBoth())
+					.map(role -> mapper.toBusinessPartnerVO(role)).collect(Collectors.toList());
 		} catch (Exception e) {
 			log.error("Exception in listServiceProviderList method in CompanyService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -202,48 +228,6 @@ public class CompanyService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in getCompanyInfoByUid method in CompanyService");
-			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-		}
-	}
-
-	public BusinessPartnerVO createCompanyBusinessPartner(CompanyMasterRequestVO request) {
-		log.info(generateLog("createCompanyBusinessPartner", this.getClass().getName()));
-		try {
-			if (request == null || request.getCompanyId() == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
-			}
-
-			CompanyMaster bpCompany = companyMasterRepository.findByUidAndIsActive(request.getBpUid(), ACTIVE)
-					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
-			Optional<BusinessPartner> businessPartner = companyRoleRepository
-					.findByCompany_CompanyIdAndMappedCompany_CompanyIdAndIsActive(request.getCompanyId(),
-							bpCompany.getCompanyId(), ACTIVE);
-			businessPartner.ifPresent(role -> {
-				throw new FlickzzDeskException(ALREADY_EXISTS,
-						getDescription(ALREADY_EXISTS.getDescription(), "Mapping "));
-			});
-
-			BusinessPartner entity = new BusinessPartner();
-			entity.setCompany(companyMasterRepository.findById(request.getCompanyId())
-					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY))));
-			entity.setMappedCompany(bpCompany);
-			entity.setIsBoth(Boolean.TRUE);
-			entity.setCreatedBy(request.getCreatedBy());
-			entity.setIsCreatorAdmin(request.getIsCreatedByAdmin());
-			entity.setCallHorizon(request.getCallHorizonDays());
-			entity.setValidFrom(request.getValidFrom());
-			entity.setValidTo(request.getValidTo());
-			entity.setRefNo(request.getRefNumber());
-			entity.setRefDate(request.getRefDate());
-			companyRoleRepository.save(entity);
-			return mapper.toCompanyRoleVO(entity);
-		} catch (FlickzzDeskException e) {
-			throw e;
-		} catch (Exception e) {
-			log.error("Exception in createCompanyBusinessPartner method in CompanyService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

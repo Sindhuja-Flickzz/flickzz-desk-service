@@ -82,7 +82,7 @@ public class CompanyController {
 	public ResponseEntity<FlickzzDeskResponse> listServiceProviderList(@PathVariable String orgId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<BusinessPartnerVO> response = companyService.listServiceProviderList(orgId);
+		List<BusinessPartnerVO> response = companyService.listServiceProviderList(Long.valueOf(orgId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY_ROLE),
@@ -98,16 +98,5 @@ public class CompanyController {
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COMPANY), response);
-	}
-
-	@PostMapping("/bp/create")
-	public ResponseEntity<FlickzzDeskResponse> createCompanyBusinessPartner(@RequestBody CompanyMasterRequestVO request)
-			throws Exception {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
-
-		BusinessPartnerVO respVO = companyService.createCompanyBusinessPartner(request);
-
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), COMPANY), respVO);
 	}
 }
