@@ -48,7 +48,19 @@ public class BusinessPartnerService {
 	BPSubCategoryRepository bpSubCategoryRepository;
 
 	@Autowired
-	private CommonMapper mapper;
+	BPSupportGroupRepository bpSupportGroupRepository;
+
+	@Autowired
+	BPSupportGroupMemberRepository bpSupportGroupMemberRepository;
+
+	@Autowired
+	BPAssignmentRepository bpAssignmentRepository;
+
+	@Autowired
+	AgentMasterRepository agentMasterRepository;
+
+	@Autowired
+	CommonMapper mapper;
 
 	public BusinessPartnerVO createBusinessPartner(CompanyMasterRequestVO request) {
 		log.info(generateLog("createBusinessPartner", this.getClass().getName()));
@@ -619,6 +631,498 @@ public class BusinessPartnerService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in getBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPSupportGroupVO createBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
+		log.info(generateLog("createBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		try {
+			if (request == null || request.getBusinessPartnerId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+			if (request.getGroupName() == null || request.getGroupName().trim().isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Group name"));
+			}
+			if (request.getAgents() == null || request.getAgents().isEmpty()) {
+				throw new FlickzzDeskException(SET_TEXT, getDescription(SET_TEXT.getDescription(), "agent list"));
+			}
+
+			Optional<BusinessPartner> businessPartner = businessPartnerRepository
+					.findByBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+			if (!businessPartner.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+
+			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
+					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+
+			BPConfiguration config = new BPConfiguration();
+			if (!existingConfig.isPresent()) {
+				config.setBusinessPartner(businessPartner.get());
+				config.setCreatedBy(request.getCreatedBy());
+				config.setIsCreatorAdmin(request.getIsCreatedByAdmin());
+				bPConfigurationRepository.save(config);
+			} else {
+				config = existingConfig.get();
+			}
+
+			if (bpSupportGroupRepository.existsByConfigurationConfigurationIdAndGroupNameAndIsActive(
+					config.getConfigurationId(), request.getGroupName().trim(), ACTIVE)) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Support group"));
+			}
+
+			Set<Long> agentIds = new LinkedHashSet<>();
+			for (Long agentId : request.getAgents()) {
+				if (agentId == null) {
+					continue;
+				}
+				agentIds.add(agentId);
+			}
+			if (agentIds.isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Agent list"));
+			}
+
+			for (Long agentId : agentIds) {
+				Optional<AgentMaster> agent = agentMasterRepository.findById(agentId);
+				if (agent.isEmpty() || !agent.get().getIsActive()) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+				}
+			}
+
+			BPSupportGroup supportGroup = BPSupportGroup.builder().configuration(config)
+					.groupName(request.getGroupName().trim()).createdBy(request.getCreatedBy())
+					.updatedBy(request.getUpdatedBy()).build();
+			bpSupportGroupRepository.save(supportGroup);
+
+			for (Long agentId : agentIds) {
+				AgentMaster agent = agentMasterRepository.findById(agentId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupMember member = BPSupportGroupMember.builder().supportGroup(supportGroup).agent(agent)
+						.isGroupLead(Boolean.FALSE).build();
+				bpSupportGroupMemberRepository.save(member);
+			}
+
+			return mapper.toSupportGroupVo(supportGroup);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in createBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPSupportGroupVO updateBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
+		log.info(generateLog("updateBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		try {
+			if (request == null || request.getSupportGroupId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+			if (request.getGroupName() == null || request.getGroupName().trim().isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Group name"));
+			}
+			if (request.getAgents() == null || request.getAgents().isEmpty()) {
+				throw new FlickzzDeskException(SET_TEXT, getDescription(SET_TEXT.getDescription(), "agent list"));
+			}
+
+			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
+					.findBySupportGroupIdAndIsActive(request.getSupportGroupId(), ACTIVE);
+			if (existingGroup.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+
+			BPSupportGroup supportGroup = existingGroup.get();
+			supportGroup.setGroupName(request.getGroupName().trim());
+			supportGroup.setUpdatedBy(request.getUpdatedBy());
+			bpSupportGroupRepository.save(supportGroup);
+
+			Set<Long> incomingAgentIds = new LinkedHashSet<>();
+			for (Long agentId : request.getAgents()) {
+				if (agentId != null) {
+					incomingAgentIds.add(agentId);
+				}
+			}
+			if (incomingAgentIds.isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Agent list"));
+			}
+			for (Long agentId : incomingAgentIds) {
+				Optional<AgentMaster> agent = agentMasterRepository.findById(agentId);
+				if (agent.isEmpty() || !agent.get().getIsActive()) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+				}
+			}
+
+			List<BPSupportGroupMember> existingMembers = bpSupportGroupMemberRepository
+					.findBySupportGroupSupportGroupId(supportGroup.getSupportGroupId());
+			Set<Long> existingAgentIds = existingMembers.stream().map(member -> member.getAgent().getAgentId())
+					.collect(Collectors.toSet());
+
+			for (Long agentId : incomingAgentIds) {
+				Optional<BPSupportGroupMember> existingMember = bpSupportGroupMemberRepository
+						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), agentId);
+				if (existingMember.isPresent()) {
+					existingMember.get().setIsActive(Boolean.TRUE);
+					bpSupportGroupMemberRepository.save(existingMember.get());
+				} else {
+					AgentMaster agent = agentMasterRepository.findById(agentId)
+							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+					BPSupportGroupMember member = BPSupportGroupMember.builder().supportGroup(supportGroup).agent(agent)
+							.isGroupLead(Boolean.FALSE).build();
+					bpSupportGroupMemberRepository.save(member);
+				}
+			}
+
+			for (BPSupportGroupMember member : existingMembers) {
+				if (!incomingAgentIds.contains(member.getAgent().getAgentId())) {
+					member.setIsActive(Boolean.FALSE);
+					bpSupportGroupMemberRepository.save(member);
+				}
+			}
+
+			return mapper.toSupportGroupVo(supportGroup);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in updateBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public void deleteBusinessPartnerSupportGroupConfiguration(String supportGroupId) {
+		log.info(generateLog("deleteBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		try {
+			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
+					.findBySupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
+			if (existingGroup.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+
+			BPSupportGroup supportGroup = existingGroup.get();
+			supportGroup.setIsActive(Boolean.FALSE);
+			supportGroup.setUpdatedBy(null);
+			bpSupportGroupRepository.save(supportGroup);
+
+			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
+					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			for (BPSupportGroupMember member : members) {
+				member.setIsActive(Boolean.FALSE);
+				bpSupportGroupMemberRepository.save(member);
+			}
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPSupportGroupVO getBusinessPartnerSupportGroupConfigurationById(Long supportGroupId) {
+		log.info(generateLog("getBusinessPartnerSupportGroupConfigurationById", this.getClass().getName()));
+		try {
+			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
+					.findBySupportGroupIdAndIsActive(supportGroupId, ACTIVE);
+			if (existingGroup.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+			return mapper.toSupportGroupVo(existingGroup.get());
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerSupportGroupConfigurationById method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<BPSupportGroupVO> getBusinessPartnerSupportGroupConfiguration(Long businessPartnerId) {
+		log.info(generateLog("getBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		try {
+			Optional<BusinessPartner> businessPartner = businessPartnerRepository
+					.findByBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+			if (!businessPartner.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+
+			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
+					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+			if (!existingConfig.isPresent()) {
+				return Collections.emptyList();
+			}
+
+			List<BPSupportGroup> groups = bpSupportGroupRepository
+					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+			return groups.stream().map(mapper::toSupportGroupVo).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<BPSubCategoryVO> getBusinessPartnerSubCategoryConfiguration(Long valueOf) {
+
+		log.info(generateLog("getBusinessPartnerSubCategoryConfiguration", this.getClass().getName()));
+		try {
+			Optional<BusinessPartner> businessPartner = businessPartnerRepository
+					.findByBusinessPartnerIdAndIsActive(valueOf, ACTIVE);
+			if (!businessPartner.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+
+			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
+					.findByBusinessPartnerBusinessPartnerIdAndIsActive(valueOf, ACTIVE);
+			if (!existingConfig.isPresent()) {
+				return Collections.emptyList();
+			}
+
+			List<BPCategory> categories = bpCategoryRepository
+					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+
+			List<BPSubCategoryVO> subCategoryVOs = new ArrayList<>();
+			for (BPCategory category : categories) {
+				List<BPSubCategory> subCategories = bpSubCategoryRepository
+						.findByCategoryCategoryIdAndIsActive(category.getCategoryId(), ACTIVE);
+				for (BPSubCategory subCategory : subCategories) {
+					BPSubCategoryVO vo = new BPSubCategoryVO();
+					vo.setSubCategoryId(subCategory.getSubCategoryId());
+					vo.setSubCategoryName(subCategory.getSubCategoryName());
+					subCategoryVOs.add(vo);
+				}
+			}
+			return subCategoryVOs;
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerSubCategoryConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPAssignmentVO createBusinessPartnerAssignmentConfiguration(BpConfigRequestVO request) {
+		log.info(generateLog("createBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		try {
+			if (request == null || request.getBusinessPartnerId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+			if (request.getSupportGroupId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+			if (request.getSubCategoryId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Sub category"));
+			}
+
+			Optional<BusinessPartner> businessPartner = businessPartnerRepository
+					.findByBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+			if (!businessPartner.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+
+			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
+					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+			BPConfiguration config = existingConfig.orElseGet(() -> {
+				BPConfiguration newConfig = new BPConfiguration();
+				newConfig.setBusinessPartner(businessPartner.get());
+				newConfig.setCreatedBy(request.getCreatedBy());
+				newConfig.setIsCreatorAdmin(request.getIsCreatedByAdmin());
+				bPConfigurationRepository.save(newConfig);
+				return newConfig;
+			});
+
+			Optional<BPSupportGroup> supportGroup = bpSupportGroupRepository
+					.findBySupportGroupIdAndIsActive(request.getSupportGroupId(), ACTIVE);
+			if (supportGroup.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			}
+			if (!Objects.equals(supportGroup.get().getConfiguration().getConfigurationId(),
+					config.getConfigurationId())) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Support group"));
+			}
+
+			Optional<BPSubCategory> subCategory = bpSubCategoryRepository
+					.findBySubCategoryIdAndIsActive(request.getSubCategoryId(), ACTIVE);
+			if (subCategory.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Sub category"));
+			}
+			if (!Objects.equals(subCategory.get().getCategory().getConfiguration().getConfigurationId(),
+					config.getConfigurationId())) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Sub category"));
+			}
+
+			Optional<BPAssignment> existingAssignmentBySupportGroup = bpAssignmentRepository
+					.findByConfigurationConfigurationIdAndSupportGroupSupportGroupIdAndIsActive(
+							config.getConfigurationId(), request.getSupportGroupId(), ACTIVE);
+			if (existingAssignmentBySupportGroup.isPresent()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for support group"));
+			}
+
+			Optional<BPAssignment> existingAssignmentBySubCategory = bpAssignmentRepository
+					.findByConfigurationConfigurationIdAndSubCategorySubCategoryIdAndIsActive(
+							config.getConfigurationId(), request.getSubCategoryId(), ACTIVE);
+			if (existingAssignmentBySubCategory.isPresent()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for sub category"));
+			}
+
+			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
+					.findByConfigurationConfigurationIdAndSupportGroupSupportGroupIdAndSubCategorySubCategoryId(
+							config.getConfigurationId(), request.getSupportGroupId(), request.getSubCategoryId());
+
+			BPAssignment assignment;
+
+			if (existingAssignment.isPresent()) {
+				assignment = existingAssignment.get();
+				assignment.setIsActive(Boolean.TRUE);
+				assignment.setUpdatedBy(request.getUpdatedBy());
+			} else {
+				assignment = BPAssignment.builder().configuration(config).subCategory(subCategory.get())
+						.supportGroup(supportGroup.get()).createdBy(request.getCreatedBy())
+						.updatedBy(request.getUpdatedBy()).build();
+			}
+			bpAssignmentRepository.save(assignment);
+			return mapper.toBPAssignmentVo(assignment);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in createBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPAssignmentVO updateBusinessPartnerAssignmentConfiguration(BpConfigRequestVO request) {
+		log.info(generateLog("updateBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		try {
+			if (request == null || request.getSupportGroupId() == null || request.getSubCategoryId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			}
+
+			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
+					.findBySupportGroupSupportGroupIdAndIsActive(request.getSupportGroupId(), ACTIVE);
+			if (existingAssignment.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			}
+
+			Optional<BPSubCategory> targetSubCategory = bpSubCategoryRepository
+					.findBySubCategoryIdAndIsActive(request.getSubCategoryId(), ACTIVE);
+			if (targetSubCategory.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Sub category"));
+			}
+
+			Optional<BPAssignment> assignmentForSubCategory = bpAssignmentRepository
+					.findByConfigurationConfigurationIdAndSubCategorySubCategoryIdAndIsActive(
+							existingAssignment.get().getConfiguration().getConfigurationId(),
+							request.getSubCategoryId(), ACTIVE);
+			if (assignmentForSubCategory.isPresent()
+					&& !Objects.equals(assignmentForSubCategory.get().getAssignmentId(),
+							existingAssignment.get().getAssignmentId())) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for sub category"));
+			}
+
+			BPAssignment assignment = existingAssignment.get();
+			assignment.setUpdatedBy(request.getUpdatedBy());
+			assignment.setSubCategory(targetSubCategory.get());
+			bpAssignmentRepository.save(assignment);
+			return mapper.toBPAssignmentVo(assignment);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in updateBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public void deleteBusinessPartnerAssignmentConfiguration(String supportGroupId) {
+		log.info(generateLog("deleteBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		try {
+			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
+					.findBySupportGroupSupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
+			if (existingAssignment.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			}
+			BPAssignment assignment = existingAssignment.get();
+			assignment.setIsActive(Boolean.FALSE);
+			assignment.setUpdatedBy(null);
+			bpAssignmentRepository.save(assignment);
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in deleteBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public BPAssignmentVO getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long supportGroupId) {
+		log.info(generateLog("getBusinessPartnerAssignmentConfigurationBySupportGroupId", this.getClass().getName()));
+		try {
+			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
+					.findBySupportGroupSupportGroupIdAndIsActive(supportGroupId, ACTIVE);
+			if (existingAssignment.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			}
+			return mapper.toBPAssignmentVo(existingAssignment.get());
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error(
+					"Exception in getBusinessPartnerAssignmentConfigurationBySupportGroupId method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<BPAssignmentVO> getBusinessPartnerAssignmentConfiguration(Long businessPartnerId) {
+		log.info(generateLog("getBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		try {
+			Optional<BusinessPartner> businessPartner = businessPartnerRepository
+					.findByBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+			if (!businessPartner.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), BUSINESS_PARTNER));
+			}
+
+			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
+					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+			if (!existingConfig.isPresent()) {
+				return Collections.emptyList();
+			}
+
+			List<BPAssignment> assignments = bpAssignmentRepository
+					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+			return assignments.stream().map(mapper::toBPAssignmentVo).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

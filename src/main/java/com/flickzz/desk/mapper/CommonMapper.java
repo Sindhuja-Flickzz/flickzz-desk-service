@@ -849,4 +849,38 @@ public class CommonMapper {
 				.createdBy(bpSubCategory.getCreatedBy()).updatedBy(bpSubCategory.getUpdatedBy()).build();
 	}
 
+	public BPSupportGroupVO toSupportGroupVo(BPSupportGroup supportGroup) {
+		if (supportGroup == null) {
+			return null;
+		}
+		return BPSupportGroupVO.builder().supportGroupId(supportGroup.getSupportGroupId())
+				.configuration(toBPConfigurationVO(supportGroup.getConfiguration()))
+				.members(supportGroup.getMembers() != null
+						? supportGroup.getMembers().stream().filter(member -> Boolean.TRUE.equals(member.getIsActive()))
+								.map(this::toSupportGroupMemberVo).toList()
+						: null)
+				.groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive())
+				.createdBy(supportGroup.getCreatedBy()).updatedBy(supportGroup.getUpdatedBy()).build();
+	}
+
+	public BPSupportGroupMemberVO toSupportGroupMemberVo(BPSupportGroupMember supportGroupMember) {
+		if (supportGroupMember == null) {
+			return null;
+		}
+		return BPSupportGroupMemberVO.builder().memberId(supportGroupMember.getMemberId()).supportGroup(null)
+				.agent(toAgentMasterVO(supportGroupMember.getAgent())).isGroupLead(supportGroupMember.getIsGroupLead())
+				.isActive(supportGroupMember.getIsActive()).build();
+	}
+
+	public BPAssignmentVO toBPAssignmentVo(BPAssignment assignment) {
+		if (assignment == null) {
+			return null;
+		}
+		return BPAssignmentVO.builder().assignmentId(assignment.getAssignmentId())
+				.configuration(toBPConfigurationVO(assignment.getConfiguration()))
+				.subCategory(toBPSubCategoryVo(assignment.getSubCategory()))
+				.supportGroup(toSupportGroupVo(assignment.getSupportGroup())).isActive(assignment.getIsActive())
+				.createdBy(assignment.getCreatedBy()).updatedBy(assignment.getUpdatedBy()).build();
+	}
+
 }

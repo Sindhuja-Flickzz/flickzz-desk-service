@@ -1,6 +1,7 @@
 package com.flickzz.desk.vo;
 
 import java.io.*;
+import java.util.*;
 
 import lombok.*;
 
@@ -15,6 +16,8 @@ public class BPSupportGroupVO implements Serializable {
 	private Long supportGroupId;
 
 	private BPConfigurationVO configuration;
+
+	private List<BPSupportGroupMemberVO> members;
 
 	private String groupName;
 

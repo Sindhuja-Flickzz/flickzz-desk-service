@@ -1,9 +1,12 @@
 package com.flickzz.desk.vo;
 
-import java.io.*;
-import java.util.*;
+import java.io.Serializable;
+import java.util.List;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
@@ -30,6 +33,11 @@ public class BpConfigRequestVO implements Serializable {
 	private Long categoryId;
 	private String categoryName;
 	private List<String> subCategories;
+
+	private Long supportGroupId;
+	private String groupName;
+	private List<Long> agents;
+	private Long subCategoryId;
 
 	private Boolean isActive;
 	private Long createdBy;

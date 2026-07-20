@@ -1,6 +1,9 @@
 package com.flickzz.desk.model;
 
 import java.time.*;
+import java.util.*;
+
+import com.fasterxml.jackson.annotation.*;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,6 +29,10 @@ public class BPSupportGroup {
 
 	@Column(name = "GROUP_NAME", nullable = false, length = 100)
 	private String groupName;
+
+	@OneToMany(mappedBy = "supportGroup", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<BPSupportGroupMember> members;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
