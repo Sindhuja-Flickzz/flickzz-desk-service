@@ -18,17 +18,22 @@ public class FlickzzDeskConstants {
 	public static final String SKILL = "Skill";
 	public static final String AGENT = "Agent";
 	public static final String COMPANY = "Company";
+	public static final String TICKET_TYPE = "Ticket Type";
 	public static final String COMPANY_ROLE = "Company Role";
 	public static final String COUNTRY = "Country";
 	public static final String STATE = "State";
 	public static final String CITY = "City";
 	public static final String PRIORITY = "Priority";
+	public static final String SLA = "SLA";
+	public static final String CATEGORY = "Category";
 	public static final String LANGUAGE = "Language";
 	public static final String PROJECT = "Project";
 	public static final String EPIC = "Epic";
 	public static final String PROJECT_ID = "Project Id";
 	public static final String TIME_ZONE = "Current time of timezone";
 	public static final String BUSINESS_SERVICE = "Business Service";
+	public static final String BUSINESS_PARTNER = "Business Partner";
+	public static final String BUSINESS_PARTNER_CONFIG = "Business Partner Config";
 	public static final String REQUEST_NUMBER = "Request Number";
 	public static final String REQUEST_CONFIG = "Request Config";
 	public static final String PHONE_NUMBER = "Phone Number";
@@ -73,4 +78,11 @@ public class FlickzzDeskConstants {
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),
 			Map.entry("Request Item", "RITM"), Map.entry("EPIC", "EPIC"), Map.entry("USER_STORY", "STORY"),
 			Map.entry("TASK", "TASK"), Map.entry("SUB_TASK", "STSK"));
+	public static final Map<String, Character> SLA_TERMS = new HashMap<String, Character>() {
+		{
+			put("days", 'D');
+			put("hours", 'H');
+			put("minutes", 'M');
+		}
+	};
 }

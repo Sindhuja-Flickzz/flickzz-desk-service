@@ -28,7 +28,7 @@ public class UserStoryVO implements Serializable {
 	private Long predecessorId;
 	private List<ProjectLeadAssignmentVO> leads;
 	private List<TaskVO> tasks;
-	private PriorityMasterVO priorityId;
+	private BPPriorityVO priorityId;
 	private Integer storyPoints;
 	private Boolean isActive;
 	private Long createdBy;

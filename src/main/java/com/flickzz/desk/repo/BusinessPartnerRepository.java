@@ -9,7 +9,7 @@ import org.springframework.stereotype.*;
 import com.flickzz.desk.model.*;
 
 @Repository
-public interface CompanyRoleRepository extends JpaRepository<BusinessPartner, Long> {
+public interface BusinessPartnerRepository extends JpaRepository<BusinessPartner, Long> {
 
 	@Query("""
 			SELECT bp
@@ -23,6 +23,20 @@ public interface CompanyRoleRepository extends JpaRepository<BusinessPartner, Lo
 	List<BusinessPartner> findActivePartnersByCompany(@Param("companyId") Long companyId,
 			@Param("active") boolean active);
 
+	@Query(value = """
+			SELECT COUNT(*)
+			FROM FD_BUSINESS_PARTNER
+			WHERE (
+			        (COMPANY_ID = :companyId AND MAPPING_ID = :mappedCompanyId)
+			     OR (COMPANY_ID = :mappedCompanyId AND MAPPING_ID = :companyId)
+			)
+			AND IS_ACTIVE = TRUE
+			""", nativeQuery = true)
+	long existsBusinessPartnerMapping(@Param("companyId") Long companyId,
+			@Param("mappedCompanyId") Long mappedCompanyId);
+
+	Optional<BusinessPartner> findByBusinessPartnerIdAndIsActive(Long businessPartnerId, Boolean active);
+
 	Optional<BusinessPartner> findByCompany_CompanyIdAndMappedCompany_CompanyIdAndIsActive(Long companyId,
-			Long mappedCompanyId, boolean isActive);
+			Long mappedCompanyId, Boolean active);
 }

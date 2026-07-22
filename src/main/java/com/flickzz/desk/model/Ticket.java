@@ -51,10 +51,6 @@ public class Ticket {
 	@JoinColumn(name = "IMPACT_ID")
 	private ImpactMaster impact;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "PRIORITY_ID")
-	private PriorityMaster priority;
-
 	@Column(name = "SHORT_DESCRIPTION", length = 255)
 	private String shortDescription;
 

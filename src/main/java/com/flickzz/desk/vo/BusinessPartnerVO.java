@@ -12,7 +12,7 @@ import lombok.*;
 public class BusinessPartnerVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-	private Long roleId;
+	private Long businessPartnerId;
 	private CompanyMasterVO company;
 	private CompanyMasterVO mappedCompany;
 	private Boolean isServiceProvider;

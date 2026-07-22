@@ -20,7 +20,7 @@ public class TicketVO implements Serializable {
 	private ServiceOfferingVO serviceOffering; // FK reference
 	private String configItemGroup;
 	private ImpactMasterVO impact; // FK reference
-	private PriorityMasterVO priority; // FK reference
+	private BPPriorityVO priority; // FK reference
 	private String shortDescription;
 	private String description;
 	private String attachment;
