@@ -16,7 +16,6 @@ import com.flickzz.desk.vo.*;
 @Component
 public class CommonMapper {
 
-	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}

@@ -29,7 +29,7 @@ public class CompanyMasterRequestVO implements Serializable {
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
 	private String bpUid;
-	private int callHorizonDays;
+	private Integer callHorizonDays;
 	private Date validFrom;
 	private Date validTo;
 	private String refNumber;

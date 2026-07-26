@@ -14,5 +14,5 @@ import lombok.NoArgsConstructor;
 public class VerificationRequestVO implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private String email;
-	private int code;
+	private Integer code;
 }
