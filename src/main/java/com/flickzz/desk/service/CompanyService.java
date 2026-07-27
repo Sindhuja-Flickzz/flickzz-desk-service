@@ -41,6 +41,12 @@ public class CompanyService {
 	BusinessPartnerRepository businessPartnerRepository;
 
 	@Autowired
+	CompanyApproverRepository companyApproverRepository;
+
+	@Autowired
+	AgentMasterRepository agentMasterRepository;
+
+	@Autowired
 	private CommonMapper mapper;
 
 	public CompanyMasterVO createCompany(CompanyMasterRequestVO request) {
@@ -114,6 +120,11 @@ public class CompanyService {
 						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
 
+			if (request.getApproverIds() == null || request.getApproverIds().isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), APPROVERS));
+			}
+
 			Optional<CountryMaster> country = countryMasterRepository.findById(request.getCountryId());
 			if (country.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -134,6 +145,26 @@ public class CompanyService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
 
+			// Validate and load approvers
+			List<CompanyApprover> approvers = new java.util.ArrayList<>();
+			Integer level = 1;
+			for (Long approverId : request.getApproverIds()) {
+				AgentMaster agent = agentMasterRepository.findById(approverId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), "Approver")));
+
+				// Validate that agent belongs to the same organization
+				if (!agent.getOrganization().getCompanyId().equals(existing.getCompanyId())) {
+					throw new FlickzzDeskException(INVALID_FIELD,
+							getDescription(INVALID_FIELD.getDescription(), "Approver belongs to different organization"));
+				}
+
+				CompanyApprover approver = mapper.toCompanyApproverEntity(agent, existing, level,
+						request.getUpdatedBy(), request.getIsUpdatedByAdmin());
+				approvers.add(approver);
+				level++;
+			}
+
 			existing.setIsActive(ACTIVE);
 			existing.setCompanyName(request.getCompanyName());
 			existing.setCountry(country.get());
@@ -144,8 +175,12 @@ public class CompanyService {
 			existing.setAddressLine2(request.getAddressLine2());
 			existing.setEmployeeSize(request.getEmployeeSize());
 			existing.setUpdatedBy(request.getUpdatedBy());
+			existing.getApprovers().clear();
+			existing.getApprovers().addAll(approvers);
+			
+			companyMasterRepository.save(existing);
 
-			return mapper.toCompanyMasterVO(companyMasterRepository.save(existing));
+			return mapper.toCompanyMasterVO(existing);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

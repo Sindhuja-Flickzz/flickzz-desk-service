@@ -34,4 +34,5 @@ public class CompanyMasterRequestVO implements Serializable {
 	private Date validTo;
 	private String refNumber;
 	private Date refDate;
+	private List<Long> approverIds;
 }

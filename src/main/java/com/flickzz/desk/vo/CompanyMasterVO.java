@@ -1,6 +1,7 @@
 package com.flickzz.desk.vo;
 
 import java.io.*;
+import java.util.List;
 
 import lombok.*;
 
@@ -29,4 +30,5 @@ public class CompanyMasterVO implements Serializable {
 	private Long updatedBy;
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
+	private List<CompanyApproverVO> approvers;
 }
