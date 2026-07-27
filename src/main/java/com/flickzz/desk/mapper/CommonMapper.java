@@ -1,15 +1,15 @@
 package com.flickzz.desk.mapper;
 
-import java.util.*;
-import java.util.stream.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.context.annotation.*;
-import org.springframework.lang.*;
-import org.springframework.security.crypto.bcrypt.*;
-import org.springframework.security.crypto.password.*;
-import org.springframework.stereotype.*;
+import org.springframework.lang.NonNull;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
-import com.flickzz.desk.config.*;
+import com.flickzz.desk.config.FlickzzDeskConstants;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.vo.*;
 
@@ -153,18 +153,37 @@ public class CommonMapper {
 	}
 
 	public PlantMasterVO toPlantMasterVO(PlantMaster entity) {
-		if (entity == null) {
-			return null;
-		}
-		return PlantMasterVO.builder().plantId(entity.getPlantId()).plantName(entity.getPlantName())
-				.region(toCountryMasterVO(entity.getRegion())).calendar(toCalendarMasterVO(entity.getCalendar()))
-				.company(entity.getCompany() != null ? toCompanyMasterVO(entity.getCompany()) : null)
-				.createdBy(entity.getCreatedBy())
-				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
-				.updatedBy(entity.getUpdatedBy())
-				.isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false)
-				.isActive(entity.getIsActive()).build();
-	}
+        if (entity == null) {
+            return null;
+        }
+        return PlantMasterVO.builder().plantId(entity.getPlantId()).plantName(entity.getPlantName())
+                .region(toCountryMasterVO(entity.getRegion())).calendar(
+                        entity.getCalendar() != null ? CalendarMasterVO.builder().calendarId(entity.getCalendar().getCalendarId())
+                                .calendarCode(entity.getCalendar().getCalendarCode()).build()
+                                : null
+                )
+                .weekOff(entity.getWeekoff() == null ? null
+                        : entity.getWeekoff().stream().filter(PlantWeekoff::isActive)
+                        .map(this::toPlantWeekoffVo).toList())
+                .createdBy(entity.getCreatedBy())
+                .isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+                .updatedBy(entity.getUpdatedBy())
+                .isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false)
+                .isActive(entity.getIsActive()).build();
+    }
+
+    private PlantWeekoffVO toPlantWeekoffVo(PlantWeekoff plantWeekoff) {
+        if (plantWeekoff == null) {
+            return null;
+        }
+        return PlantWeekoffVO.builder().weekoffId(plantWeekoff.getWeekoffId())
+                .weekoff(plantWeekoff.getWeekoff()).isActive(plantWeekoff.getIsActive())
+                .createdBy(plantWeekoff.getCreatedBy())
+                .isCreatedByAdmin(plantWeekoff.getIsCreatorAdmin() != null ? plantWeekoff.getIsCreatorAdmin() : false)
+                .updatedBy(plantWeekoff.getUpdatedBy())
+                .isUpdatedByAdmin(plantWeekoff.getIsUpdaterAdmin() != null ? plantWeekoff.getIsUpdaterAdmin() : false)
+                .build();
+    }
 
 	public CountryMasterVO toCountryMasterVO(CountryMaster country) {
 		if (country == null) {
@@ -881,5 +900,61 @@ public class CommonMapper {
 				.supportGroup(toSupportGroupVo(assignment.getSupportGroup())).isActive(assignment.getIsActive())
 				.createdBy(assignment.getCreatedBy()).updatedBy(assignment.getUpdatedBy()).build();
 	}
+
+    public BPSupportGroupVO toNoBakcRefSupportGroupVo(BPSupportGroup supportGroup) {
+        if (supportGroup == null) {
+            return null;
+        }
+        return BPSupportGroupVO.builder().supportGroupId(supportGroup.getSupportGroupId())
+                .configuration(null)
+                .members(supportGroup.getMembers() != null
+                        ? supportGroup.getMembers().stream().filter(member -> Boolean.TRUE.equals(member.getIsActive()))
+                        .map(this::toNoBackRefSupportGroupMemberVo).toList()
+                        : null)
+                .managers(supportGroup.getManagers() != null
+                        ? supportGroup.getManagers().stream().filter(manager -> Boolean.TRUE.equals(manager.getIsActive()))
+                        .map(this::toNoBackRefSupportGroupManagerVo).toList()
+                        : null)
+                .groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive())
+                .createdBy(supportGroup.getCreatedBy()).updatedBy(supportGroup.getUpdatedBy()).build();
+    }
+
+    private BPSupportGroupManagerVO toNoBackRefSupportGroupManagerVo(BPSupportGroupManager bpSupportGroupManager) {
+        if (bpSupportGroupManager == null) {
+            return null;
+        }
+        return BPSupportGroupManagerVO.builder().managerId(bpSupportGroupManager.getManagerId()).supportGroup(null)
+                .agent(toNoBackRefAgentMasterVO(bpSupportGroupManager.getAgent()))
+                .isInternal(bpSupportGroupManager.getIsInternal())
+                .isBP(bpSupportGroupManager.getIsBP())
+                .isActive(bpSupportGroupManager.getIsActive()).build();
+    }
+
+    private BPSupportGroupMemberVO toNoBackRefSupportGroupMemberVo(BPSupportGroupMember bpSupportGroupMember) {
+        if (bpSupportGroupMember == null) {
+            return null;
+        }
+        return BPSupportGroupMemberVO.builder().memberId(bpSupportGroupMember.getMemberId()).supportGroup(null)
+                .agent(toNoBackRefAgentMasterVO(bpSupportGroupMember.getAgent())).isGroupLead(bpSupportGroupMember.getIsGroupLead())
+                .isActive(bpSupportGroupMember.getIsActive()).build();
+    }
+
+    private AgentMasterVO toNoBackRefAgentMasterVO(AgentMaster agent) {
+        if (agent == null) {
+            return null;
+        }
+        return AgentMasterVO.builder().agentId(agent.getAgentId()).agentName(agent.getAgentName()).build();
+    }
+
+    public List<PlantWeekoff> toWeekOffEntity(List<String> weekOff, PlantMaster plant) {
+        if (weekOff == null) {
+            return Collections.EMPTY_LIST;
+        }
+        return weekOff.stream().map(off -> PlantWeekoff.builder().weekoff(off).plant(plant)
+                .createdBy(plant.getCreatedBy()).isCreatorAdmin(plant.getIsCreatorAdmin())
+                .updatedBy(plant.getUpdatedBy()).isUpdaterAdmin(plant.getIsUpdaterAdmin() != null ? plant.getIsUpdaterAdmin() : false)
+                .build()).toList();
+
+    }
 
 }

@@ -1,6 +1,7 @@
 package com.flickzz.desk.vo;
 
-import java.io.*;
+import java.io.Serializable;
+import java.util.List;
 
 import lombok.*;
 
@@ -16,6 +17,7 @@ public class PlantMasterRequestVO implements Serializable {
 	private Long countryId; // reference to CountryMaster;
 	private Long calendarId; // reference to CalendarMaster
 	private Long companyId;
+    private List<String> weekOff;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

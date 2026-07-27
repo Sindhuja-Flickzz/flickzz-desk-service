@@ -1,6 +1,6 @@
 package com.flickzz.desk.vo;
 
-import java.io.*;
+import java.io.Serializable;
 
 import lombok.*;
 
@@ -16,6 +16,7 @@ public class PlantMasterVO implements Serializable {
 	private CountryMasterVO region;
 	private CalendarMasterVO calendar; // reference to CalendarMaster
 	private CompanyMasterVO company; // reference to CompanyMaster
+	private List<PlantWeekoffVO> weekOff;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

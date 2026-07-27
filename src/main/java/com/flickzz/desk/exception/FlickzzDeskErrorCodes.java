@@ -22,7 +22,8 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 			"Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character."),
 	INVALID_TEXT("FD-112", "Invalid Text", "Invalid %s. Please verify!"),
 	SET_TEXT("FD-113", "Set Text", "Set %s to proceed further!"),
-	DB_SAVE_ERROR("FD-114", "Save failed", "Unable to save the record because a database constraint was violated.");
+	DB_SAVE_ERROR("FD-114", "Save failed", "Unable to save the record because a database constraint was violated."),
+	INVALID_REQUEST("FD-115", "Invalid Request", "The request is invalid. Please verify!");
 
 	private String code;
 	private String title;

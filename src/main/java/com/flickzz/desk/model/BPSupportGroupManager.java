@@ -15,7 +15,7 @@ public class BPSupportGroupManager {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "bpSupportGroupManagerSeq")
 	@SequenceGenerator(name = "bpSupportGroupManagerSeq", sequenceName = "BP_SUPPORT_GROUP_MANAGER_SEQ", allocationSize = 1)
-	@Column(name = "MANAGER_ID")
+	@Column(name = "ID")
 	private Long managerId;
 
 	@ManyToOne(fetch = FetchType.LAZY)

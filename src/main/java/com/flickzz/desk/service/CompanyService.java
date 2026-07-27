@@ -1,18 +1,21 @@
 package com.flickzz.desk.service;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.*;
-import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.*;
-import java.util.stream.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import org.slf4j.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.stereotype.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import com.flickzz.desk.exception.*;
-import com.flickzz.desk.mapper.*;
+import com.flickzz.desk.exception.FlickzzDeskException;
+import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.*;
@@ -141,15 +144,6 @@ public class CompanyService {
 			existing.setAddressLine2(request.getAddressLine2());
 			existing.setEmployeeSize(request.getEmployeeSize());
 			existing.setUpdatedBy(request.getUpdatedBy());
-
-			BusinessPartner entity = new BusinessPartner();
-			entity.setCompany(existing);
-			entity.setMappedCompany(existing);
-			entity.setIsBoth(Boolean.TRUE);
-			entity.setCreatedBy(request.getUpdatedBy());
-			entity.setIsCreatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin()
-					: existing.getIsCreatorAdmin());
-			businessPartnerRepository.save(entity);
 
 			return mapper.toCompanyMasterVO(companyMasterRepository.save(existing));
 		} catch (FlickzzDeskException e) {
