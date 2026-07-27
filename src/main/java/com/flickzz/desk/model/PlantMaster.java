@@ -1,6 +1,9 @@
 package com.flickzz.desk.model;
 
-import java.time.*;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -32,6 +35,10 @@ public class PlantMaster {
 	@JoinColumn(name = "CALENDAR_ID", nullable = false)
 	private CalendarMaster calendar;
 
+    @OneToMany(mappedBy = "plant", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<PlantWeekoff> weekoff;
+    
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_PLANT_COMPANY"), nullable = false)
 	private CompanyMaster company;

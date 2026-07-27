@@ -1,5 +1,9 @@
 package com.flickzz.desk.service;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -10,38 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COMPANY_NAME;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ROLE_ADMIN;
-import static com.flickzz.desk.config.FlickzzDeskConstants.USERNAME_OR_EMAIL;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateUniversalId;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.EXPIRED_LINK;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_PASSWORD;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_TOKEN;
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CompanyMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.EnquiryInfo;
-import com.flickzz.desk.model.EnquiryRegistration;
-import com.flickzz.desk.model.StateMaster;
-import com.flickzz.desk.repo.CityMasterRepository;
-import com.flickzz.desk.repo.CompanyMasterRepository;
-import com.flickzz.desk.repo.CountryMasterRepository;
-import com.flickzz.desk.repo.EnquiryInfoRepository;
-import com.flickzz.desk.repo.EnquiryRegistrationRepository;
-import com.flickzz.desk.repo.StateMasterRepository;
-import com.flickzz.desk.vo.EnquiryInfoVO;
-import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
-import com.flickzz.desk.vo.EnquiryRegistrationVO;
-import com.flickzz.desk.vo.EnquiryRequestVO;
+import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.*;
+import com.flickzz.desk.vo.*;
 
 @Service
 public class EnquiryService {
@@ -74,6 +51,9 @@ public class EnquiryService {
 
 	@Autowired
 	private MailService mailService;
+	
+	@Autowired
+	BusinessPartnerRepository businessPartnerRepository;
 
 	@Value("${uid.prefix}")
 	private String uidPrefix;
@@ -219,6 +199,13 @@ public class EnquiryService {
 			enquiryRegistrationRepository.save(enquiryRegistration);
 
 			enquiryInfo.setUsed(true);
+			BusinessPartner entity = new BusinessPartner();
+			entity.setCompany(enquiryRegistration.getCompany());
+			entity.setMappedCompany(enquiryRegistration.getCompany());
+			entity.setIsBoth(Boolean.TRUE);
+			entity.setCreatedBy(enquiryRegistration.getEnquiryId());
+			entity.setIsCreatorAdmin(Boolean.TRUE);
+			businessPartnerRepository.save(entity);
 			enquiryInfoRepository.save(enquiryInfo);
 		} catch (FlickzzDeskException e) {
 			throw e;

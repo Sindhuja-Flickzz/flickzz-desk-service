@@ -1,9 +1,9 @@
 package com.flickzz.desk.model;
 
-import java.time.*;
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.List;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -33,6 +33,10 @@ public class BPSupportGroup {
 	@OneToMany(mappedBy = "supportGroup", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private List<BPSupportGroupMember> members;
+
+	@OneToMany(mappedBy = "supportGroup", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<BPSupportGroupManager> managers;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
