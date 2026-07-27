@@ -27,12 +27,12 @@ public class BPSupportGroupManager {
 	private AgentMaster agent;
 	
 	@Builder.Default
-	@Column(name = "IS_GROUP_LEAD")
-	private Boolean isGroupLead = false;
+	@Column(name = "IS_INTERNAL")
+	private Boolean isInternal = false;
 	
 	@Builder.Default
-	@Column(name = "IS_GROUP_MANAGER")
-	private Boolean isGroupManager = false;
+	@Column(name = "IS_BP")
+	private Boolean isBP = false;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

@@ -1,6 +1,7 @@
 package com.flickzz.desk.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 

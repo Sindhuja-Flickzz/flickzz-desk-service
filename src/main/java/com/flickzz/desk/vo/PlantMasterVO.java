@@ -1,6 +1,7 @@
 package com.flickzz.desk.vo;
 
 import java.io.Serializable;
+import java.util.List;
 
 import lombok.*;
 
