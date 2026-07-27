@@ -1,7 +1,9 @@
 package com.flickzz.desk.model;
 
 import java.time.*;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -42,6 +44,10 @@ public class CompanyMaster {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "CITY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_CITY"))
 	private CityMaster city;
+
+	@OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<CompanyApprover> approvers;
 
 	@Column(name = "PIN_CODE", length = 20)
 	private String pinCode;

@@ -24,7 +24,7 @@ public class CompanyApprover {
 
     @ManyToOne
     @JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_COMPANY"))
-    private CompanyMaster companyMaster;
+    private CompanyMaster company;
 
     @ManyToOne
     @JoinColumn(name = "AGENT_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_AGENT"))

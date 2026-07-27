@@ -1,12 +1,13 @@
 package com.flickzz.desk.vo;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CompanyApproverVO implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long approverId;

@@ -145,6 +145,21 @@ public class CommonMapper {
 				.country(toCountryMasterVO(entity.getCountry())).state(toStateMasterVO(entity.getState()))
 				.city(toCityMasterVO(entity.getCity())).addressLine1(entity.getAddressLine1())
 				.addressLine2(entity.getAddressLine2()).pinCode(entity.getPinCode()).isActive(entity.getIsActive())
+				.approvers(entity.getApprovers() == null ? null
+						: entity.getApprovers().stream().filter(CompanyApprover::getIsActive)
+								.map(approver -> CompanyApproverVO.builder()
+										.approverId(approver.getApproverId())
+										.company(null)
+										.agent(toCompanyApproverAgentVO(approver.getAgent()))
+										.level(approver.getLevel()).isActive(approver.getIsActive())
+										.createdBy(approver.getCreatedBy())
+										.isCreatedByAdmin(
+												approver.getIsCreatorAdmin() != null ? approver.getIsCreatorAdmin() : false)
+										.updatedBy(approver.getUpdatedBy())
+										.isUpdatedByAdmin(
+												approver.getIsUpdaterAdmin() != null ? approver.getIsUpdaterAdmin() : false)
+										.build())
+								.toList())
 				.createdBy(entity.getCreatedBy())
 				.isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
 				.uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
@@ -955,6 +970,47 @@ public class CommonMapper {
                 .updatedBy(plant.getUpdatedBy()).isUpdaterAdmin(plant.getIsUpdaterAdmin() != null ? plant.getIsUpdaterAdmin() : false)
                 .build()).toList();
 
+    }
+
+    public CompanyApproverVO toCompanyApproverVO(CompanyApprover entity) {
+    	if (entity == null) {
+    		return null;
+    	}
+    	CompanyApproverVO vo = new CompanyApproverVO();
+    	vo.setApproverId(entity.getApproverId());
+    	vo.setAgent(toCompanyApproverAgentVO(entity.getAgent()));
+    	vo.setLevel(entity.getLevel());
+    	vo.setIsActive(entity.getIsActive());
+    	vo.setCreatedBy(entity.getCreatedBy());
+    	vo.setIsCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false);
+    	vo.setUpdatedBy(entity.getUpdatedBy());
+    	vo.setIsUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false);
+    	return vo;
+    }
+
+    private AgentMasterVO toCompanyApproverAgentVO(AgentMaster agent) {
+    	if (agent == null) {
+    		return null;
+    	}
+    	return AgentMasterVO.builder()
+    			.agentId(agent.getAgentId())
+    			.agentName(agent.getAgentName())
+    			.build();
+    }
+
+    public CompanyApprover toCompanyApproverEntity(AgentMaster agent, CompanyMaster company, Integer level, Long createdBy, Boolean isCreatorAdmin) {
+    	if (agent == null || company == null) {
+    		return null;
+    	}
+    	return CompanyApprover.builder()
+    			.agent(agent)
+    			.company(company)
+    			.level(level)
+    			.createdBy(createdBy)
+    			.isCreatorAdmin(isCreatorAdmin != null ? isCreatorAdmin : false)
+    			.updatedBy(createdBy)
+    			.isUpdaterAdmin(false)
+    			.build();
     }
 
 }
