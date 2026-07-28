@@ -21,6 +21,7 @@ public class BpConfigRequestVO implements Serializable {
 	private String code;
 	private Integer level;
 	private String description;
+	private Long orgId;
 
 	private Long slaId;
 	private Integer firstResponseTime;
@@ -37,6 +38,8 @@ public class BpConfigRequestVO implements Serializable {
 	private Long supportGroupId;
 	private String groupName;
 	private List<Long> agents;
+	private List<Long> managerInternalAgents;
+	private List<Long> managerBpAgents;
 	private Long subCategoryId;
 
 	private Boolean isActive;

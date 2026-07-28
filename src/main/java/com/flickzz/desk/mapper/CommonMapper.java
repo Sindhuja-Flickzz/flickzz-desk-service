@@ -102,7 +102,7 @@ public class CommonMapper {
 		return calendarHolidayList.stream().map(h -> {
 			CalendarHoliday holiday = CalendarHoliday.builder().holidayDate(h.getHolidayDate())
 					.description(h.getDescription()).calendarMaster(entity).createdBy(createdBy)
-					.isCreatorAdmin(h.getIsCreatedByAdmin()).updatedBy(createdBy)
+					.isCreatorAdmin(h.getIsCreatedByAdmin() != null? h.getIsCreatedByAdmin() : entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false).updatedBy(createdBy)
 					.isUpdaterAdmin(h.getIsUpdatedByAdmin()).build();
 			return holiday;
 		}).toList();
@@ -1013,4 +1013,20 @@ public class CommonMapper {
     			.build();
     }
 
+	public SystemAuditRequest toSystemAuditRequest(String module, String area, String entityName, Long entityId, String action, String newValue, String oldValue, String changedFields, Long userId, Long companyId, String status, String errorMessage) {
+		return SystemAuditRequest.builder()
+				.module(module)
+				.area(area)
+				.entityName(entityName)
+				.entityId(entityId)
+				.action(action)
+				.newValue(newValue)
+				.oldValue(oldValue)
+				.changedFields(changedFields)
+				.userId(userId)
+				.companyId(companyId)
+				.status(status)
+				.errorMessage(errorMessage)
+				.build();
+	}
 }

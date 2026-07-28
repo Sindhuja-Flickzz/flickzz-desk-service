@@ -1,8 +1,7 @@
 package com.flickzz.desk.service;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.*;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
 import java.util.*;
@@ -18,6 +17,7 @@ import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.*;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 @SuppressWarnings("unused")
@@ -56,13 +56,25 @@ public class BusinessPartnerService {
 	BPSupportGroupMemberRepository bpSupportGroupMemberRepository;
 
 	@Autowired
+	BPSupportGroupManagerRepository bpSupportGroupManagerRepository;
+
+	@Autowired
 	BPAssignmentRepository bpAssignmentRepository;
 
 	@Autowired
 	AgentMasterRepository agentMasterRepository;
 
 	@Autowired
+	SystemAuditRepository systemAuditRepository;
+
+	@Autowired
+	AuditService auditService;
+
+	@Autowired
 	CommonMapper mapper;
+
+	@Autowired
+	ObjectMapper objectMapper;
 
 	public BusinessPartnerVO createBusinessPartner(CompanyMasterRequestVO request) {
 		log.info(generateLog("createBusinessPartner", this.getClass().getName()));
@@ -74,7 +86,7 @@ public class BusinessPartnerService {
 
 			if (request == null || request.getBpUid() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), "Business Partner"));
+						"Update Company profile to create configuration");
 			}
 
 			if (request.getCompanyId().equals(request.getBpUid())) {
@@ -106,13 +118,120 @@ public class BusinessPartnerService {
 			entity.setRefNo(request.getRefNumber());
 			entity.setRefDate(request.getRefDate());
 			businessPartnerRepository.save(entity);
+
+			// Record CREATE audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildBusinessPartnerSnapshot(entity));
+			} catch (Exception ignore) {
+			}
+
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("isBoth", entity.getIsBoth());
+			changed.put("callHorizon", entity.getCallHorizon());
+			changed.put("validFrom", entity.getValidFrom());
+			changed.put("validTo", entity.getValidTo());
+			String changedStr = null;
+			try {
+				changedStr = objectMapper.writeValueAsString(changed);
+			} catch (Exception ignore) {
+			}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Partner", "BusinessPartner",
+					entity.getBusinessPartnerId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getCompanyId(),
+					SUCCESS,
+					null));
+
 			return mapper.toBusinessPartnerVO(entity);
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("isBoth", Boolean.TRUE);
+				attemptedMap.put("callHorizon", request != null ? request.getCallHorizonDays() : null);
+				attemptedMap.put("validFrom", request != null ? request.getValidFrom() : null);
+				attemptedMap.put("validTo", request != null ? request.getValidTo() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Partner", "BusinessPartner",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getCompanyId() : null,
+					ERROR,
+					e.getDescription()), e);
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createBusinessPartner method in BusinessPartnerService");
+			// record unexpected exception as ERROR audit
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("isBoth", Boolean.TRUE);
+				attemptedMap.put("callHorizon", request != null ? request.getCallHorizonDays() : null);
+				attemptedMap.put("validFrom", request != null ? request.getValidFrom() : null);
+				attemptedMap.put("validTo", request != null ? request.getValidTo() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Partner", "BusinessPartner",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getCompanyId() : null,
+					ERROR,
+					e.getMessage()), e);
+			log.error("Exception in createBusinessPartner method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
+	}
+
+	private Map<String, Object> buildBusinessPartnerSnapshot(BusinessPartner bp) {
+		Map<String, Object> snapshot = new HashMap<>();
+		if (bp == null) {
+			return snapshot;
+		}
+		try {
+			snapshot.put("businessPartnerId", bp.getBusinessPartnerId());
+			snapshot.put("isBoth", bp.getIsBoth());
+			snapshot.put("isCreatorAdmin", bp.getIsCreatorAdmin());
+			snapshot.put("callHorizon", bp.getCallHorizon());
+			snapshot.put("validFrom", bp.getValidFrom());
+			snapshot.put("validTo", bp.getValidTo());
+			snapshot.put("refNo", bp.getRefNo());
+			snapshot.put("refDate", bp.getRefDate());
+			snapshot.put("createdBy", bp.getCreatedBy());
+			snapshot.put("updatedBy", bp.getUpdatedBy());
+			snapshot.put("createdAt", bp.getCreatedAt());
+			snapshot.put("updatedAt", bp.getUpdatedAt());
+			try {
+				if (bp.getCompany() != null) {
+					snapshot.put("companyId", bp.getCompany().getCompanyId());
+				}
+			} catch (Exception ignore) {
+			}
+			try {
+				if (bp.getMappedCompany() != null) {
+					snapshot.put("mappedCompanyId", bp.getMappedCompany().getCompanyId());
+				}
+			} catch (Exception ignore) {
+			}
+		} catch (Exception ignore) {
+		}
+		return snapshot;
 	}
 
 	public BPConfigurationVO getBusinessPartnerConfigurationList(String businessPartnerId) {
@@ -179,18 +298,76 @@ public class BusinessPartnerService {
 			}
 
 			BPPriority bpPriority = mapper.toBPPriority(request, config, ticketType.get());
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+			} catch (Exception ignore) {
+			}
 			bPPriorityRepository.save(bpPriority);
+
+			// Record CREATE audit
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("level", bpPriority.getLevel());
+			changed.put("code", bpPriority.getCode());
+			changed.put("description", bpPriority.getDescription());
+			String changedStr = null;
+			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+					bpPriority.getPriorityId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getOrgId(),
+					SUCCESS,
+					null));
+
 			return mapper.toBPPriorityVo(bpPriority);
 		} catch (FlickzzDeskException e) {
-			throw e;
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("level", request != null ? request.getLevel() : null);
+				attemptedMap.put("code", request != null ? request.getCode() : null);
+				attemptedMap.put("description", request != null ? request.getDescription() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", null, CREATE,
+					attempted, null, null, request != null ? request.getCreatedBy() : null, (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+				throw e;
 		} catch (Exception e) {
-			log.error("Exception in createBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("level", request != null ? request.getLevel() : null);
+				attemptedMap.put("code", request != null ? request.getCode() : null);
+				attemptedMap.put("description", request != null ? request.getDescription() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getOrgId() : null,
+					ERROR,
+					e.getMessage()), e);
+			log.error("Exception in createBusinessPartnerPriorityConfiguration method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
 	public BPPriorityVO updateBusinessPartnerPriorityConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerPriorityConfiguration", this.getClass().getName()));
+		BPPriority bpPriority = null;
 		try {
 			if (request == null || request.getPriorityId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -205,23 +382,128 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
 			}
 
-			BPPriority bpPriority = existingPriority.get();
+			bpPriority = existingPriority.get();
+			
+			// Capture old values before update (use snapshot to avoid serializing full entity graph)
+			String oldValue = "";
+			try {
+				oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+			} catch (Exception ignore) {
+			}
+			
+			// Track changed fields
+			Map<String, Object> changedFields = new HashMap<>();
+			if (!bpPriority.getCode().equals(request.getCode())) {
+				changedFields.put("code", true);
+			}
+			if (!bpPriority.getDescription().equals(request.getDescription())) {
+				changedFields.put("description", true);
+			}
+			if (!bpPriority.getUpdatedBy().equals(request.getUpdatedBy())) {
+				changedFields.put("updatedBy", true);
+			}
+			
+			// Update the priority
 			bpPriority.setCode(request.getCode());
 			bpPriority.setDescription(request.getDescription());
 			bpPriority.setUpdatedBy(request.getUpdatedBy());
 			bPPriorityRepository.save(bpPriority);
+			
+			// Save audit record if there are changes
+			if (!changedFields.isEmpty()) {
+				// New value snapshot
+				String newSnapshot = null;
+				try {
+					newSnapshot = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+				} catch (Exception ignore) {
+				}
+				String changedValue = null;
+				try {
+					changedValue = objectMapper.writeValueAsString(changedFields);
+				} catch (Exception ignore) {
+					changedValue = null;
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue, request.getUpdatedBy(), null, SUCCESS, null));
+			}
+			
 			return mapper.toBPPriorityVo(bpPriority);
 		} catch (FlickzzDeskException e) {
+			String newValue = null;
+			try {
+				if (request != null) {
+					// create a simple representation of attempted new values
+					Map<String, Object> attempted = new HashMap<>();
+					attempted.put("code", request.getCode());
+					attempted.put("description", request.getDescription());
+					attempted.put("updatedBy", request.getUpdatedBy());
+					try {
+						newValue = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+						newValue = null;
+					}
+				}
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority != null ? bpPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, null, ERROR, e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in updateBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
+			// Attempt to save error audit
+			try {
+				String oldValue = null; String newValue = null;
+				try {
+					if (bpPriority != null) {
+						if (bpPriority.getPriorityId() != null) {
+							try {
+								oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+							} catch (Exception ignore) {
+								oldValue = null;
+							}
+						}
+					}
+				} catch (Exception ignore) {
+				}
+				// newValue: attempt to capture requested values
+				try {
+					if (request != null) {
+						// create a simple representation of attempted new values
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("code", request.getCode());
+						attempted.put("description", request.getDescription());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						try {
+							newValue = objectMapper.writeValueAsString(attempted);
+						} catch (Exception ignore) {
+							newValue = null;
+						}
+					}
+				} catch (Exception ignore) {
+				}
+				try {
+					auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+							bpPriority != null ? bpPriority.getPriorityId() : null,
+							UPDATE,
+							newValue,
+							oldValue,
+							null,
+							request != null ? request.getUpdatedBy() : null,
+							request.getOrgId(),
+							ERROR,
+							e.getMessage()), e);
+				} catch (Exception ignore) {
+					log.error("Failed to save error audit for updateBusinessPartnerPriorityConfiguration", ignore);
+				}
+			} catch (Exception ignore) {
+				log.error("Unexpected error while recording audit", ignore);
+			}
+			log.error("Exception in updateBusinessPartnerPriorityConfiguration method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public void deleteBusinessPartnerPriorityConfiguration(String priorityId) {
+	public void deleteBusinessPartnerPriorityConfiguration(String priorityId, Long userId) {
 
 		log.info(generateLog("deleteBusinessPartnerPriorityConfiguration", this.getClass().getName()));
+		BPPriority bpPriority = null;
 		try {
 			Optional<BPPriority> existingPriority = bPPriorityRepository
 					.findByPriorityIdAndIsActive(Long.valueOf(priorityId), ACTIVE);
@@ -231,12 +513,73 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
 			}
 
-			BPPriority bpPriority = existingPriority.get();
+			bpPriority = existingPriority.get();
+			
+			// Capture old snapshot before deletion
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+			} catch (Exception ignore) {
+			}
+			
+			// Mark as inactive
 			bpPriority.setIsActive(Boolean.FALSE);
 			bPPriorityRepository.save(bpPriority);
+			Long companyId = bpPriority.getConfiguration() != null
+					&& bpPriority.getConfiguration().getBusinessPartner() != null
+					&& bpPriority.getConfiguration().getBusinessPartner().getCompany() != null
+						? bpPriority.getConfiguration().getBusinessPartner().getCompany().getCompanyId()
+						: null;
+			// Record DELETE audit
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+					bpPriority.getPriorityId(),
+					DELETE,
+					oldValue,
+					null,
+					null,
+					userId,
+					companyId,
+					SUCCESS,
+					null));
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(priorityId);
+				} catch (Exception ignore) {
+				}
+				if (bpPriority != null && bpPriority.getConfiguration() != null 
+					&& bpPriority.getConfiguration().getBusinessPartner() != null
+					&& bpPriority.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpPriority.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+						entityId, DELETE,
+						null, null, null, userId, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// record generic exception as ERROR audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(priorityId);
+				} catch (Exception ignore) {
+				}
+				if (bpPriority != null && bpPriority.getConfiguration() != null 
+					&& bpPriority.getConfiguration().getBusinessPartner() != null
+					&& bpPriority.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpPriority.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+						entityId, DELETE,
+						null, null, null, null, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in deleteBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -336,12 +679,79 @@ public class BusinessPartnerService {
 			}
 
 			BPSla bpSla = mapper.toBPSla(request, config, existingPriority.get());
+			
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+			} catch (Exception ignore) {
+			}
 			bpSlaRepository.save(bpSla);
+
+			// Record CREATE audit
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("firstResponseTime", bpSla.getFirstResponseTime());
+			changed.put("firstResponseTerm", bpSla.getFirstResponseTerm());
+			changed.put("resolutionTime", bpSla.getResolutionTime());
+			changed.put("resolutionTerm", bpSla.getResolutionTerm());
+			changed.put("updateFrequency", bpSla.getUpdateFrequency());
+			changed.put("updateFrequencyTerm", bpSla.getUpdateFrequencyTerm());
+			String changedStr = null;
+			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+					bpSla.getSlaId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getOrgId(),
+					SUCCESS,
+					null));
+
 			return mapper.toBPSlaVo(bpSla);
 		} catch (FlickzzDeskException e) {
-			throw e;
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("firstResponseTime", request != null ? request.getFirstResponseTime() : null);
+				attemptedMap.put("firstResponseTerm", request != null ? request.getFirstResponseTerm() : null);
+				attemptedMap.put("resolutionTime", request != null ? request.getResolutionTime() : null);
+				attemptedMap.put("resolutionTerm", request != null ? request.getResolutionTerm() : null);
+				attemptedMap.put("updateFrequency", request != null ? request.getUpdateFrequency() : null);
+				attemptedMap.put("updateFrequencyTerm", request != null ? request.getUpdateFrequencyTerm() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla", null, CREATE,
+					attempted, null, null, request != null ? request.getCreatedBy() : null, (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+				throw e;
 		} catch (Exception e) {
-			log.error("Exception in createBusinessPartnerSLAConfiguration method in BusinessPartnerService");
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("firstResponseTime", request != null ? request.getFirstResponseTime() : null);
+				attemptedMap.put("firstResponseTerm", request != null ? request.getFirstResponseTerm() : null);
+				attemptedMap.put("resolutionTime", request != null ? request.getResolutionTime() : null);
+				attemptedMap.put("resolutionTerm", request != null ? request.getResolutionTerm() : null);
+				attemptedMap.put("updateFrequency", request != null ? request.getUpdateFrequency() : null);
+				attemptedMap.put("updateFrequencyTerm", request != null ? request.getUpdateFrequencyTerm() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getOrgId() : null,
+					ERROR,
+					e.getMessage()), e);
+			log.error("Exception in createBusinessPartnerSLAConfiguration method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
@@ -378,6 +788,7 @@ public class BusinessPartnerService {
 	public BPSlaVO updateBusinessPartnerSLAConfiguration(BpConfigRequestVO request) {
 
 		log.info(generateLog("updateBusinessPartnerSLAConfiguration", this.getClass().getName()));
+		BPSla bpSla = null;
 		try {
 			if (request == null || request.getSlaId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
@@ -389,7 +800,40 @@ public class BusinessPartnerService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
 			}
 
-			BPSla bpSla = existingSla.get();
+			bpSla = existingSla.get();
+			
+			// Capture old values before update
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+			} catch (Exception ignore) {
+			}
+			
+			// Track changed fields
+			Map<String, Object> changedFields = new HashMap<>();
+			if (!Objects.equals(bpSla.getFirstResponseTime(), request.getFirstResponseTime())) {
+				changedFields.put("firstResponseTime", true);
+			}
+			if (!Objects.equals(bpSla.getFirstResponseTerm(), request.getFirstResponseTerm())) {
+				changedFields.put("firstResponseTerm", true);
+			}
+			if (!Objects.equals(bpSla.getResolutionTime(), request.getResolutionTime())) {
+				changedFields.put("resolutionTime", true);
+			}
+			if (!Objects.equals(bpSla.getResolutionTerm(), request.getResolutionTerm())) {
+				changedFields.put("resolutionTerm", true);
+			}
+			if (!Objects.equals(bpSla.getUpdateFrequency(), request.getUpdateFrequency())) {
+				changedFields.put("updateFrequency", true);
+			}
+			if (!Objects.equals(bpSla.getUpdateFrequencyTerm(), request.getUpdateFrequencyTerm())) {
+				changedFields.put("updateFrequencyTerm", true);
+			}
+			if (!Objects.equals(bpSla.getUpdatedBy(), request.getUpdatedBy())) {
+				changedFields.put("updatedBy", true);
+			}
+			
+			// Update the SLA
 			bpSla.setFirstResponseTime(request.getFirstResponseTime());
 			bpSla.setFirstResponseTerm(request.getFirstResponseTerm());
 			bpSla.setResolutionTime(request.getResolutionTime());
@@ -398,18 +842,128 @@ public class BusinessPartnerService {
 			bpSla.setUpdateFrequencyTerm(request.getUpdateFrequencyTerm());
 			bpSla.setUpdatedBy(request.getUpdatedBy());
 			bpSlaRepository.save(bpSla);
+			
+			// Record UPDATE audit if there are changes
+			if (!changedFields.isEmpty()) {
+				String newSnapshot = null;
+				try {
+					newSnapshot = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+				} catch (Exception ignore) {
+				}
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changedFields);
+				} catch (Exception ignore) {
+				}
+				Long companyId = null;
+				try {
+					if (bpSla.getConfiguration() != null && bpSla.getConfiguration().getBusinessPartner() != null
+						&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					}
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+						bpSla.getSlaId(),
+						UPDATE,
+						newSnapshot,
+						oldValue,
+						changedStr,
+						request.getUpdatedBy(),
+						companyId,
+						SUCCESS,
+						null));
+			}
+			
 			return mapper.toBPSlaVo(bpSla);
 		} catch (FlickzzDeskException e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (bpSla != null) {
+					entityId = bpSla.getSlaId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (bpSla.getConfiguration() != null && bpSla.getConfiguration().getBusinessPartner() != null
+							&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("firstResponseTime", request.getFirstResponseTime());
+						attempted.put("firstResponseTerm", request.getFirstResponseTerm());
+						attempted.put("resolutionTime", request.getResolutionTime());
+						attempted.put("resolutionTerm", request.getResolutionTerm());
+						attempted.put("updateFrequency", request.getUpdateFrequency());
+						attempted.put("updateFrequencyTerm", request.getUpdateFrequencyTerm());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+						entityId, UPDATE, newSnap, oldSnap, null, 
+						request != null ? request.getUpdatedBy() : null, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in updateBusinessPartnerSLAConfiguration method in BusinessPartnerService");
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (bpSla != null) {
+					entityId = bpSla.getSlaId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (bpSla.getConfiguration() != null && bpSla.getConfiguration().getBusinessPartner() != null
+							&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("firstResponseTime", request.getFirstResponseTime());
+						attempted.put("firstResponseTerm", request.getFirstResponseTerm());
+						attempted.put("resolutionTime", request.getResolutionTime());
+						attempted.put("resolutionTerm", request.getResolutionTerm());
+						attempted.put("updateFrequency", request.getUpdateFrequency());
+						attempted.put("updateFrequencyTerm", request.getUpdateFrequencyTerm());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						request != null ? request.getUpdatedBy() : null, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
+			log.error("Exception in updateBusinessPartnerSLAConfiguration method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public void deleteBusinessPartnerSLAConfiguration(String slaId) {
+	public void deleteBusinessPartnerSLAConfiguration(String slaId, Long userId) {
 
 		log.info(generateLog("deleteBusinessPartnerSLAConfiguration", this.getClass().getName()));
+		BPSla bpSla = null;
 		try {
 			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(Long.valueOf(slaId), ACTIVE);
 
@@ -417,12 +971,77 @@ public class BusinessPartnerService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
 			}
 
-			BPSla bpSla = existingSla.get();
+			bpSla = existingSla.get();
+			
+			// Capture old snapshot before deletion
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+			} catch (Exception ignore) {
+			}
+			
+			// Mark as inactive
 			bpSla.setIsActive(Boolean.FALSE);
 			bpSlaRepository.save(bpSla);
+			
+			// Record DELETE audit
+			Long companyId = null;
+			try {
+				if (bpSla.getConfiguration() != null && bpSla.getConfiguration().getBusinessPartner() != null
+					&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+					bpSla.getSlaId(),
+					DELETE,
+					oldValue,
+					null,
+					null,
+					userId,
+					companyId,
+					SUCCESS,
+					null));
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(slaId);
+				} catch (Exception ignore) {
+				}
+				if (bpSla != null && bpSla.getConfiguration() != null 
+					&& bpSla.getConfiguration().getBusinessPartner() != null
+					&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+						entityId, DELETE,
+						null, null, null, userId, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// record generic exception as ERROR audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(slaId);
+				} catch (Exception ignore) {
+				}
+				if (bpSla != null && bpSla.getConfiguration() != null 
+					&& bpSla.getConfiguration().getBusinessPartner() != null
+					&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
+						entityId, DELETE,
+						null, null, null, userId, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in deleteBusinessPartnerSLAConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -484,6 +1103,13 @@ public class BusinessPartnerService {
 			}
 
 			BPCategory bpCategory = mapper.toBPCategory(request, config);
+			
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+			} catch (Exception ignore) {
+			}
 			bpCategoryRepository.save(bpCategory);
 
 			if (request.getSubCategories() != null && !request.getSubCategories().isEmpty()) {
@@ -501,10 +1127,55 @@ public class BusinessPartnerService {
 					bpSubCategoryRepository.save(subCategory);
 				}
 			}
+
+			// Record CREATE audit
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("categoryName", bpCategory.getCategoryName());
+			String changedStr = null;
+			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+					bpCategory.getCategoryId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getOrgId(),
+					SUCCESS,
+					null));
+
 			return mapper.toBPCategoryVo(bpCategory);
 		} catch (FlickzzDeskException e) {
-			throw e;
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("categoryName", request != null ? request.getCategoryName() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory", null, CREATE,
+					attempted, null, null, request != null ? request.getCreatedBy() : null, (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+				throw e;
 		} catch (Exception e) {
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("categoryName", request != null ? request.getCategoryName() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getOrgId() : null,
+					ERROR,
+					e.getMessage()), e);
 			log.error("Exception in createBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -512,6 +1183,7 @@ public class BusinessPartnerService {
 
 	public BPCategoryVO updateBusinessPartnerCategoryConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerCategoryConfiguration", this.getClass().getName()));
+		BPCategory bpCategory = null;
 		try {
 			if (request == null || request.getCategoryId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -525,7 +1197,28 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
 			}
 
-			BPCategory bpCategory = existingCategory.get();
+			bpCategory = existingCategory.get();
+			
+			// Capture old values before update
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+			} catch (Exception ignore) {
+			}
+			
+			// Track changed fields
+			Map<String, Object> changedFields = new HashMap<>();
+			if (!bpCategory.getCategoryName().equals(request.getCategoryName())) {
+				changedFields.put("categoryName", true);
+			}
+			if (!Objects.equals(bpCategory.getSubCategories().stream().map(BPSubCategory::getSubCategoryName).toList(), request.getSubCategories())) {
+				changedFields.put("subCategories", true);
+			}
+			if (!Objects.equals(bpCategory.getUpdatedBy(), request.getUpdatedBy())) {
+				changedFields.put("updatedBy", true);
+			}
+			
+			// Update the category
 			bpCategory.setCategoryName(request.getCategoryName());
 			bpCategory.setUpdatedBy(request.getUpdatedBy());
 			bpCategoryRepository.save(bpCategory);
@@ -562,17 +1255,119 @@ public class BusinessPartnerService {
 					}
 				}
 			}
+			
+			// Record UPDATE audit if there are changes
+			if (!changedFields.isEmpty()) {
+				String newSnapshot = null;
+				try {
+					newSnapshot = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+				} catch (Exception ignore) {
+				}
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changedFields);
+				} catch (Exception ignore) {
+				}
+				Long companyId = null;
+				try {
+					if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
+						&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					}
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						bpCategory.getCategoryId(),
+						UPDATE,
+						newSnapshot,
+						oldValue,
+						changedStr,
+						request.getUpdatedBy(),
+						companyId,
+						SUCCESS,
+						null));
+			}
+			
 			return mapper.toBPCategoryVo(bpCategory);
 		} catch (FlickzzDeskException e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (bpCategory != null) {
+					entityId = bpCategory.getCategoryId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
+							&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("categoryName", request.getCategoryName());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						entityId, UPDATE, newSnap, oldSnap, null, 
+						request != null ? request.getUpdatedBy() : null, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in updateBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (bpCategory != null) {
+					entityId = bpCategory.getCategoryId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
+							&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("categoryName", request.getCategoryName());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						request != null ? request.getUpdatedBy() : null, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
+			log.error("Exception in updateBusinessPartnerCategoryConfiguration method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public void deleteBusinessPartnerCategoryConfiguration(String categoryId) {
+	public void deleteBusinessPartnerCategoryConfiguration(String categoryId, Long userId) {
 		log.info(generateLog("deleteBusinessPartnerCategoryConfiguration", this.getClass().getName()));
+		BPCategory bpCategory = null;
 		try {
 			Optional<BPCategory> existingCategory = bpCategoryRepository
 					.findByCategoryIdAndIsActive(Long.valueOf(categoryId), ACTIVE);
@@ -581,12 +1376,77 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
 			}
 
-			BPCategory bpCategory = existingCategory.get();
+			bpCategory = existingCategory.get();
+			
+			// Capture old snapshot before deletion
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+			} catch (Exception ignore) {
+			}
+			
+			// Mark as inactive
 			bpCategory.setIsActive(Boolean.FALSE);
 			bpCategoryRepository.save(bpCategory);
+			
+			// Record DELETE audit
+			Long companyId = null;
+			try {
+				if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
+					&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+					bpCategory.getCategoryId(),
+					DELETE,
+					oldValue,
+					null,
+					null,
+					userId,
+					companyId,
+					SUCCESS,
+					null));
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(categoryId);
+				} catch (Exception ignore) {
+				}
+				if (bpCategory != null && bpCategory.getConfiguration() != null 
+					&& bpCategory.getConfiguration().getBusinessPartner() != null
+					&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						entityId, DELETE,
+						null, null, null, userId, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// record generic exception as ERROR audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(categoryId);
+				} catch (Exception ignore) {
+				}
+				if (bpCategory != null && bpCategory.getConfiguration() != null 
+					&& bpCategory.getConfiguration().getBusinessPartner() != null
+					&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						entityId, DELETE,
+						null, null, null, userId, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in deleteBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -712,10 +1572,122 @@ public class BusinessPartnerService {
 				bpSupportGroupMemberRepository.save(member);
 			}
 
+			// Handle managers (internal and business partner managers)
+			Set<Long> internalManagerIds = new LinkedHashSet<>();
+			if (request.getManagerInternalAgents() != null) {
+				for (Long mId : request.getManagerInternalAgents()) {
+					if (mId != null) {
+						internalManagerIds.add(mId);
+					}
+				}
+			}
+
+			Set<Long> bpManagerIds = new LinkedHashSet<>();
+			if (request.getManagerBpAgents() != null) {
+				for (Long mId : request.getManagerBpAgents()) {
+					if (mId != null) {
+						bpManagerIds.add(mId);
+					}
+				}
+			}
+
+			// validate manager agents exist (if any)
+			Set<Long> allManagerIds = new LinkedHashSet<>();
+			allManagerIds.addAll(internalManagerIds);
+			allManagerIds.addAll(bpManagerIds);
+			for (Long managerId : allManagerIds) {
+				if (managerId == null) continue;
+				Optional<AgentMaster> agent = agentMasterRepository.findById(managerId);
+				if (agent.isEmpty() || !agent.get().getIsActive()) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+				}
+			}
+
+			// save internal managers
+			for (Long managerId : internalManagerIds) {
+				AgentMaster agent = agentMasterRepository.findById(managerId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupManager manager = BPSupportGroupManager.builder().supportGroup(supportGroup)
+						.agent(agent).isInternal(Boolean.TRUE).isBP(Boolean.FALSE).build();
+				bpSupportGroupManagerRepository.save(manager);
+			}
+
+			// save BP managers
+			for (Long managerId : bpManagerIds) {
+				AgentMaster agent = agentMasterRepository.findById(managerId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupManager manager = BPSupportGroupManager.builder().supportGroup(supportGroup)
+						.agent(agent).isInternal(Boolean.FALSE).isBP(Boolean.TRUE).build();
+				bpSupportGroupManagerRepository.save(manager);
+			}
+
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, agentIds, internalManagerIds, bpManagerIds));
+			} catch (Exception ignore) {
+			}
+
+			// Record CREATE audit
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("groupName", supportGroup.getGroupName());
+			changed.put("members", agentIds);
+			changed.put("internalManagers", internalManagerIds);
+			changed.put("bpManagers", bpManagerIds);
+			String changedStr = null;
+			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+					supportGroup.getSupportGroupId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getOrgId(),
+					SUCCESS,
+					null));
+
 			return mapper.toSupportGroupVo(supportGroup);
 		} catch (FlickzzDeskException e) {
-			throw e;
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("groupName", request != null ? request.getGroupName() : null);
+				attemptedMap.put("members", request != null? request.getAgents() : null);
+				attemptedMap.put("internalManagers", request != null ? request.getManagerInternalAgents() : null);
+				attemptedMap.put("bpManagers", request != null ? request.getManagerBpAgents() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup", null, CREATE,
+					attempted, null, null, request != null ? request.getCreatedBy() : null, (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+				throw e;
 		} catch (Exception e) {
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("groupName", request != null ? request.getGroupName() : null);
+				attemptedMap.put("members", request != null && request.getAgents() != null ? request.getAgents() : null);
+				attemptedMap.put("internalManagers", request != null ? request.getManagerInternalAgents() : null);
+				attemptedMap.put("bpManagers", request != null ? request.getManagerBpAgents() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getOrgId() : null,
+					ERROR,
+					e.getMessage()), e);
 			log.error("Exception in createBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -723,6 +1695,7 @@ public class BusinessPartnerService {
 
 	public BPSupportGroupVO updateBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		BPSupportGroup supportGroup = null;
 		try {
 			if (request == null || request.getSupportGroupId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -743,7 +1716,17 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
 			}
 
-			BPSupportGroup supportGroup = existingGroup.get();
+			supportGroup = existingGroup.get();
+
+			// Track changed fields
+			Map<String, Object> changedFields = new HashMap<>();
+			if (!supportGroup.getGroupName().equals(request.getGroupName().trim())) {
+				changedFields.put("groupName", true);
+			}
+			if (!Objects.equals(supportGroup.getUpdatedBy(), request.getUpdatedBy())) {
+				changedFields.put("updatedBy", true);
+			}
+			
 			supportGroup.setGroupName(request.getGroupName().trim());
 			supportGroup.setUpdatedBy(request.getUpdatedBy());
 			bpSupportGroupRepository.save(supportGroup);
@@ -771,6 +1754,10 @@ public class BusinessPartnerService {
 			Set<Long> existingAgentIds = existingMembers.stream().map(member -> member.getAgent().getAgentId())
 					.collect(Collectors.toSet());
 
+			if (!existingAgentIds.equals(incomingAgentIds)) {
+				changedFields.put("members", true);
+			}
+
 			for (Long agentId : incomingAgentIds) {
 				Optional<BPSupportGroupMember> existingMember = bpSupportGroupMemberRepository
 						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), agentId);
@@ -794,17 +1781,232 @@ public class BusinessPartnerService {
 				}
 			}
 
+			// Handle managers for update: reactivate/add incoming managers and deactivate removed ones
+			Set<Long> incomingInternalManagerIds = new LinkedHashSet<>();
+			if (request.getManagerInternalAgents() != null) {
+				for (Long mId : request.getManagerInternalAgents()) {
+					if (mId != null) incomingInternalManagerIds.add(mId);
+				}
+			}
+
+			Set<Long> incomingBpManagerIds = new LinkedHashSet<>();
+			if (request.getManagerBpAgents() != null) {
+				for (Long mId : request.getManagerBpAgents()) {
+					if (mId != null) incomingBpManagerIds.add(mId);
+				}
+			}
+
+			Set<Long> existingInternalManagerIds = existingGroup.get().getManagers().stream()
+					.filter(BPSupportGroupManager::getIsInternal)
+					.map(manager -> manager.getAgent().getAgentId())
+					.collect(Collectors.toSet());
+
+			if (!existingInternalManagerIds.equals(incomingInternalManagerIds)) {
+				changedFields.put("internalManagers", true);
+			}
+
+			Set<Long> existingBpManagerIds = existingGroup.get().getManagers().stream()
+					.filter(BPSupportGroupManager::getIsBP)
+					.map(manager -> manager.getAgent().getAgentId())
+					.collect(Collectors.toSet());
+
+
+			// Capture old values before update
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, existingMembers.stream().map(BPSupportGroupMember::getAgent).map(AgentMaster::getAgentId).collect(Collectors.toSet()), existingInternalManagerIds, existingBpManagerIds));
+			} catch (Exception ignore) {
+			}
+
+			if (!existingBpManagerIds.equals(incomingBpManagerIds)) {
+				changedFields.put("bpManagers", true);
+			}
+
+			// validate managers exist (if provided)
+			Set<Long> allIncomingManagers = new LinkedHashSet<>();
+			allIncomingManagers.addAll(incomingInternalManagerIds);
+			allIncomingManagers.addAll(incomingBpManagerIds);
+			for (Long managerId : allIncomingManagers) {
+				if (managerId == null) continue;
+				Optional<AgentMaster> am = agentMasterRepository.findById(managerId);
+				if (am.isEmpty() || !am.get().getIsActive()) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+				}
+			}
+
+			List<BPSupportGroupManager> existingManagers = bpSupportGroupManagerRepository
+					.findBySupportGroupSupportGroupId(supportGroup.getSupportGroupId());
+			Set<Long> existingManagerIds = existingManagers.stream().map(m -> m.getAgent().getAgentId())
+					.collect(Collectors.toSet());
+
+			// add or reactivate incoming internal managers
+			for (Long managerId : incomingInternalManagerIds) {
+				Optional<BPSupportGroupManager> existingManager = bpSupportGroupManagerRepository
+						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), managerId);
+				if (existingManager.isPresent()) {
+					BPSupportGroupManager mgr = existingManager.get();
+					mgr.setIsActive(Boolean.TRUE);
+					mgr.setIsInternal(Boolean.TRUE);
+					mgr.setIsBP(Boolean.FALSE);
+					bpSupportGroupManagerRepository.save(mgr);
+				} else {
+					AgentMaster agent = agentMasterRepository.findById(managerId)
+							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+					BPSupportGroupManager mgr = BPSupportGroupManager.builder().supportGroup(supportGroup)
+							.agent(agent).isInternal(Boolean.TRUE).isBP(Boolean.FALSE).build();
+					bpSupportGroupManagerRepository.save(mgr);
+				}
+			}
+
+			// add or reactivate incoming BP managers
+			for (Long managerId : incomingBpManagerIds) {
+				Optional<BPSupportGroupManager> existingManager = bpSupportGroupManagerRepository
+						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), managerId);
+				if (existingManager.isPresent()) {
+					BPSupportGroupManager mgr = existingManager.get();
+					mgr.setIsActive(Boolean.TRUE);
+					mgr.setIsBP(Boolean.TRUE);
+					mgr.setIsInternal(Boolean.FALSE);
+					bpSupportGroupManagerRepository.save(mgr);
+				} else {
+					AgentMaster agent = agentMasterRepository.findById(managerId)
+							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+					BPSupportGroupManager mgr = BPSupportGroupManager.builder().supportGroup(supportGroup)
+							.agent(agent).isInternal(Boolean.FALSE).isBP(Boolean.TRUE).build();
+					bpSupportGroupManagerRepository.save(mgr);
+				}
+			}
+
+			// deactivate removed managers
+			for (BPSupportGroupManager mgr : existingManagers) {
+				Long aid = mgr.getAgent().getAgentId();
+				if (!allIncomingManagers.contains(aid)) {
+					mgr.setIsActive(Boolean.FALSE);
+					bpSupportGroupManagerRepository.save(mgr);
+				}
+			}
+
+			// Record UPDATE audit if there are changes
+			if (!changedFields.isEmpty()) {
+				String newSnapshot = null;
+				try {
+					newSnapshot = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, incomingAgentIds, incomingInternalManagerIds, incomingBpManagerIds));
+				} catch (Exception ignore) {
+				}
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changedFields);
+				} catch (Exception ignore) {
+				}
+				Long companyId = null;
+				try {
+					if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
+						&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					}
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						supportGroup.getSupportGroupId(),
+						UPDATE,
+						newSnapshot,
+						oldValue,
+						changedStr,
+						request.getUpdatedBy(),
+						companyId,
+						SUCCESS,
+						null));
+			}
+
 			return mapper.toSupportGroupVo(supportGroup);
 		} catch (FlickzzDeskException e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (supportGroup != null) {
+					entityId = supportGroup.getSupportGroupId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal() == Boolean.TRUE) .map(internalManager -> internalManager.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsBP() == Boolean.TRUE) .map(bpManager -> bpManager.getAgent().getAgentId()).collect(Collectors.toSet())));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
+							&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("groupName", request.getGroupName());
+						attempted.put("agentCount", request.getAgents() != null ? request.getAgents().size() : 0);
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						entityId, UPDATE, newSnap, oldSnap, null, 
+						request != null ? request.getUpdatedBy() : null, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (supportGroup != null) {
+					entityId = supportGroup.getSupportGroupId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal() == Boolean.TRUE) .map(internalManager -> internalManager.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsBP() == Boolean.TRUE) .map(bpManager -> bpManager.getAgent().getAgentId()).collect(Collectors.toSet())));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
+							&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("groupName", request.getGroupName());
+						attempted.put("agentCount", request.getAgents() != null ? request.getAgents().size() : 0);
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						request != null ? request.getUpdatedBy() : null, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in updateBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public void deleteBusinessPartnerSupportGroupConfiguration(String supportGroupId) {
+	public void deleteBusinessPartnerSupportGroupConfiguration(String supportGroupId, Long userId) {
 		log.info(generateLog("deleteBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
+		BPSupportGroup supportGroup = null;
 		try {
 			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
 					.findBySupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
@@ -813,10 +2015,19 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
 			}
 
-			BPSupportGroup supportGroup = existingGroup.get();
-			supportGroup.setIsActive(Boolean.FALSE);
-			supportGroup.setUpdatedBy(null);
-			bpSupportGroupRepository.save(supportGroup);
+			supportGroup = existingGroup.get();
+
+			// Capture old snapshot before deletion
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup,
+						supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
+						supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal()).map(manager -> manager.getAgent().getAgentId()).collect(Collectors.toSet()),
+						supportGroup.getManagers().stream().filter(manager -> manager.getIsBP()).map(manager -> manager.getAgent().getAgentId()).collect(Collectors.toSet())));
+			} catch (Exception ignore) {
+			}
+
+			bpSupportGroupRepository.delete(supportGroup);
 
 			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
 					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
@@ -824,9 +2035,65 @@ public class BusinessPartnerService {
 				member.setIsActive(Boolean.FALSE);
 				bpSupportGroupMemberRepository.save(member);
 			}
+			
+			// Record DELETE audit
+			Long companyId = null;
+			try {
+				if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
+					&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+					supportGroup.getSupportGroupId(),
+					DELETE,
+					oldValue,
+					null,
+					null,
+					userId,
+					companyId,
+					SUCCESS,
+					null));
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(supportGroupId);
+				} catch (Exception ignore) {
+				}
+				if (supportGroup != null && supportGroup.getConfiguration() != null 
+					&& supportGroup.getConfiguration().getBusinessPartner() != null
+					&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						entityId, DELETE,
+						null, null, null, userId, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// record generic exception as ERROR audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(supportGroupId);
+				} catch (Exception ignore) {
+				}
+				if (supportGroup != null && supportGroup.getConfiguration() != null 
+					&& supportGroup.getConfiguration().getBusinessPartner() != null
+					&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						entityId, DELETE,
+						null, null, null, userId, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -1006,11 +2273,66 @@ public class BusinessPartnerService {
 						.supportGroup(supportGroup.get()).createdBy(request.getCreatedBy())
 						.updatedBy(request.getUpdatedBy()).build();
 			}
+			
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+			} catch (Exception ignore) {
+			}
 			bpAssignmentRepository.save(assignment);
+
+			// Record CREATE audit
+			java.util.Map<String, Object> changed = new java.util.HashMap<>();
+			changed.put("supportGroupId", assignment.getSupportGroup().getSupportGroupId());
+			changed.put("subCategoryId", assignment.getSubCategory().getSubCategoryId());
+			String changedStr = null;
+			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
+
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+					assignment.getAssignmentId(),
+					CREATE,
+					newSnapshot,
+					null,
+					changedStr,
+					request.getCreatedBy(),
+					request.getOrgId(),
+					SUCCESS,
+					null));
+
 			return mapper.toBPAssignmentVo(assignment);
 		} catch (FlickzzDeskException e) {
-			throw e;
+			// record FlickzzDeskException as ERROR audit and rethrow
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("supportGroupId", request != null ? request.getSupportGroupId() : null);
+				attemptedMap.put("subCategoryId", request != null ? request.getSubCategoryId() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment", null, CREATE,
+					attempted, null, null, request != null ? request.getCreatedBy() : null, (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+				throw e;
 		} catch (Exception e) {
+			String attempted = null;
+			try {
+				java.util.Map<String, Object> attemptedMap = new java.util.HashMap<>();
+				attemptedMap.put("supportGroupId", request != null ? request.getSupportGroupId() : null);
+				attemptedMap.put("subCategoryId", request != null ? request.getSubCategoryId() : null);
+				attempted = objectMapper.writeValueAsString(attemptedMap);
+			} catch (Exception ignore) {
+			}
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+					null,
+					CREATE,
+					attempted,
+					null,
+					null,
+					request != null ? request.getCreatedBy() : null,
+					request != null ? request.getOrgId() : null,
+					ERROR,
+					e.getMessage()), e);
 			log.error("Exception in createBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -1018,6 +2340,7 @@ public class BusinessPartnerService {
 
 	public BPAssignmentVO updateBusinessPartnerAssignmentConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		BPAssignment assignment = null;
 		try {
 			if (request == null || request.getSupportGroupId() == null || request.getSubCategoryId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -1031,6 +2354,24 @@ public class BusinessPartnerService {
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
 			}
 
+			assignment = existingAssignment.get();
+			
+			// Capture old values before update
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+			} catch (Exception ignore) {
+			}
+			
+			// Track changed fields
+			Map<String, Object> changedFields = new HashMap<>();
+			if (!Objects.equals(assignment.getSubCategory().getSubCategoryId(), request.getSubCategoryId())) {
+				changedFields.put("subCategoryId", true);
+			}
+			if (!Objects.equals(assignment.getUpdatedBy(), request.getUpdatedBy())) {
+				changedFields.put("updatedBy", true);
+			}
+
 			Optional<BPSubCategory> targetSubCategory = bpSubCategoryRepository
 					.findBySubCategoryIdAndIsActive(request.getSubCategoryId(), ACTIVE);
 			if (targetSubCategory.isEmpty()) {
@@ -1040,44 +2381,210 @@ public class BusinessPartnerService {
 
 			Optional<BPAssignment> assignmentForSubCategory = bpAssignmentRepository
 					.findByConfigurationConfigurationIdAndSubCategorySubCategoryIdAndIsActive(
-							existingAssignment.get().getConfiguration().getConfigurationId(),
+							assignment.getConfiguration().getConfigurationId(),
 							request.getSubCategoryId(), ACTIVE);
 			if (assignmentForSubCategory.isPresent()
 					&& !Objects.equals(assignmentForSubCategory.get().getAssignmentId(),
-							existingAssignment.get().getAssignmentId())) {
+							assignment.getAssignmentId())) {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for sub category"));
 			}
 
-			BPAssignment assignment = existingAssignment.get();
 			assignment.setUpdatedBy(request.getUpdatedBy());
 			assignment.setSubCategory(targetSubCategory.get());
 			bpAssignmentRepository.save(assignment);
+			
+			// Record UPDATE audit if there are changes
+			if (!changedFields.isEmpty()) {
+				String newSnapshot = null;
+				try {
+					newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+				} catch (Exception ignore) {
+				}
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changedFields);
+				} catch (Exception ignore) {
+				}
+				Long companyId = null;
+				try {
+					if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
+						&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					}
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+						assignment.getAssignmentId(),
+						UPDATE,
+						newSnapshot,
+						oldValue,
+						changedStr,
+						request.getUpdatedBy(),
+						companyId,
+						SUCCESS,
+						null));
+			}
+			
 			return mapper.toBPAssignmentVo(assignment);
 		} catch (FlickzzDeskException e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (assignment != null) {
+					entityId = assignment.getAssignmentId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
+							&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("supportGroupId", request.getSupportGroupId());
+						attempted.put("subCategoryId", request.getSubCategoryId());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+						entityId, UPDATE, newSnap, oldSnap, null, 
+						request != null ? request.getUpdatedBy() : null, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// Attempt to save error audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (assignment != null) {
+					entityId = assignment.getAssignmentId();
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
+							&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("supportGroupId", request.getSupportGroupId());
+						attempted.put("subCategoryId", request.getSubCategoryId());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						request != null ? request.getUpdatedBy() : null, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in updateBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
 
-	public void deleteBusinessPartnerAssignmentConfiguration(String supportGroupId) {
+	public void deleteBusinessPartnerAssignmentConfiguration(String assignmentId, Long userId) {
 		log.info(generateLog("deleteBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
+		BPAssignment assignment = null;
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
+					.findByAssignmentIdAndIsActive(Long.valueOf(assignmentId), ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
 			}
-			BPAssignment assignment = existingAssignment.get();
-			assignment.setIsActive(Boolean.FALSE);
-			assignment.setUpdatedBy(null);
-			bpAssignmentRepository.save(assignment);
+			
+			assignment = existingAssignment.get();
+			
+			// Capture old snapshot before deletion
+			String oldValue = null;
+			try {
+				oldValue = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+			} catch (Exception ignore) {
+			}
+
+			bpAssignmentRepository.delete(assignment);
+			
+			// Record DELETE audit
+			Long companyId = null;
+			try {
+				if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
+					&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+					assignment.getAssignmentId(),
+					DELETE,
+					oldValue,
+					null,
+					null,
+					userId,
+					companyId,
+					SUCCESS,
+					null));
 		} catch (FlickzzDeskException e) {
+			// record FlickzzDeskException as ERROR audit and rethrow
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(assignmentId);
+				} catch (Exception ignore) {
+				}
+				if (assignment != null && assignment.getConfiguration() != null 
+					&& assignment.getConfiguration().getBusinessPartner() != null
+					&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+						entityId, DELETE,
+						null, null, null, userId, companyId, "ERROR", e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
 			throw e;
 		} catch (Exception e) {
+			// record generic exception as ERROR audit
+			try {
+				Long entityId = null;
+				Long companyId = null;
+				try {
+					entityId = Long.valueOf(assignmentId);
+				} catch (Exception ignore) {
+				}
+				if (assignment != null && assignment.getConfiguration() != null 
+					&& assignment.getConfiguration().getBusinessPartner() != null
+					&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+					companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
+						entityId, DELETE,
+						null, null, null, userId, companyId, ERROR, e.getMessage()), e);
+			} catch (Exception ignore) {
+			}
 			log.error("Exception in deleteBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}

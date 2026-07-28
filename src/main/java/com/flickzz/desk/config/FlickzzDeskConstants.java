@@ -74,6 +74,11 @@ public class FlickzzDeskConstants {
 	public static final String EMAIL = "Email";
 	public static final String PASSWORD = "Password";
 	public static final String APPROVERS = "Approvers";
+	public static final String CREATE = "CREATE";
+	public static final String UPDATE = "UPDATE";
+	public static final String DELETE = "DELETE";
+	public static final String SUCCESS = "SUCCESS";
+	public static final String ERROR = "ERROR";
 
 	public static final String LEAD_COMPANY = "Lead company";
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),
