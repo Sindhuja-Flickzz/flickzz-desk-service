@@ -350,7 +350,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -572,7 +572,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, "ERROR", e.getDescription()), e);
+						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -742,7 +742,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, "ERROR", e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -930,7 +930,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, "ERROR", e.getDescription()), e);
+						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1038,7 +1038,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, "ERROR", e.getDescription()), e);
+						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1176,7 +1176,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, "ERROR", e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1344,7 +1344,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, "ERROR", e.getDescription()), e);
+						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1448,7 +1448,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, "ERROR", e.getDescription()), e);
+						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1691,7 +1691,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1986,7 +1986,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, "ERROR", e.getDescription()), e);
+						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2101,7 +2101,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, "ERROR", e.getDescription()), e);
+						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2344,7 +2344,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), "ERROR", e.getDescription()), e);
+					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -2495,7 +2495,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, "ERROR", e.getDescription()), e);
+						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2598,7 +2598,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, "ERROR", e.getDescription()), e);
+						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
