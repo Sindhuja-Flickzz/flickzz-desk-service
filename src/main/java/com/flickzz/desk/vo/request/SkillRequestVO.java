@@ -1,23 +1,19 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.*;
-import java.util.*;
 
 import lombok.*;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class TemplateDetailsRequestVO implements Serializable {
+@NoArgsConstructor
+public class SkillRequestVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
-
-	private Long templateId;
-	private String templateName;
-	private Long workItemId;
+	private Long skillId;
+	private String skillName;
 	private Long companyId;
-	private List<TemplateFieldDetailVO> templateDetails;
 	private Long createdBy;
 	private Long updatedBy;
 	private Boolean isCreatedByAdmin;

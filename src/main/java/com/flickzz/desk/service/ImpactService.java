@@ -28,7 +28,7 @@ import com.flickzz.desk.model.ImpactMaster;
 import com.flickzz.desk.repo.CompanyMasterRepository;
 import com.flickzz.desk.repo.ImpactMasterRepository;
 import com.flickzz.desk.vo.ImpactMasterVO;
-import com.flickzz.desk.vo.ImpactRequestVO;
+import com.flickzz.desk.vo.request.ImpactRequestVO;
 
 @Service
 public class ImpactService {

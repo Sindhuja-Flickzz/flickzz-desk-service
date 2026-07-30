@@ -1,4 +1,4 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.Serializable;
 
@@ -7,13 +7,11 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class LoginResponseVO implements Serializable {
+public class CommonRequestVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	private String loginResponse;
-	
-	private String accessToken;
+	private String username;
 
 	private String refreshToken;
 }

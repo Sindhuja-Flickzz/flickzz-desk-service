@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.flickzz.desk.model.SystemAudit;
 import com.flickzz.desk.repo.SystemAuditRepository;
-import com.flickzz.desk.vo.SystemAuditRequest;
+import com.flickzz.desk.vo.request.SystemAuditRequest;
 import tools.jackson.databind.ObjectMapper;
 
 @Service
@@ -37,6 +37,7 @@ public class AuditService {
             if (req.getUserId() != null) {
                 audit.setUserId(req.getUserId());
             }
+            audit.setUserName(req.getUserName());
             audit.setCompanyId(req.getCompanyId());
             audit.setStatus(req.getStatus());
             audit.setErrorMessage(req.getErrorMessage());

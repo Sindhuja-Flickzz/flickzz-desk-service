@@ -1,7 +1,8 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.*;
 
+import com.flickzz.desk.vo.CompanyMasterVO;
 import lombok.*;
 
 @Data

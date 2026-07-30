@@ -7,6 +7,8 @@ import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.flickzz.desk.vo.request.EnquiryRegisterRequestVO;
+import com.flickzz.desk.vo.request.EnquiryRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

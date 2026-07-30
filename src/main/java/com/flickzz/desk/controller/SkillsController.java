@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.SkillsService;
 import com.flickzz.desk.vo.SkillMasterVO;
-import com.flickzz.desk.vo.SkillRequestVO;
+import com.flickzz.desk.vo.request.SkillRequestVO;
 
 @CrossOrigin
 @RestController

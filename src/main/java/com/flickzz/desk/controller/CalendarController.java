@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.CalendarService;
-import com.flickzz.desk.vo.CalendarMasterRequestVO;
+import com.flickzz.desk.vo.request.CalendarMasterRequestVO;
 import com.flickzz.desk.vo.CalendarMasterVO;
 import com.flickzz.desk.vo.CalendarTypeVO;
 

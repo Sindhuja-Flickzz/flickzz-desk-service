@@ -1,4 +1,4 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.Serializable;
 

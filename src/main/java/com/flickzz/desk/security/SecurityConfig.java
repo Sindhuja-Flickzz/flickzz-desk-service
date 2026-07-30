@@ -50,7 +50,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/register", "/verify", "/login", "/auth/**", "/refresh", "/reset/**",
-								"/country/**", "/enquiry/**", "/user/**")
+								"/country/**", "/enquiry/**", "/user/**","/audit/**")
 						.permitAll().anyRequest().authenticated())
 				.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
 				.logout(logout -> logout.logoutUrl("/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")

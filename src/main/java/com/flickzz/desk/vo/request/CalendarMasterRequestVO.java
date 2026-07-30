@@ -1,10 +1,11 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.*;
 import java.util.*;
 
 import com.fasterxml.jackson.annotation.*;
 
+import com.flickzz.desk.vo.CalendarHolidayVO;
 import lombok.*;
 
 @Data

@@ -1,4 +1,4 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +21,7 @@ public class SystemAuditRequest {
     private String newValue;
     private String changedFields;
     private Long userId;
+    private String userName;
     private Long companyId;
     private String status;
     private String errorMessage;

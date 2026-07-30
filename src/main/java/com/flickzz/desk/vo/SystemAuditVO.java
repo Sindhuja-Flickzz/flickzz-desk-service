@@ -6,6 +6,10 @@ import lombok.*;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+
 public class SystemAuditVO {
 
 	private Long auditId;
@@ -17,7 +21,8 @@ public class SystemAuditVO {
 	private String oldValue;
 	private String newValue;
 	private String changedFields;
-	private Long userId;
+	private Long changedBy;
+	private String userName;
 	private Long companyId;
 	private String status;
 	private String errorMessage;

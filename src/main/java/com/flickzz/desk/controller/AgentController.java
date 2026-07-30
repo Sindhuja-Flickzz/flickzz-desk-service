@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.AgentService;
 import com.flickzz.desk.vo.AgentMasterVO;
-import com.flickzz.desk.vo.AgentRequestVO;
+import com.flickzz.desk.vo.request.AgentRequestVO;
 import com.flickzz.desk.vo.AgentSkillsMappingVO;
 
 @CrossOrigin

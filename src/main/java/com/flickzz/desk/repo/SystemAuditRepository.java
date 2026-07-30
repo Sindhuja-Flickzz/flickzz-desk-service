@@ -1,9 +1,13 @@
 package com.flickzz.desk.repo;
 
-import org.springframework.data.jpa.repository.*;
+import java.util.List;
 
-import com.flickzz.desk.model.*;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface SystemAuditRepository extends JpaRepository<SystemAudit, Long> {
+import com.flickzz.desk.model.SystemAudit;
 
+public interface SystemAuditRepository extends JpaRepository<SystemAudit, Long>, JpaSpecificationExecutor<SystemAudit> {
+
+    List<SystemAudit> findByCompanyId(Long orgId);
 }

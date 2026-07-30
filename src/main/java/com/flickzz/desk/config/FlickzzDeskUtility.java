@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.flickzz.desk.vo.response.RegisterLoginResponseVO;
 import org.springframework.security.core.*;
 import org.springframework.security.core.context.*;
 
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.security.*;
-import com.flickzz.desk.vo.*;
 
 public class FlickzzDeskUtility {
 
@@ -55,8 +55,8 @@ public class FlickzzDeskUtility {
 	}
 
 	public static RegisterLoginResponseVO generateLoginResponse(String jwtToken, String refreshToken,
-			Boolean isEnquiryUser, Boolean mfaEnabled, CompanyMaster company, String userRole, String qrCodeImageUri,
-			Long userId) {
+                                                                Boolean isEnquiryUser, Boolean mfaEnabled, CompanyMaster company, String userRole, String qrCodeImageUri,
+                                                                Long userId) {
 		return RegisterLoginResponseVO.builder().accessToken(jwtToken != null ? jwtToken : "")
 				.refreshToken(refreshToken != null ? refreshToken : "").isEnquiryUser(isEnquiryUser)
 				.mfaEnabled(mfaEnabled).userOrgId(company != null ? company.getCompanyId() : 0)
@@ -234,4 +234,7 @@ public class FlickzzDeskUtility {
 		return snapshot;
 	}
 
+	public static String buildName(String firstName, String middleName, String lastName) {
+		return (firstName != null ? firstName : "") + " " + (middleName != null ? middleName + " " : "") + (lastName != null ? lastName : "");
+	}
 }

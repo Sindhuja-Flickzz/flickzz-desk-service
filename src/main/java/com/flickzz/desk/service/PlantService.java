@@ -17,7 +17,7 @@ import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
-import com.flickzz.desk.vo.PlantMasterRequestVO;
+import com.flickzz.desk.vo.request.PlantMasterRequestVO;
 import com.flickzz.desk.vo.PlantMasterVO;
 
 @Service

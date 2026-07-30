@@ -1,8 +1,9 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import java.io.*;
 import java.util.*;
 
+import com.flickzz.desk.vo.EpicVO;
 import lombok.*;
 
 @Data

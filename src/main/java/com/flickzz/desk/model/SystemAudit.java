@@ -50,6 +50,9 @@ public class SystemAudit {
 	@Column(name = "USER_ID", nullable = false)
 	private Long userId;
 
+	@Column(name = "USER_NAME")
+	private String userName;
+
 	@Column(name = "COMPANY_ID")
 	private Long companyId;
 
