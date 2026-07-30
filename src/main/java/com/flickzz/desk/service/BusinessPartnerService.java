@@ -436,7 +436,7 @@ public class BusinessPartnerService {
 				} catch (Exception ignore) {
 					changedValue = null;
 				}
-				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue, request.getUpdatedBy(), loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), null, SUCCESS, null));
+				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue, request.getUpdatedBy(), loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), SUCCESS, null));
 			}
 			
 			return mapper.toBPPriorityVo(bpPriority);
@@ -457,7 +457,7 @@ public class BusinessPartnerService {
 				}
 			} catch (Exception ignore) {
 			}
-			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority != null ? bpPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), null, FAILED, e.getMessage()), e);
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority != null ? bpPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), FAILED, e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
 			// Attempt to save error audit
