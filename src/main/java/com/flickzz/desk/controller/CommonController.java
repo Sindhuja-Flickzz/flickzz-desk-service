@@ -13,23 +13,16 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
 import java.util.List;
 
+import com.flickzz.desk.vo.*;
+import com.flickzz.desk.vo.request.SystemAuditFilterRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.CommonService;
-import com.flickzz.desk.vo.CityMasterVO;
-import com.flickzz.desk.vo.CountryMasterVO;
-import com.flickzz.desk.vo.LanguageMasterVO;
-import com.flickzz.desk.vo.StateMasterVO;
 
 @CrossOrigin
 @RestController
@@ -150,5 +143,25 @@ public class CommonController {
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
+	}
+
+	@GetMapping("audit/list/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getAuditListByOrg(@PathVariable String orgId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<SystemAuditVO> response = commonService.getAuditListByOrg(Long.valueOf(orgId));
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Audit"), response);
+	}
+
+	@GetMapping("audit/list")
+	public ResponseEntity<FlickzzDeskResponse> getAuditListByFilter(@ModelAttribute SystemAuditFilterRequestVO filter) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<SystemAuditVO> response = commonService.getAuditListByFilter(filter);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Audit"), response);
 	}
 }

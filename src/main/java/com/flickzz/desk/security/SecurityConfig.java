@@ -50,7 +50,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/register", "/verify", "/login", "/auth/**", "/refresh", "/reset/**",
-								"/country/**", "/enquiry/**", "/user/**")
+								"/country/**", "/enquiry/**", "/user/**","/audit/**")
 						.permitAll().anyRequest().authenticated())
 				.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
 				.logout(logout -> logout.logoutUrl("/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
@@ -77,7 +77,7 @@ public class SecurityConfig {
 		config.setAllowedOrigins(
 				List.of("http://localhost:4200", "https://flickzz-desk-service-production.up.railway.app",
 						"https://flickzz-desk-ui-production.up.railway.app"));
-		config.setAllowedHeaders(Arrays.asList(ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, "x-user-id"));
+		config.setAllowedHeaders(Arrays.asList(ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION, "x-user-email", "x-user-id"));
 		config.setAllowedMethods(Arrays.asList(GET.name(), POST.name(), DELETE.name(), PUT.name(), PATCH.name(), OPTIONS.name()));
 		source.registerCorsConfiguration("/**", config);
 		return new CorsFilter(source);

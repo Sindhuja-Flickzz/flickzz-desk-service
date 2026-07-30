@@ -12,6 +12,7 @@ import lombok.*;
 @Entity
 @Table(name = "FD_BP_SUB_CATEGORY", uniqueConstraints = {
 		@UniqueConstraint(name = "UK_SUB_CATEGORY", columnNames = { "CATEGORY_ID", "SUB_CATEGORY_NAME" }) })
+@ToString(exclude = "category")
 public class BPSubCategory {
 
 	@Id

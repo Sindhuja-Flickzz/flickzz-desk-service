@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.ImpactService;
 import com.flickzz.desk.vo.ImpactMasterVO;
-import com.flickzz.desk.vo.ImpactRequestVO;
+import com.flickzz.desk.vo.request.ImpactRequestVO;
 
 @CrossOrigin
 @RestController

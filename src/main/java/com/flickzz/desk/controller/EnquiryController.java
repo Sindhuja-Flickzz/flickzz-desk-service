@@ -26,9 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.EnquiryService;
 import com.flickzz.desk.vo.EnquiryInfoVO;
-import com.flickzz.desk.vo.EnquiryRegisterRequestVO;
+import com.flickzz.desk.vo.request.EnquiryRegisterRequestVO;
 import com.flickzz.desk.vo.EnquiryRegistrationVO;
-import com.flickzz.desk.vo.EnquiryRequestVO;
+import com.flickzz.desk.vo.request.EnquiryRequestVO;
 
 @CrossOrigin
 @RestController

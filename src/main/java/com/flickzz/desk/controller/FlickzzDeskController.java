@@ -29,12 +29,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.FlickzzDeskService;
-import com.flickzz.desk.vo.CommonRequestVO;
-import com.flickzz.desk.vo.LoginResponseVO;
-import com.flickzz.desk.vo.RegisterLoginRequestVO;
-import com.flickzz.desk.vo.RegisterLoginResponseVO;
+import com.flickzz.desk.vo.request.CommonRequestVO;
+import com.flickzz.desk.vo.response.LoginResponseVO;
+import com.flickzz.desk.vo.request.RegisterLoginRequestVO;
+import com.flickzz.desk.vo.response.RegisterLoginResponseVO;
 import com.flickzz.desk.vo.UserVO;
-import com.flickzz.desk.vo.VerificationRequestVO;
+import com.flickzz.desk.vo.request.VerificationRequestVO;
 
 @CrossOrigin
 @RestController

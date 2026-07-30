@@ -10,6 +10,7 @@ import lombok.*;
 @Entity
 @Table(name = "FD_BP_SUPPORT_GROUP_MANAGER", uniqueConstraints = {
 		@UniqueConstraint(name = "UK_GROUP_MANAGER", columnNames = { "SUPPORT_GROUP_ID", "AGENT_ID" }) })
+@ToString(exclude = {"supportGroup","agent"})
 public class BPSupportGroupManager {
 
 	@Id

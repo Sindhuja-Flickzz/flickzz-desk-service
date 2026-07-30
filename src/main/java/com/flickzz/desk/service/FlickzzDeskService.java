@@ -6,6 +6,11 @@ import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
 import java.util.*;
 
+import com.flickzz.desk.vo.request.CommonRequestVO;
+import com.flickzz.desk.vo.request.RegisterLoginRequestVO;
+import com.flickzz.desk.vo.request.VerificationRequestVO;
+import com.flickzz.desk.vo.response.LoginResponseVO;
+import com.flickzz.desk.vo.response.RegisterLoginResponseVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.security.core.*;

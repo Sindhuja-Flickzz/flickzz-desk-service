@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.flickzz.desk.vo.request.*;
 import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -83,7 +84,7 @@ public class CommonMapper {
 	}
 
 	public CalendarMaster toCalendarMasterEntity(CalendarMasterRequestVO request, CalendarType calendarType,
-			CompanyMaster company) {
+	                                             CompanyMaster company) {
 		if (request == null) {
 			return null;
 		}
@@ -102,7 +103,7 @@ public class CommonMapper {
 		return calendarHolidayList.stream().map(h -> {
 			CalendarHoliday holiday = CalendarHoliday.builder().holidayDate(h.getHolidayDate())
 					.description(h.getDescription()).calendarMaster(entity).createdBy(createdBy)
-					.isCreatorAdmin(h.getIsCreatedByAdmin()).updatedBy(createdBy)
+					.isCreatorAdmin(h.getIsCreatedByAdmin() != null? h.getIsCreatedByAdmin() : entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false).updatedBy(createdBy)
 					.isUpdaterAdmin(h.getIsUpdatedByAdmin()).build();
 			return holiday;
 		}).toList();
@@ -122,7 +123,7 @@ public class CommonMapper {
 	}
 
 	public CompanyMaster toCompanyMasterEntity(CompanyMasterRequestVO request, CountryMaster country,
-			StateMaster stateMaster, CityMaster cityMaster) {
+	                                           StateMaster stateMaster, CityMaster cityMaster) {
 		if (request == null) {
 			return null;
 		}
@@ -414,7 +415,7 @@ public class CommonMapper {
 	}
 
 	public EnquiryRegistration enquiryRegisterRequestToEnquiryRegistration(EnquiryRegisterRequestVO request,
-			CountryMaster country, String role, CompanyMaster company) {
+	                                                                       CountryMaster country, String role, CompanyMaster company) {
 		if (request == null) {
 			return null;
 		}
@@ -1013,4 +1014,44 @@ public class CommonMapper {
     			.build();
     }
 
+	public SystemAuditRequest toSystemAuditRequest(String module, String area, String entityName, Long entityId, String action, String newValue, String oldValue, String changedFields, Long userId, String userName, Long companyId, String status, String errorMessage) {
+		return SystemAuditRequest.builder()
+				.module(module)
+				.area(area)
+				.entityName(entityName)
+				.entityId(entityId)
+				.action(action)
+				.newValue(newValue)
+				.oldValue(oldValue)
+				.changedFields(changedFields)
+				.userId(userId)
+				.userName(userName)
+				.companyId(companyId)
+				.status(status)
+				.errorMessage(errorMessage)
+				.build();
+	}
+
+    public SystemAuditVO toSystemAuditVO(SystemAudit systemAudit) {
+        if (systemAudit == null) {
+            return null;
+        }
+        return SystemAuditVO.builder()
+                .auditId(systemAudit.getAuditId())
+                .module(systemAudit.getModule())
+                .area(systemAudit.getArea())
+                .entityName(systemAudit.getEntityName())
+                .entityId(systemAudit.getEntityId())
+                .action(systemAudit.getAction())
+                .newValue(systemAudit.getNewValue())
+                .oldValue(systemAudit.getOldValue())
+                .changedFields(systemAudit.getChangedFields())
+                .changedBy(systemAudit.getUserId())
+				.userName(systemAudit.getUserName())
+                .companyId(systemAudit.getCompanyId())
+                .status(systemAudit.getStatus())
+                .errorMessage(systemAudit.getErrorMessage())
+                .createdAt(systemAudit.getCreatedAt())
+                .build();
+    }
 }

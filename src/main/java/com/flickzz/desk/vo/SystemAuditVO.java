@@ -3,10 +3,13 @@ package com.flickzz.desk.vo;
 import java.time.*;
 
 import lombok.*;
-import tools.jackson.databind.*;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+
 public class SystemAuditVO {
 
 	private Long auditId;
@@ -15,19 +18,12 @@ public class SystemAuditVO {
 	private String entityName;
 	private Long entityId;
 	private String action;
-	private String description;
-	private JsonNode oldValue;
-	private JsonNode newValue;
-	private JsonNode changedFields;
-	private Long userId;
+	private String oldValue;
+	private String newValue;
+	private String changedFields;
+	private Long changedBy;
 	private String userName;
 	private Long companyId;
-	private String requestId;
-	private String sessionId;
-	private String url;
-	private String httpMethod;
-	private String ipAddress;
-	private String userAgent;
 	private String status;
 	private String errorMessage;
 	private LocalDateTime createdAt;

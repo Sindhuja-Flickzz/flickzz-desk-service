@@ -13,6 +13,7 @@ import lombok.*;
 @Entity
 @Table(name = "FD_BUSINESS_PARTNER", uniqueConstraints = {
 		@UniqueConstraint(name = "UQ_BUSINESS_PARTNER_MAPPING", columnNames = { "COMPANY_ID", "MAPPING_ID" }) })
+@ToString(exclude = {"company","mappedCompany"})
 public class BusinessPartner {
 
 	@Id

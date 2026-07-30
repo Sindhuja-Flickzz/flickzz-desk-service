@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.PlantService;
-import com.flickzz.desk.vo.PlantMasterRequestVO;
+import com.flickzz.desk.vo.request.PlantMasterRequestVO;
 import com.flickzz.desk.vo.PlantMasterVO;
 
 @CrossOrigin

@@ -7,6 +7,7 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 
 import java.util.*;
 
+import com.flickzz.desk.vo.request.BusinessServiceRequestVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
