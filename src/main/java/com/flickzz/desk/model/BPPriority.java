@@ -38,6 +38,9 @@ public class BPPriority {
 	@JoinColumn(name = "TICKET_TYPE_ID", nullable = false)
 	private TicketTypeMaster ticketType;
 
+	@OneToOne(mappedBy = "priority", cascade = CascadeType.ALL, orphanRemoval = true)
+	private BPSla sla;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;

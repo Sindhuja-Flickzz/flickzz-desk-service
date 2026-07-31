@@ -535,10 +535,10 @@ public class BusinessPartnerService {
 				oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
 			} catch (Exception ignore) {
 			}
-			
-			// Mark as inactive
-			bpPriority.setIsActive(Boolean.FALSE);
-			bPPriorityRepository.save(bpPriority);
+
+			validatePrioritySlaForDeletion(bpPriority);
+
+			bPPriorityRepository.delete(bpPriority);
 			Long companyId = bpPriority.getConfiguration() != null
 					&& bpPriority.getConfiguration().getBusinessPartner() != null
 					&& bpPriority.getConfiguration().getBusinessPartner().getCompany() != null
@@ -597,6 +597,20 @@ public class BusinessPartnerService {
 			}
 			log.error("Exception in deleteBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	private void validatePrioritySlaForDeletion(BPPriority bpPriority) {
+		if (bpPriority == null) {
+			return;
+		}
+		boolean hasSla = bpSlaRepository.existsByConfigurationConfigurationIdAndPriorityPriorityIdAndIsActive(
+				bpPriority.getConfiguration() != null ? bpPriority.getConfiguration().getConfigurationId() : null,
+				bpPriority.getPriorityId(),
+				ACTIVE);
+		if (hasSla) {
+			throw new FlickzzDeskException(INVALID_FIELD,
+					bpPriority.getCode() + " cannot be be deleted, as it has SLA configured");
 		}
 	}
 
@@ -997,10 +1011,8 @@ public class BusinessPartnerService {
 				oldValue = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
 			} catch (Exception ignore) {
 			}
-			
-			// Mark as inactive
-			bpSla.setIsActive(Boolean.FALSE);
-			bpSlaRepository.save(bpSla);
+
+			bpSlaRepository.delete(bpSla);
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1136,14 +1148,7 @@ public class BusinessPartnerService {
 					if (subCategoryName == null || subCategoryName.trim().isEmpty()) {
 						continue;
 					}
-					if (bpSubCategoryRepository.existsByCategoryCategoryIdAndSubCategoryNameAndIsActive(
-							bpCategory.getCategoryId(), subCategoryName.trim(), ACTIVE)) {
-						continue;
-					}
-					BPSubCategory subCategory = BPSubCategory.builder().category(bpCategory)
-							.subCategoryName(subCategoryName.trim()).createdBy(request.getCreatedBy())
-							.updatedBy(request.getUpdatedBy()).build();
-					bpSubCategoryRepository.save(subCategory);
+					upsertSubCategory(bpCategory, subCategoryName.trim(), request.getCreatedBy(), request.getUpdatedBy());
 				}
 			}
 
@@ -1253,6 +1258,8 @@ public class BusinessPartnerService {
 					incomingSubCategories.add(subCategoryName.trim());
 				}
 
+				validateSubCategoryAssignmentsForRemoval(bpCategory, incomingSubCategories);
+
 				List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
 						.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
 				Set<String> existingNames = existingSubCategories.stream().map(BPSubCategory::getSubCategoryName)
@@ -1262,17 +1269,12 @@ public class BusinessPartnerService {
 					if (existingNames.contains(subCategoryName)) {
 						continue;
 					}
-					BPSubCategory subCategory = BPSubCategory.builder().category(bpCategory)
-							.subCategoryName(subCategoryName).createdBy(request.getCreatedBy())
-							.updatedBy(request.getUpdatedBy()).build();
-					bpSubCategoryRepository.save(subCategory);
+					upsertSubCategory(bpCategory, subCategoryName, request.getCreatedBy(), request.getUpdatedBy());
 				}
 
 				for (BPSubCategory subCategory : existingSubCategories) {
 					if (!incomingSubCategories.contains(subCategory.getSubCategoryName())) {
-						subCategory.setIsActive(Boolean.FALSE);
-						subCategory.setUpdatedBy(request.getUpdatedBy());
-						bpSubCategoryRepository.save(subCategory);
+						bpSubCategoryRepository.delete(subCategory);
 					}
 				}
 			}
@@ -1407,10 +1409,17 @@ public class BusinessPartnerService {
 				oldValue = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
 			} catch (Exception ignore) {
 			}
-			
-			// Mark as inactive
-			bpCategory.setIsActive(Boolean.FALSE);
-			bpCategoryRepository.save(bpCategory);
+
+			validateSubCategoryAssignmentsForDeletion(bpCategory);
+
+			bpCategoryRepository.delete(bpCategory);
+			List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
+					.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
+			for (BPSubCategory subCategory : existingSubCategories) {
+				subCategory.setIsActive(Boolean.FALSE);
+				subCategory.setUpdatedBy(userId);
+				bpSubCategoryRepository.save(subCategory);
+			}
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1473,6 +1482,73 @@ public class BusinessPartnerService {
 			}
 			log.error("Exception in deleteBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	BPSubCategory upsertSubCategory(BPCategory bpCategory, String subCategoryName, Long createdBy, Long updatedBy) {
+		if (bpCategory == null || subCategoryName == null || subCategoryName.trim().isEmpty()) {
+			return null;
+		}
+
+		String normalizedName = subCategoryName.trim();
+		Optional<BPSubCategory> existingSubCategory = bpSubCategoryRepository
+				.findByCategoryCategoryIdAndSubCategoryName(bpCategory.getCategoryId(), normalizedName);
+		if (existingSubCategory.isPresent()) {
+			BPSubCategory subCategory = existingSubCategory.get();
+			if (!Boolean.TRUE.equals(subCategory.getIsActive())) {
+				subCategory.setIsActive(Boolean.TRUE);
+				subCategory.setUpdatedBy(updatedBy);
+				if (subCategory.getCreatedBy() == null && createdBy != null) {
+					subCategory.setCreatedBy(createdBy);
+				}
+				return bpSubCategoryRepository.save(subCategory);
+			}
+			return subCategory;
+		}
+
+		BPSubCategory subCategory = BPSubCategory.builder().category(bpCategory).subCategoryName(normalizedName)
+				.createdBy(createdBy).updatedBy(updatedBy).build();
+		return bpSubCategoryRepository.save(subCategory);
+	}
+
+	void validateSubCategoryAssignmentsForRemoval(BPCategory bpCategory, Set<String> incomingSubCategories) {
+		if (bpCategory == null || bpCategory.getConfiguration() == null || incomingSubCategories == null) {
+			return;
+		}
+
+		List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
+				.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
+		for (BPSubCategory subCategory : existingSubCategories) {
+			if (incomingSubCategories.contains(subCategory.getSubCategoryName())) {
+				continue;
+			}
+			validateSubCategoryAssignment(subCategory, bpCategory.getConfiguration().getConfigurationId());
+		}
+	}
+
+	void validateSubCategoryAssignmentsForDeletion(BPCategory bpCategory) {
+		if (bpCategory == null || bpCategory.getConfiguration() == null) {
+			return;
+		}
+
+		List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
+				.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
+		for (BPSubCategory subCategory : existingSubCategories) {
+			validateSubCategoryAssignment(subCategory, bpCategory.getConfiguration().getConfigurationId());
+		}
+	}
+
+	private void validateSubCategoryAssignment(BPSubCategory subCategory, Long configurationId) {
+		if (subCategory == null) {
+			return;
+		}
+		boolean hasAssignment = bpAssignmentRepository
+				.findByConfigurationConfigurationIdAndSubCategorySubCategoryIdAndIsActive(
+						configurationId, subCategory.getSubCategoryId(), ACTIVE)
+				.isPresent();
+		if (hasAssignment) {
+			throw new FlickzzDeskException(INVALID_FIELD,
+					"SubCategory " + subCategory.getSubCategoryName() + " cannot be removed as it has existing assignment");
 		}
 	}
 
@@ -2056,15 +2132,22 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 
+			validateSupportGroupAssignmentForRemoval(supportGroup);
+
 			bpSupportGroupRepository.delete(supportGroup);
 
 			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
 					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
 			for (BPSupportGroupMember member : members) {
-				member.setIsActive(Boolean.FALSE);
-				bpSupportGroupMemberRepository.save(member);
+				bpSupportGroupMemberRepository.delete(member);
 			}
-			
+
+			List<BPSupportGroupManager> managers = bpSupportGroupManagerRepository
+					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			for (BPSupportGroupManager manager : managers) {
+				bpSupportGroupManagerRepository.delete(manager);
+			}
+
 			// Record DELETE audit
 			Long companyId = null;
 			try {
@@ -2126,6 +2209,20 @@ public class BusinessPartnerService {
 			}
 			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	private void validateSupportGroupAssignmentForRemoval(BPSupportGroup supportGroup) {
+		if (supportGroup == null) {
+			return;
+		}
+		boolean hasAssignment = bpAssignmentRepository
+				.findByConfigurationConfigurationIdAndSupportGroupSupportGroupIdAndIsActive(
+						supportGroup.getConfiguration().getConfigurationId(), supportGroup.getSupportGroupId(), ACTIVE)
+				.isPresent();
+		if (hasAssignment) {
+			throw new FlickzzDeskException(INVALID_FIELD,
+					supportGroup.getGroupName() + " cannot be removed as it has existing assignment");
 		}
 	}
 

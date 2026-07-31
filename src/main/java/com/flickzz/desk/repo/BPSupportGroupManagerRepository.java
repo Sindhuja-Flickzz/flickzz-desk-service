@@ -16,4 +16,6 @@ public interface BPSupportGroupManagerRepository extends JpaRepository<BPSupport
 
 	boolean existsBySupportGroupSupportGroupIdAndAgentAgentIdAndIsActive(Long supportGroupId, Long agentId,
 			Boolean active);
+
+    List<BPSupportGroupManager> findBySupportGroupSupportGroupIdAndIsActive(Long supportGroupId, Boolean active);
 }

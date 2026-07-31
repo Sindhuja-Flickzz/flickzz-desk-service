@@ -11,6 +11,8 @@ public interface BPSubCategoryRepository extends JpaRepository<BPSubCategory, Lo
 
 	List<BPSubCategory> findByCategoryCategoryIdAndIsActive(Long categoryId, Boolean active);
 
+	Optional<BPSubCategory> findByCategoryCategoryIdAndSubCategoryName(Long categoryId, String subCategoryName);
+
 	Optional<BPSubCategory> findBySubCategoryIdAndIsActive(Long subCategoryId, Boolean active);
 
 	boolean existsByCategoryCategoryIdAndSubCategoryNameAndIsActive(Long categoryId, String subCategoryName,
