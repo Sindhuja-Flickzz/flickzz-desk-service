@@ -22,4 +22,6 @@ public interface CalendarMasterRepository extends JpaRepository<CalendarMaster, 
 			Boolean isActive);
 
 	Optional<CalendarMaster> findByCalendarCodeAndCompany_CompanyId(String calendarCode, Long company);
+
+    boolean existsByCalendarType_CalendarTypeId(Long calendarTypeId);
 }

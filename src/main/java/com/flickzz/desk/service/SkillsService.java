@@ -30,6 +30,8 @@ public class SkillsService {
 
 	@Autowired
 	CommonMapper mapper;
+    @Autowired
+    private AgentSkillsMappingRepository agentSkillsMappingRepository;
 
 	public List<SkillMasterVO> createSkills(List<SkillRequestVO> skills) {
 		log.info(generateLog("createSkills", this.getClass().getName()));
@@ -111,8 +113,11 @@ public class SkillsService {
 			SkillMaster skillMaster = skillMasterRepository.findBySkillId(Long.valueOf(skillId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), SKILL)));
-			skillMaster.setIsActive(false);
-			skillMasterRepository.save(skillMaster);
+			if(agentSkillsMappingRepository.existsBySkill_SkillIdAndIsActive(Long.valueOf(skillId), ACTIVE)) {
+				log.info("Skill is assigned to an agent, cannot delete");
+				throw new FlickzzDeskException(DB_SAVE_ERROR, "Please unassign the skill from all agent(s) before deleting.");
+			}
+			skillMasterRepository.delete(skillMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

@@ -9,6 +9,7 @@ import java.util.*;
 import com.flickzz.desk.vo.request.AgentRequestVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.*;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
@@ -286,6 +287,9 @@ public class AgentService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
 			}
 			agentMasterRepository.delete(existing.get());
+		} catch (DataIntegrityViolationException e) {
+			log.error("DataIntegrityViolationException in deleteAgent method in FlickzzDeskService");
+			throw new FlickzzDeskException(DB_SAVE_ERROR, "Unassign agent from all assignment to delete");
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
