@@ -23,7 +23,7 @@ public class BPSla {
 	@JoinColumn(name = "CONFIGURATION_ID", nullable = false)
 	private BPConfiguration configuration;
 
-	@ManyToOne(fetch = FetchType.LAZY)
+	@OneToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "PRIORITY_ID", nullable = false)
 	private BPPriority priority;
 
