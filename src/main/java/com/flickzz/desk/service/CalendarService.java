@@ -7,8 +7,10 @@ import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 import java.util.*;
 
 import com.flickzz.desk.vo.request.CalendarMasterRequestVO;
+import org.hibernate.TransientPropertyValueException;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.*;
 
 import com.flickzz.desk.exception.*;
@@ -170,12 +172,15 @@ public class CalendarService {
 			CalendarMaster existing = calendarMasterRepository.findByCalendarCode(calendarCode)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), "Calendar")));
-			existing.setIsActive(false);
-			calendarMasterRepository.save(existing);
+			calendarMasterRepository.delete(existing);
+		} catch (DataIntegrityViolationException e) {
+			log.error("Unable to delete calendar due to a dependent entity reference", e);
+			throw new FlickzzDeskException(DB_SAVE_ERROR,
+					"Unable to delete the calendar because it is referenced by existing records. Please remove all associations and try again.");
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in deleteCalendar method in CalendarService");
+			log.error("Exception in deleteCalendar method in CalendarService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
@@ -230,8 +235,12 @@ public class CalendarService {
 			CalendarType calendarType = calendarTypeRepository.findById(Long.valueOf(calendarTypeId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), "Calendar Type")));
-			calendarType.setIsActive(INACTIVE);
-			calendarTypeRepository.save(calendarType);
+
+			if(calendarMasterRepository.existsByCalendarType_CalendarTypeId(calendarType.getCalendarTypeId())) {
+				log.info("Cannot delete calendar type as it is associated with existing calendars.");
+				throw new FlickzzDeskException(DB_SAVE_ERROR, "Cannot delete calendar type as it is associated with existing calendars.");
+			}
+			calendarTypeRepository.delete(calendarType);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

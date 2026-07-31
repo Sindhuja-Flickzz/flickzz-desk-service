@@ -10,6 +10,7 @@ import java.util.stream.*;
 import com.flickzz.desk.vo.request.TemplateDetailsRequestVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
 
@@ -334,7 +335,9 @@ public class TemplateDetailsService {
 			}
 
 			templateDetailsRepository.delete(template.get());
-
+		} catch (DataIntegrityViolationException e) {
+			log.error("DataIntegrityViolationException in deleteTemplateDetails method in TemplateDetailsService");
+			throw new FlickzzDeskException(DB_SAVE_ERROR, "Cannot delete template details as it is associated with existing records.");
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
