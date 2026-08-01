@@ -9,8 +9,7 @@ import com.flickzz.desk.model.EnquiryRegistration;
 
 public interface EnquiryRegistrationRepository extends JpaRepository<EnquiryRegistration, Long> {
 
-	@Query("SELECT e FROM EnquiryRegistration e WHERE e.email = :email AND e.isActive = :active")
-	Optional<EnquiryRegistration> findByEmailAndIsActive(String email, Boolean active);
+	Optional<EnquiryRegistration> findTopByEmailAndIsActiveOrderByVersionDesc(String email, Boolean active);
 
 	boolean existsByUserName(String username);
 

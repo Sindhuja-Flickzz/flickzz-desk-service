@@ -18,6 +18,7 @@ import com.flickzz.desk.mapper.*;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.*;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class CalendarService {
@@ -35,6 +36,9 @@ public class CalendarService {
 
 	@Autowired
 	private CommonMapper mapper;
+
+	@Autowired
+    ObjectMapper objectMapper;
 
 	public CalendarMasterVO createCalendar(CalendarMasterRequestVO request) {
 		log.info(generateLog("createCalendar", this.getClass().getName()));
@@ -213,13 +217,22 @@ public class CalendarService {
 			List<CalendarTypeVO> calendarTypeVOs = new ArrayList<CalendarTypeVO>();
 
 			request.getCalendarTypeList().forEach(type -> {
-				calendarTypeRepository.findByTypeNameAndCompany_CompanyId(type, request.getCompany()).ifPresent(c -> {
-					c.setIsActive(true);
-					calendarTypeRepository.save(c);
+				calendarTypeRepository.findByTypeNameAndCompany_CompanyId(type, request.getCompany()).ifPresent(calendarType -> {
+					calendarType.setIsActive(true);
+					calendarTypeRepository.save(calendarType);
 				});
 				calendarTypeVOs.add(mapper.toCalendarTypeVO(calendarTypeRepository
 						.save(mapper.toCalendarTypeEntity(type, company, request.getCreatedBy()))));
 			});
+
+			// Prepare new snapshot for audit
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildCategoryTypeSnapshot(calendarTypeVOs));
+			} catch (Exception e) {
+				log.error("Exception while creating snapshot for audit", e);
+			}
+
 			return calendarTypeVOs;
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -227,6 +240,29 @@ public class CalendarService {
 			log.error("Exception in createCalendarType method in CalendarService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
+	}
+
+	private Object buildCategoryTypeSnapshot(List<CalendarTypeVO> calendarTypeVOs) {
+		Map<String, Object> snapshot = new HashMap<>();
+		if (calendarTypeVOs == null) {
+			return snapshot;
+		}
+		try {
+			calendarTypeVOs.stream().map(calendarTypeVO -> {
+				Map<String, Object> calendarTypeMap = new HashMap<>();
+				calendarTypeMap.put("calendarTypeId", calendarTypeVO.getCalendarTypeId());
+				calendarTypeMap.put("typeName", calendarTypeVO.getTypeName());
+				calendarTypeMap.put("isActive", calendarTypeVO.getIsActive());
+				calendarTypeMap.put("createdBy", calendarTypeVO.getCreatedBy());
+				calendarTypeMap.put("updatedBy", calendarTypeVO.getUpdatedBy());
+				calendarTypeMap.put("isCreatedByAdmin", calendarTypeVO.getIsCreatedByAdmin());
+				calendarTypeMap.put("isUpdatedByAdmin", calendarTypeVO.getIsUpdatedByAdmin());
+				return calendarTypeMap;
+			}).forEach(calendarTypeMap -> snapshot.put(String.valueOf(calendarTypeMap.get("calendarTypeId")), calendarTypeMap));
+		} catch (Exception e) {
+			log.error("Exception while building snapshot for audit", e);
+		}
+		return snapshot;
 	}
 
 	public void deleteCalendarType(String calendarTypeId) {

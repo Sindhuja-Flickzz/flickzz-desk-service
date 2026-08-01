@@ -64,6 +64,9 @@ public class CompanyMaster {
 	@Column(name = "MAIL", length = 100, nullable = false, unique = true)
 	private String mail;
 
+	@Column(name = "VERSION", nullable = false)
+	private Integer version = 1;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;

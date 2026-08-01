@@ -63,12 +63,48 @@ public class EnquiryService {
 	public void enquiryRegister(EnquiryRegisterRequestVO request) {
 		log.info(generateLog("enquiryRegister", this.getClass().getName()));
 		try {
-			enquiryRegistrationRepository.findByEmailAndIsActive(request.getEmail(), ACTIVE).ifPresent(er -> {
-				throw new FlickzzDeskException(ALREADY_EXISTS,
-						getDescription(ALREADY_EXISTS.getDescription(), USERNAME_OR_EMAIL));
-			});
+			var existingEnquiry = enquiryRegistrationRepository.findTopByEmailAndIsActiveOrderByVersionDesc(request.getEmail(), ACTIVE);
+			
+			int nextVersion = 1;
+			if (existingEnquiry.isPresent()) {
+				log.info("Existing enquiry found for email: {}", request.getEmail());
+				EnquiryRegistration enquiryRegistration = existingEnquiry.get();
+				
+				if (enquiryRegistration.getEnquiryInfo() != null &&
+					enquiryRegistration.getEnquiryInfo().getExpiryTime().isAfter(LocalDateTime.now())) {
+					log.info("Existing enquiry is still valid for email: {}", request.getEmail());
+					throw new FlickzzDeskException(ALREADY_EXISTS,
+							"Registration already exists, please check your email to verify existing enquiry");
+				} else {
+					log.info("Existing enquiry expired for email: {}, proceeding with new registration", request.getEmail());
+					var allExistingEnquiries = enquiryRegistrationRepository.findAll().stream()
+							.filter(e -> e.getEmail().equals(request.getEmail()) && e.getIsActive())
+							.toList();
+					
+					// Get max version from existing enquiries
+					nextVersion = allExistingEnquiries.stream()
+							.map(EnquiryRegistration::getVersion)
+							.max(Integer::compareTo)
+							.orElse(0) + 1;
+					
+					// Inactivate all existing enquiries and their associated companies
+					allExistingEnquiries.forEach(e -> {
+						log.info("Inactivating existing enquiry with ID: {} and version: {}", e.getEnquiryId(), e.getVersion());
+						e.setIsActive(Boolean.FALSE);
+						enquiryRegistrationRepository.save(e);
+						
+						// Inactivate and clear email from company master to avoid unique constraint error
+						if (e.getCompany() != null) {
+							log.info("Inactivating associated company with ID: {} for enquiry ID: {}", e.getCompany().getCompanyId(), e.getEnquiryId());
+							e.getCompany().setIsActive(Boolean.FALSE);
+							e.getCompany().setMail(e.getCompany().getMail() + "_inactive_" + System.currentTimeMillis());
+							companyMasterRepository.save(e.getCompany());
+						}
+					});
+				}
+			}
 
-			companyMasterRepository.findByCompanyNameAndIsActive(request.getOrgName(), ACTIVE).ifPresent(er -> {
+			companyMasterRepository.findTopByCompanyNameAndIsActiveOrderByVersionDesc(request.getOrgName(), ACTIVE).ifPresent(companyMaster -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), COMPANY_NAME));
 			});
@@ -82,13 +118,15 @@ public class EnquiryService {
 			String universalId = generateUniversalId(uidPrefix, currentUID);
 
 			CompanyMaster company = CompanyMaster.builder().companyName(request.getOrgName()).uid(universalId)
-					.employeeSize(request.getEmployeeSize()).registeredNumber(request.getPhoneNumber())
+					.employeeSize(request.getEmployeeSize()).registeredNumber(request.getPhoneNumber()).version(nextVersion)
 					.phoneCode(request.getPhoneCode()).mail(request.getEmail()).country(country).isActive(true)
 					.isCreatorAdmin(true).createdBy(0L).build();
 			companyMasterRepository.save(company);
 
 			EnquiryRegistration enquiry = mapper.enquiryRegisterRequestToEnquiryRegistration(request, country,
 					ROLE_ADMIN, company);
+			// Set version to nextVersion (1 for new or oldVersion + 1 for reregistration)
+			enquiry.setVersion(nextVersion);
 			enquiryRegistrationRepository.save(enquiry);
 
 			company.setCreatedBy(enquiry.getEnquiryId());
@@ -132,6 +170,8 @@ public class EnquiryService {
 			exitingRegistration.setState(state);
 			exitingRegistration.setCity(city);
 			exitingRegistration.setUpdatedAt(LocalDateTime.now());
+			// Increment version for update
+			exitingRegistration.setVersion(exitingRegistration.getVersion() + 1);
 			enquiryRegistrationRepository.save(exitingRegistration);
 		} catch (
 
@@ -221,7 +261,7 @@ public class EnquiryService {
 		log.info(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
 		try {
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-					.findByEmailAndIsActive(userEmail, ACTIVE)
+					.findTopByEmailAndIsActiveOrderByVersionDesc(userEmail, ACTIVE)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), USERNAME_OR_EMAIL)));
 

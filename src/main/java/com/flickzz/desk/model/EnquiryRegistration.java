@@ -2,6 +2,7 @@ package com.flickzz.desk.model;
 
 import java.time.*;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -40,9 +41,16 @@ public class EnquiryRegistration {
 	@Column(name = "EMAIL", nullable = false, length = 150)
 	private String email;
 
+	@Column(name = "VERSION", nullable = false)
+	private Integer version = 1;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_ENQUIRY_COMPANY"), nullable = false)
 	private CompanyMaster company; // FK to FD_COMPANY_MASTER
+
+	@OneToOne(mappedBy = "enquiryRegistration")
+	@JsonManagedReference
+	private EnquiryInfo enquiryInfo;
 
 	@Column(name = "PHONE_CODE", length = 10)
 	private String phoneCode;

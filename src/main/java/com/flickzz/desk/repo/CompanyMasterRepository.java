@@ -11,7 +11,7 @@ public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, Lo
 
 	Optional<CompanyMaster> findByCompanyNameOrRegisteredNumber(String companyName, String registeredNumber);
 
-	Optional<CompanyMaster> findByCompanyNameAndIsActive(String orgName, Boolean active);
+	Optional<CompanyMaster> findTopByCompanyNameAndIsActiveOrderByVersionDesc(String orgName, Boolean active);
 
 	@Query("SELECT c.uid FROM CompanyMaster c WHERE c.companyId = (SELECT MAX(cm.companyId) FROM CompanyMaster cm)")
 	String findMaxUid();

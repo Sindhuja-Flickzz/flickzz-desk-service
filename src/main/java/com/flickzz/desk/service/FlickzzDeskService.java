@@ -94,7 +94,7 @@ public class FlickzzDeskService {
 			}
 
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-					.findByEmailAndIsActive(request.getEmail(), ACTIVE).orElse(null);
+					.findTopByEmailAndIsActiveOrderByVersionDesc(request.getEmail(), ACTIVE).orElse(null);
 
 			if (enquiryRegistration != null) {
 				if (!passwordEncoder.matches(request.getPassword(), enquiryRegistration.getPassword())) {

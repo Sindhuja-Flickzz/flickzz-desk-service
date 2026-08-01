@@ -35,6 +35,15 @@ public interface BusinessPartnerRepository extends JpaRepository<BusinessPartner
 	long existsBusinessPartnerMapping(@Param("companyId") Long companyId,
 			@Param("mappedCompanyId") Long mappedCompanyId);
 
+	@Query("""
+			SELECT bp
+			FROM BusinessPartner bp
+			WHERE bp.isActive = true
+			  AND bp.validTo IS NOT NULL
+			  AND bp.validTo <= :now
+			""")
+	List<BusinessPartner> findExpiredActivePartners(@Param("now") Date now);
+
 	Optional<BusinessPartner> findByBusinessPartnerIdAndIsActive(Long businessPartnerId, Boolean active);
 
 	Optional<BusinessPartner> findByCompany_CompanyIdAndMappedCompany_CompanyIdAndIsActive(Long companyId,

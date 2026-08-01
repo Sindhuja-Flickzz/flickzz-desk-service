@@ -96,7 +96,7 @@ public class AgentService {
 			});
 
 			Optional<EnquiryRegistration> enquiryRegistration = enquiryRegistrationRepository
-					.findByEmailAndIsActive(request.getMailId(), ACTIVE);
+					.findTopByEmailAndIsActiveOrderByVersionDesc(request.getMailId(), ACTIVE);
 
 			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActive(request.getOrgId(),
 					ACTIVE);

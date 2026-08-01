@@ -83,7 +83,7 @@ public class CompanyService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CITY));
 			}
 
-			companyMasterRepository.findByCompanyNameAndIsActive(request.getCompanyName(), ACTIVE).ifPresent(c -> {
+			companyMasterRepository.findTopByCompanyNameAndIsActiveOrderByVersionDesc(request.getCompanyName(), ACTIVE).ifPresent(c -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), COMPANY_NAME));
 			});
