@@ -10,11 +10,11 @@ import com.flickzz.desk.model.User;
 
 public interface AgentMasterRepository extends JpaRepository<AgentMaster, Long> {
 
-	Optional<AgentMaster> findByAgentName(String agentName);
+	Optional<AgentMaster> findByAgentNameAndIsActiveTrue(String agentName);
 
-	AgentMaster findByUser(User user);
+	AgentMaster findByUserAndIsActiveTrue(User user);
 
-	List<AgentMaster> findAllByOrganization_CompanyId(Long orgId);
+	List<AgentMaster> findAllByOrganization_CompanyIdAndIsActiveTrue(Long orgId);
 
-	Optional<AgentMaster> findByMailId(String emailId);
+	Optional<AgentMaster> findByMailIdAndIsActiveTrue(String emailId);
 }

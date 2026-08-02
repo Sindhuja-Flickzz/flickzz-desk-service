@@ -48,7 +48,7 @@ public class PlantService {
                         getDescription(INVALID_FIELD.getDescription(), PLANT_NAME));
             }
 
-            Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
+            Optional<CountryMaster> countryMaster = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
             if (countryMaster == null) {
                 throw new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
@@ -108,7 +108,7 @@ public class PlantService {
                 throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), PLANT));
             }
 
-            Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
+            Optional<CountryMaster> countryMaster = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
             if (!countryMaster.isPresent()) {
                 throw new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));

@@ -42,6 +42,8 @@ public class FlickzzDeskConstants {
 
 	public static final Boolean ACTIVE = true;
 	public static final Boolean INACTIVE = false;
+	public static final Boolean ACTIVATE = Boolean.TRUE;
+	public static final Boolean DEACTIVATE = Boolean.FALSE;
 
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";

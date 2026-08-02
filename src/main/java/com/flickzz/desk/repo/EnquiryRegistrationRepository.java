@@ -3,20 +3,17 @@ package com.flickzz.desk.repo;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 
 import com.flickzz.desk.model.EnquiryRegistration;
 
 public interface EnquiryRegistrationRepository extends JpaRepository<EnquiryRegistration, Long> {
 
-	Optional<EnquiryRegistration> findTopByEmailAndIsActiveOrderByVersionDesc(String email, Boolean active);
+	Optional<EnquiryRegistration> findTopByEmailAndIsActiveTrueOrderByVersionDesc(String email);
 
-	boolean existsByUserName(String username);
+	Optional<EnquiryRegistration> findByUserNameAndIsActiveTrue(String username);
 
-	Optional<EnquiryRegistration> findByUserNameAndIsActive(String username, Boolean active);
+	Optional<EnquiryRegistration> findByEmailAndIsActiveTrue(String email);
 
-	Optional<EnquiryRegistration> findByEmail(String email);
-
-	Optional<EnquiryRegistration> findByEnquiryIdAndIsActive(String enquiryId, Boolean active);
+	Optional<EnquiryRegistration> findByEnquiryIdAndIsActiveTrue(String enquiryId);
 
 }

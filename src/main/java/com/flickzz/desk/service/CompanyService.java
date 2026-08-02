@@ -67,7 +67,7 @@ public class CompanyService {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), CURRENCY));
 			}
 
-			Optional<CountryMaster> country = countryMasterRepository.findById(request.getCountryId());
+			Optional<CountryMaster> country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
 			if (country.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
@@ -78,7 +78,7 @@ public class CompanyService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), STATE));
 			}
 
-			Optional<CityMaster> city = cityMasterRepository.findById(request.getCityId());
+			Optional<CityMaster> city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId());
 			if (city.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CITY));
 			}
@@ -126,7 +126,7 @@ public class CompanyService {
 						getDescription(INVALID_FIELD.getDescription(), APPROVERS));
 			}
 
-			Optional<CountryMaster> country = countryMasterRepository.findById(request.getCountryId());
+			Optional<CountryMaster> country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
 			if (country.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CURRENCY));
@@ -137,7 +137,7 @@ public class CompanyService {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), STATE));
 			}
 
-			Optional<CityMaster> city = cityMasterRepository.findById(request.getCityId());
+			Optional<CityMaster> city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId());
 			if (city.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CITY));
 			}

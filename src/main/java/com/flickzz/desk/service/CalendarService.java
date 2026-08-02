@@ -7,7 +7,6 @@ import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 import java.util.*;
 
 import com.flickzz.desk.vo.request.CalendarMasterRequestVO;
-import org.hibernate.TransientPropertyValueException;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -192,7 +191,7 @@ public class CalendarService {
 	public List<CalendarMasterVO> listCalendars(String orgId) {
 		log.info(generateLog("listCalendars", this.getClass().getName()));
 		try {
-			return calendarMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+			return calendarMasterRepository.findAllByCompany_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
 					.map(mapper::toCalendarMasterVO).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -276,7 +275,8 @@ public class CalendarService {
 				log.info("Cannot delete calendar type as it is associated with existing calendars.");
 				throw new FlickzzDeskException(DB_SAVE_ERROR, "Cannot delete calendar type as it is associated with existing calendars.");
 			}
-			calendarTypeRepository.delete(calendarType);
+			calendarType.setIsActive(DEACTIVATE);
+			calendarTypeRepository.save(calendarType);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
@@ -288,7 +288,7 @@ public class CalendarService {
 	public List<CalendarTypeVO> listCalendarTypes(String orgId) {
 		log.info(generateLog("listCalendarTypes", this.getClass().getName()));
 		try {
-			return calendarTypeRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+			return calendarTypeRepository.findAllByCompany_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
 					.map(mapper::toCalendarTypeVO).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;

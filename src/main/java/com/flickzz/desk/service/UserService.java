@@ -19,7 +19,7 @@ public class UserService {
 
 	public UserDetails loadUserByUsername(String username) {
 		// Fetch user from DB
-        User user = userRepository.findByUserName(username)
+        User user = userRepository.findByUserNameAndIsActiveTrue(username)
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,getDescription(DOES_NOT_EXIST.getDescription(), username)));
 
         // Convert to Spring Security UserDetails

@@ -89,14 +89,14 @@ public class AgentService {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
 			}
 
-			Optional<User> user = userRepository.findByUserName(request.getMailId());
+			Optional<User> user = userRepository.findByUserNameAndIsActiveTrue(request.getMailId());
 			user.ifPresent(agent -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), request.getMailId()));
 			});
 
 			Optional<EnquiryRegistration> enquiryRegistration = enquiryRegistrationRepository
-					.findTopByEmailAndIsActiveOrderByVersionDesc(request.getMailId(), ACTIVE);
+					.findTopByEmailAndIsActiveTrueOrderByVersionDesc(request.getMailId());
 
 			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActive(request.getOrgId(),
 					ACTIVE);
@@ -119,15 +119,15 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
-			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+			CountryMaster country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
 
-			CityMaster city = cityMasterRepository.findById(request.getCityId())
+			CityMaster city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
 
@@ -195,7 +195,7 @@ public class AgentService {
 	public AgentMasterVO getAgentInfoByName(String agentName) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentName(agentName);
+			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentNameAndIsActiveTrue(agentName);
 			agentMaster.ifPresent(agent -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), AGENT));
 			});
@@ -232,15 +232,15 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
-			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+			CountryMaster country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
 
-			CityMaster city = cityMasterRepository.findById(request.getCityId())
+			CityMaster city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
 
@@ -301,7 +301,7 @@ public class AgentService {
 	public List<AgentMasterVO> getAgentList(String orgId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			return agentMasterRepository.findAllByOrganization_CompanyId(Long.valueOf(orgId)).stream()
+			return agentMasterRepository.findAllByOrganization_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
 					.map(mapper::toAgentMasterVO).toList();
 		} catch (Exception e) {
 			log.error("Exception in getPlantList method in FlickzzDeskService");
@@ -329,10 +329,10 @@ public class AgentService {
 	public AgentMasterVO getAgentInfoByEmail(String agentName) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			AgentMaster agentMaster = agentMasterRepository.findByMailId(agentName)
+			AgentMaster agentMaster = agentMasterRepository.findByMailIdAndIsActiveTrue(agentName)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
-			return new AgentMasterVO();
+			return mapper.toAgentMasterVO(agentMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

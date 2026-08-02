@@ -11,7 +11,9 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_ENQUIRY_REGISTRATION")
+@Table(name = "FD_ENQUIRY_REGISTRATION", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_ENQUIRY_EMAIL_VERSION", columnNames = { "EMAIL", "VERSION" })
+})
 public class EnquiryRegistration {
 
 	@Id
