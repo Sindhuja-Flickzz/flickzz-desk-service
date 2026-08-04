@@ -75,7 +75,7 @@ public class EnquiryService {
 		try {
 			var existingEnquiry = enquiryRegistrationRepository.findTopByEmailAndIsActiveTrueOrderByVersionDesc(request.getEmail());
 
-			int nextVersion = 1;
+			int nextVersion = INITIAL_VERSION;
 			if (existingEnquiry.isPresent()) {
 				log.info("Existing enquiry found for email: {}", request.getEmail());
 				EnquiryRegistration enquiryRegistration = existingEnquiry.get();

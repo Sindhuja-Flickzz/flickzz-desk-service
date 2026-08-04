@@ -5,13 +5,13 @@ import java.time.*;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Data
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "FD_BP_ASSIGNMENT", uniqueConstraints = {
-		@UniqueConstraint(name = "UK_ASSIGNMENT", columnNames = { "CONFIGURATION_ID", "SUB_CATEGORY_ID" }) })
+		@UniqueConstraint(name = "UK_ASSIGNMENT_NAME_VERSION", columnNames = { "CONFIGURATION_ID", "NAME", "VERSION" }) })
 @ToString(exclude = {"configuration","subCategory","supportGroup"})
 public class BPAssignment {
 
@@ -32,6 +32,10 @@ public class BPAssignment {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "SUPPORT_GROUP_ID", nullable = false)
 	private BPSupportGroup supportGroup;
+
+	@Column(name = "VERSION", nullable = false)
+	@Builder.Default
+	private Integer version= 1;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

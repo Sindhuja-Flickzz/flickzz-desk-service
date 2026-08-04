@@ -48,4 +48,16 @@ public interface BusinessPartnerRepository extends JpaRepository<BusinessPartner
 
 	Optional<BusinessPartner> findByCompany_CompanyIdAndMappedCompany_CompanyIdAndIsActive(Long companyId,
 			Long mappedCompanyId, Boolean active);
+
+	@Query(value = """
+			SELECT *
+			FROM FD_BUSINESS_PARTNER
+			WHERE (
+					(COMPANY_ID = :companyId AND MAPPING_ID = :mappedCompanyId)
+				 OR (COMPANY_ID = :mappedCompanyId AND MAPPING_ID = :companyId)
+			)
+			ORDER BY VERSION DESC
+			LIMIT 1
+			""", nativeQuery = true)
+	Optional<BusinessPartner> getBusinessPartnerMapping(Long companyId, Long mappedCompanyId);
 }

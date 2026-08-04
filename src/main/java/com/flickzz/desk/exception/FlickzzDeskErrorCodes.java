@@ -23,7 +23,8 @@ public enum FlickzzDeskErrorCodes implements ErrorCode {
 	INVALID_TEXT("FD-112", "Invalid Text", "Invalid %s. Please verify!"),
 	SET_TEXT("FD-113", "Set Text", "Set %s to proceed further!"),
 	DB_SAVE_ERROR("FD-114", "Save failed", "Unable to save the record because a database constraint was violated."),
-	INVALID_REQUEST("FD-115", "Invalid Request", "The request is invalid. Please verify!");
+	INVALID_REQUEST("FD-115", "Invalid Request", "The request is invalid. Please verify!"),
+	DELETED_ERROR("FD-116", "Deleted entry", "%s is marked for deletion. Please try with a different one");
 
 	private String code;
 	private String title;

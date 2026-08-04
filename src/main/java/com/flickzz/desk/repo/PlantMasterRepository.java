@@ -13,9 +13,9 @@ public interface PlantMasterRepository extends JpaRepository<PlantMaster, Long> 
 
 	Optional<PlantMaster> findByPlantId(Long plantId);
 
-	List<PlantMaster> findAllByCompany_CompanyIdAndIsActive(Long companyId, Boolean active);
+	List<PlantMaster> findAllByCompany_CompanyId(Long companyId);
 
-	Optional<PlantMaster> findByPlantNameAndCompany_CompanyIdAndIsActive(String plantName, Long companyId,
-			Boolean active);
+	Optional<PlantMaster> findByPlantNameAndCompany_CompanyId(String plantName, Long companyId);
 
+	boolean existsByCalendar_CalendarIdAndIsActiveTrue(Long calendarId);
 }

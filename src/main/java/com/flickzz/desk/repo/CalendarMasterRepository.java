@@ -20,7 +20,7 @@ public interface CalendarMasterRepository extends JpaRepository<CalendarMaster, 
 
 	Optional<CalendarMaster> findByCalendarCodeAndCompany_CompanyId(String calendarCode, Long company);
 
-    boolean existsByCalendarType_CalendarTypeId(Long calendarTypeId);
+    boolean existsByCalendarType_CalendarTypeIdAndIsActiveTrue(Long calendarTypeId);
 
-	List<CalendarMaster> findAllByCompany_CompanyIdAndIsActiveTrue(Long aLong);
+	List<CalendarMaster> findAllByCompany_CompanyId(Long aLong);
 }

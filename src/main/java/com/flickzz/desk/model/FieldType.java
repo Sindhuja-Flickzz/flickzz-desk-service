@@ -16,7 +16,7 @@ public class FieldType {
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "field_type_seq")
 	@SequenceGenerator(name = "field_type_seq", sequenceName = "FIELD_TYPE_SEQ", allocationSize = 1)
-	@Column(name = "TYPE_ID")
+	@Column(name = "FIELD_ID")
 	private Long typeId;
 
 	@Column(name = "CODE", nullable = false, unique = true, length = 50)

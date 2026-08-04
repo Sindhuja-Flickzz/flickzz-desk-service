@@ -44,6 +44,7 @@ public class FlickzzDeskConstants {
 	public static final Boolean INACTIVE = false;
 	public static final Boolean ACTIVATE = Boolean.TRUE;
 	public static final Boolean DEACTIVATE = Boolean.FALSE;
+	public static final Integer INITIAL_VERSION = 1;
 
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";
@@ -81,6 +82,7 @@ public class FlickzzDeskConstants {
 	public static final String DELETE = "DELETE";
 	public static final String SUCCESS = "SUCCESS";
 	public static final String FAILED = "FAILED";
+	public static final String DRAFTED = "DRAFTED";
 
 	public static final String LEAD_COMPANY = "Lead company";
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),

@@ -12,7 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "FD_BP_CATEGORY", uniqueConstraints = {
-		@UniqueConstraint(name = "UK_CATEGORY", columnNames = { "CONFIGURATION_ID", "CATEGORY_NAME" }) })
+		@UniqueConstraint(name = "UK_CATEGORY_NAME_VERSION", columnNames = { "CONFIGURATION_ID", "CATEGORY_NAME", "VERSION" }) })
 public class BPCategory {
 
 	@Id
@@ -27,6 +27,9 @@ public class BPCategory {
 
 	@Column(name = "CATEGORY_NAME", nullable = false)
 	private String categoryName;
+
+	@Column(name = "VERSION", nullable = false)
+	private Integer version = 1;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

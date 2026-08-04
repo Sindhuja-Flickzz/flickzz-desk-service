@@ -14,7 +14,9 @@ public interface AgentMasterRepository extends JpaRepository<AgentMaster, Long> 
 
 	AgentMaster findByUserAndIsActiveTrue(User user);
 
-	List<AgentMaster> findAllByOrganization_CompanyIdAndIsActiveTrue(Long orgId);
+	List<AgentMaster> findAllByOrganization_CompanyId(Long orgId);
 
 	Optional<AgentMaster> findByMailIdAndIsActiveTrue(String emailId);
+
+    boolean existsByCalendarMaster_CalendarIdAndIsActiveTrue(Long calendarId);
 }

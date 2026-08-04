@@ -10,4 +10,6 @@ import com.flickzz.desk.model.User;
 public interface UserRepository extends JpaRepository<User, Long> {
 
 	Optional<User> findByUserNameAndIsActiveTrue(String email);
+
+	Optional<User> findByUserName(String mailId);
 }

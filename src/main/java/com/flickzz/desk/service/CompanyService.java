@@ -50,54 +50,6 @@ public class CompanyService {
 	@Autowired
 	private CommonMapper mapper;
 
-	public CompanyMasterVO createCompany(CompanyMasterRequestVO request) {
-		log.info(generateLog("createCompany", this.getClass().getName()));
-		try {
-			if (request == null || request.getCompanyName() == null) {
-				throw new FlickzzDeskException(INVALID_FIELD,
-						getDescription(INVALID_FIELD.getDescription(), COMPANY_NAME));
-			}
-
-			if (request == null || request.getRegisteredNumber() == null) {
-				throw new FlickzzDeskException(INVALID_FIELD,
-						getDescription(INVALID_FIELD.getDescription(), REGISTERED_NUMBER));
-			}
-
-			if (request == null || request.getCountryId() == null) {
-				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), CURRENCY));
-			}
-
-			Optional<CountryMaster> country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
-			if (country.isEmpty()) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
-			}
-
-			Optional<StateMaster> state = stateMasterRepository.findById(request.getStateId());
-			if (state.isEmpty()) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), STATE));
-			}
-
-			Optional<CityMaster> city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId());
-			if (city.isEmpty()) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), CITY));
-			}
-
-			companyMasterRepository.findTopByCompanyNameAndIsActiveOrderByVersionDesc(request.getCompanyName(), ACTIVE).ifPresent(c -> {
-				throw new FlickzzDeskException(ALREADY_EXISTS,
-						getDescription(ALREADY_EXISTS.getDescription(), COMPANY_NAME));
-			});
-
-			CompanyMaster entity = mapper.toCompanyMasterEntity(request, country.get(), state.get(), city.get());
-			return mapper.toCompanyMasterVO(companyMasterRepository.save(entity));
-		} catch (FlickzzDeskException e) {
-			throw e;
-		} catch (Exception e) {
-			log.error("Exception in createCompany method in CompanyService");
-			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-		}
-	}
-
 	public CompanyMasterVO getCompanyInfo(String companyId) {
 		log.info(generateLog("getCompanyInfo", this.getClass().getName()));
 		try {
@@ -197,7 +149,7 @@ public class CompanyService {
 					.findById(companyId != null ? Long.valueOf(companyId) : null)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
-			existing.setIsActive(!ACTIVE);
+			existing.setIsActive(DEACTIVATE);
 			companyMasterRepository.save(existing);
 		} catch (FlickzzDeskException e) {
 			throw e;

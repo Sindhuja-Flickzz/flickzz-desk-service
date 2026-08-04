@@ -89,7 +89,7 @@ public class AgentService {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
 			}
 
-			Optional<User> user = userRepository.findByUserNameAndIsActiveTrue(request.getMailId());
+			Optional<User> user = userRepository.findByUserName(request.getMailId());
 			user.ifPresent(agent -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), request.getMailId()));
@@ -286,7 +286,9 @@ public class AgentService {
 			if (existing == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
 			}
-			agentMasterRepository.delete(existing.get());
+			AgentMaster agent = existing.get();
+			agent.setIsActive(DEACTIVATE);
+			agentMasterRepository.save(agent);
 		} catch (DataIntegrityViolationException e) {
 			log.error("DataIntegrityViolationException in deleteAgent method in FlickzzDeskService");
 			throw new FlickzzDeskException(DB_SAVE_ERROR, "Unassign agent from all assignment to delete");
@@ -301,7 +303,7 @@ public class AgentService {
 	public List<AgentMasterVO> getAgentList(String orgId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			return agentMasterRepository.findAllByOrganization_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
+			return agentMasterRepository.findAllByOrganization_CompanyId(Long.valueOf(orgId)).stream()
 					.map(mapper::toAgentMasterVO).toList();
 		} catch (Exception e) {
 			log.error("Exception in getPlantList method in FlickzzDeskService");
@@ -326,10 +328,10 @@ public class AgentService {
 		}
 	}
 
-	public AgentMasterVO getAgentInfoByEmail(String agentName) {
+	public AgentMasterVO getAgentInfoByEmail(String email) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			AgentMaster agentMaster = agentMasterRepository.findByMailIdAndIsActiveTrue(agentName)
+			AgentMaster agentMaster = agentMasterRepository.findByMailIdAndIsActiveTrue(email)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
 			return mapper.toAgentMasterVO(agentMaster);

@@ -10,7 +10,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_BP_SLA")
+@Table(name = "FD_BP_SLA", uniqueConstraints = {
+		@UniqueConstraint(name = "UK_SLA_PRIORITY_VERSION", columnNames = { "CONFIGURATION_ID", "PRIORITY_ID", "VERSION" })
+})
 public class BPSla {
 
 	@Id
@@ -44,6 +46,10 @@ public class BPSla {
 
 	@Column(name = "UPDATE_FREQUENCY_TERM")
 	private Character updateFrequencyTerm;
+
+	@Column(name = "VERSION", nullable = false)
+	@Builder.Default
+	private Integer version = 1;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")

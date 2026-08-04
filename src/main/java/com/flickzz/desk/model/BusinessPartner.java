@@ -11,8 +11,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_BUSINESS_PARTNER", uniqueConstraints = {
-		@UniqueConstraint(name = "UQ_BUSINESS_PARTNER_MAPPING", columnNames = { "COMPANY_ID", "MAPPING_ID" }) })
+@Table(name = " FD_BUSINESS_PARTNER", uniqueConstraints = {
+		@UniqueConstraint(name = "UQ_BUSINESS_PARTNER_MAPPING_VERSION", columnNames = { "COMPANY_ID", "MAPPING_ID", "VERSION" }) })
 @ToString(exclude = {"company","mappedCompany"})
 public class BusinessPartner {
 
@@ -57,6 +57,9 @@ public class BusinessPartner {
 
 	@Column(name = "REF_DATE")
 	private Date refDate;
+
+	@Column(name = "VERSION", nullable = false)
+	private Integer version = 1;
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
