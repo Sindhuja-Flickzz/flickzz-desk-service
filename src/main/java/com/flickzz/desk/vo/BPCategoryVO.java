@@ -21,6 +21,8 @@ public class BPCategoryVO implements Serializable {
 
 	private Boolean isActive;
 
+	private Boolean isUnderApproval;
+
 	private Long createdBy;
 
 	private Long updatedBy;

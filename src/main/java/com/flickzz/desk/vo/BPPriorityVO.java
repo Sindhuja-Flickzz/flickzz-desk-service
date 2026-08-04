@@ -24,6 +24,10 @@ public class BPPriorityVO implements Serializable {
 
 	private TicketTypeMasterVO ticketType;
 
+	private Integer version;
+
+	private Boolean isUnderApproval;
+
 	private Boolean isActive;
 
 	private Long createdBy;

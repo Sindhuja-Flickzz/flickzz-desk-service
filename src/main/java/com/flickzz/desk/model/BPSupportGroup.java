@@ -47,6 +47,10 @@ public class BPSupportGroup {
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
 
+	@Builder.Default
+	@Column(name = "IS_UNDER_APPROVAL")
+	private Boolean isUnderApproval = false;
+
 	@Column(name = "CREATED_BY")
 	private Long createdBy;
 

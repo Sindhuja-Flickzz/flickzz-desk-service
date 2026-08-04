@@ -1,8 +1,10 @@
 package com.flickzz.desk.model;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -25,6 +27,10 @@ public class BPConfigurationChangeRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CONFIGURATION_ID", nullable = false)
     private BPConfiguration configuration;
+
+    @OneToMany(mappedBy = "configurationChangeRequest", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<BPConfigurationChangeRequestRemark> remarks;
 
     @Column(name = "CHANGED_REQUEST_ID", nullable = false)
     private Long changedRequestId;

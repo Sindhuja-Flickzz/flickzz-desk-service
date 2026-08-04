@@ -1,5 +1,6 @@
 package com.flickzz.desk.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,7 @@ public class BPConfigurationChangeRequestRemark {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CCR_ID", nullable = false)
+    @JsonBackReference
     private BPConfigurationChangeRequest configurationChangeRequest;
 
     @Column(name = "REMARK_TYPE", nullable = false, length = 30)

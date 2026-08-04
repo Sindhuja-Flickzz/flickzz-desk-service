@@ -1,10 +1,8 @@
 package com.flickzz.desk.service;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ACTIVE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.CITY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.COUNTRY;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.buildName;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
 
@@ -16,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.SystemAuditFilterRequestVO;
@@ -30,9 +29,6 @@ import org.springframework.util.StringUtils;
 
 import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.CityMaster;
-import com.flickzz.desk.model.CountryMaster;
-import com.flickzz.desk.model.SystemAudit;
 
 @Service
 public class CommonService {
@@ -50,6 +46,12 @@ public class CommonService {
 
 	@Autowired
 	private LanguageMasterRepository languageMasterRepository;
+
+	@Autowired
+	private EnquiryRegistrationRepository enquiryRegistrationRepository;
+
+	@Autowired
+	private UserRepository userRepository;
 
 	@Autowired
 	private CommonMapper mapper;
@@ -199,5 +201,17 @@ public class CommonService {
 			log.error("Exception in getAllStateList method in CommonService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
+	}
+
+	public String loadUserNameByUserId(Long userId) {
+		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
+				.findById(userId).orElse(null);
+		if (enquiryRegistration != null) {
+			return buildName(enquiryRegistration.getFirstName(), enquiryRegistration.getMiddleName(), enquiryRegistration.getLastName());
+		}
+
+		User user = userRepository.findById(userId).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+				getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
+		return buildName(user.getFirstName(), user.getMiddleName(), user.getLastName());
 	}
 }

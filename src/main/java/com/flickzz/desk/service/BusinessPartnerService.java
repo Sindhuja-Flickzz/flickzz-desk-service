@@ -4,10 +4,12 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.flickzz.desk.config.RemarkType;
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
 import org.slf4j.Logger;
@@ -80,6 +82,9 @@ public class BusinessPartnerService {
 	AuditService auditService;
 
 	@Autowired
+	CommonService commonService;
+
+	@Autowired
 	CommonMapper mapper;
 
 	@Autowired
@@ -89,7 +94,13 @@ public class BusinessPartnerService {
 	BPConfigurationChangeRequestRepository bpConfigurationChangeRequestRepository;
 
 	@Autowired
+	BPConfigurationChangeRequestRemarkRepository bpConfigurationChangeRequestRemarkRepository;
+
+	@Autowired
 	CompanyApproverRepository companyApproverRepository;
+
+	@Autowired
+	ConfigurationChangeService configurationChangeService;
 
 	public BusinessPartnerVO createBusinessPartner(CompanyMasterRequestVO request) {
 		log.info(generateLog("createBusinessPartner", this.getClass().getName()));
@@ -165,7 +176,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getCompanyId(),
 					SUCCESS,
 					null));
@@ -190,7 +201,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getDescription()), e);
@@ -214,7 +225,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -342,6 +353,7 @@ public class BusinessPartnerService {
 			BPPriority bpPriority = mapper.toBPPriority(request, config, ticketType.get());
 			bpPriority.setIsActive(INACTIVE);
 			bpPriority.setVersion(INITIAL_VERSION);
+			bpPriority.setIsUnderApproval(UNDER_APPROVAL);
 			// Prepare new snapshot for audit
 			String newSnapshot = null;
 			try {
@@ -350,10 +362,10 @@ public class BusinessPartnerService {
 			}
 			bPPriorityRepository.save(bpPriority);
 
-			addConfigurationChangeRequest(config, bpPriority.getPriorityId(), null, Boolean.TRUE, Boolean.FALSE,
+			configurationChangeService.addConfigurationChangeRequest(config, bpPriority.getPriorityId(), null, Boolean.TRUE, Boolean.FALSE,
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, CREATE,
 					businessPartner.get().getCompany(), request.getCreatedBy(),
-					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin());
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
 			changed.put("level", bpPriority.getLevel());
 			changed.put("code", bpPriority.getCode());
@@ -369,7 +381,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -387,7 +399,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -406,7 +418,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -458,11 +470,11 @@ public class BusinessPartnerService {
 			newPriority.setVersion(nextVersion);
 			newPriority = bPPriorityRepository.save(newPriority);
 
-			addConfigurationChangeRequest(existingPriority.getConfiguration(), newPriority.getPriorityId(),
+			configurationChangeService.addConfigurationChangeRequest(existingPriority.getConfiguration(), newPriority.getPriorityId(),
 					existingPriority.getPriorityId(), Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
 					Boolean.FALSE, UPDATE,
 					existingPriority.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
-					existingPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					existingPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			Map<String, Object> changedFields = new HashMap<>();
 			addChangedField(changedFields, "code", existingPriority.getCode(), request.getCode());
@@ -479,7 +491,7 @@ public class BusinessPartnerService {
 			String changedValue = safeSerialize(changedFields);
 			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 					newPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue,
-					request.getUpdatedBy(), loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+					request.getUpdatedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
 					request.getOrgId(), SUCCESS, null));
 
 			return mapper.toBPPriorityVo(newPriority);
@@ -500,7 +512,7 @@ public class BusinessPartnerService {
 				}
 			} catch (Exception ignore) {
 			}
-			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", existingPriority != null ? existingPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), FAILED, e.getMessage()), e);
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", existingPriority != null ? existingPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), FAILED, e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
 			// Attempt to save error audit
@@ -542,7 +554,7 @@ public class BusinessPartnerService {
 							oldValue,
 							null,
 							request != null ? request.getUpdatedBy() : null,
-							loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+							commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 							request.getOrgId(),
 							FAILED,
 							e.getMessage()), e);
@@ -557,13 +569,13 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerPriorityConfiguration(String priorityId, Long userId) {
+	public void deleteBusinessPartnerPriorityConfiguration(BpConfigRequestVO request) {
 
 		log.info(generateLog("deleteBusinessPartnerPriorityConfiguration", this.getClass().getName()));
 		BPPriority bpPriority = null;
 		try {
 			Optional<BPPriority> existingPriority = bPPriorityRepository
-					.findByPriorityIdAndIsActive(Long.valueOf(priorityId), ACTIVE);
+					.findByPriorityIdAndIsActive(request.getPriorityId(), ACTIVE);
 
 			if (existingPriority.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -583,10 +595,10 @@ public class BusinessPartnerService {
 			bpPriority.setIsActive(DEACTIVATE);
 			bPPriorityRepository.save(bpPriority);
 
-			addConfigurationChangeRequest(bpPriority.getConfiguration(), bpPriority.getPriorityId(), bpPriority.getPriorityId(),
+			configurationChangeService.addConfigurationChangeRequest(bpPriority.getConfiguration(), bpPriority.getPriorityId(), bpPriority.getPriorityId(),
 					Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpPriority.getConfiguration().getBusinessPartner().getCompany(), userId,
-					bpPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					bpPriority.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					bpPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			Long companyId = bpPriority.getConfiguration() != null
 					&& bpPriority.getConfiguration().getBusinessPartner() != null
@@ -600,8 +612,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
 					companyId,
 					SUCCESS,
 					null));
@@ -611,7 +623,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(priorityId);
+					entityId = Long.valueOf(request.getPriorityId());
 				} catch (Exception ignore) {
 				}
 				if (bpPriority != null && bpPriority.getConfiguration() != null 
@@ -621,7 +633,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -631,7 +643,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(priorityId);
+					entityId = Long.valueOf(request.getPriorityId());
 				} catch (Exception ignore) {
 				}
 				if (bpPriority != null && bpPriority.getConfiguration() != null 
@@ -641,7 +653,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
@@ -766,10 +778,10 @@ public class BusinessPartnerService {
 			}
 			bpSlaRepository.save(bpSla);
 
-			addConfigurationChangeRequest(config, bpSla.getSlaId(), null, Boolean.FALSE, Boolean.TRUE,
+			configurationChangeService.addConfigurationChangeRequest(config, bpSla.getSlaId(), null, Boolean.FALSE, Boolean.TRUE,
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, CREATE,
 					businessPartner.get().getCompany(), request.getCreatedBy(),
-					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin());
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			// Record CREATE audit
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
@@ -789,7 +801,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -810,7 +822,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -832,7 +844,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -912,10 +924,10 @@ public class BusinessPartnerService {
 
 			bpSla = newSla;
 
-			addConfigurationChangeRequest(oldSla.getConfiguration(), newSla.getSlaId(), oldSla.getSlaId(),
+			configurationChangeService.addConfigurationChangeRequest(oldSla.getConfiguration(), newSla.getSlaId(), oldSla.getSlaId(),
 					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, UPDATE,
 					oldSla.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
-					oldSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					oldSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
@@ -936,7 +948,7 @@ public class BusinessPartnerService {
 						oldValue,
 						changedStr,
 						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
 						companyId,
 						SUCCESS,
 						null));
@@ -979,7 +991,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1019,7 +1031,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSLAConfiguration method in BusinessPartnerService", e);
@@ -1027,12 +1039,12 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerSLAConfiguration(String slaId, Long userId) {
+	public void deleteBusinessPartnerSLAConfiguration(BpConfigRequestVO request) {
 
 		log.info(generateLog("deleteBusinessPartnerSLAConfiguration", this.getClass().getName()));
 		BPSla bpSla = null;
 		try {
-			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(Long.valueOf(slaId), ACTIVE);
+			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(Long.valueOf(request.getSlaId()), ACTIVE);
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
@@ -1049,10 +1061,10 @@ public class BusinessPartnerService {
 
 			bpSlaRepository.delete(bpSla);
 
-			addConfigurationChangeRequest(bpSla.getConfiguration(), bpSla.getSlaId(), bpSla.getSlaId(),
+			configurationChangeService.addConfigurationChangeRequest(bpSla.getConfiguration(), bpSla.getSlaId(), bpSla.getSlaId(),
 					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpSla.getConfiguration().getBusinessPartner().getCompany(), userId,
-					bpSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					bpSla.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					bpSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1069,8 +1081,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
 					companyId,
 					SUCCESS,
 					null));
@@ -1080,7 +1092,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(slaId);
+					entityId = Long.valueOf(request.getSlaId());
 				} catch (Exception ignore) {
 				}
 				if (bpSla != null && bpSla.getConfiguration() != null 
@@ -1090,7 +1102,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1100,7 +1112,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(slaId);
+					entityId = Long.valueOf(request.getSlaId());
 				} catch (Exception ignore) {
 				}
 				if (bpSla != null && bpSla.getConfiguration() != null 
@@ -1110,7 +1122,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSLAConfiguration method in BusinessPartnerService");
@@ -1183,10 +1195,10 @@ public class BusinessPartnerService {
 			}
 			bpCategoryRepository.save(bpCategory);
 
-			addConfigurationChangeRequest(config, bpCategory.getCategoryId(), null, Boolean.FALSE, Boolean.FALSE,
+			configurationChangeService.addConfigurationChangeRequest(config, bpCategory.getCategoryId(), null, Boolean.FALSE, Boolean.FALSE,
 					Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, CREATE,
 					businessPartner.get().getCompany(), request.getCreatedBy(),
-					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin());
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			if (request.getSubCategories() != null && !request.getSubCategories().isEmpty()) {
 				for (String subCategoryName : request.getSubCategories()) {
@@ -1210,7 +1222,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1226,7 +1238,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1243,7 +1255,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -1331,10 +1343,10 @@ public class BusinessPartnerService {
 			}
 			newCategory.setSubCategories(newSubCategories);
 
-			addConfigurationChangeRequest(bpCategory.getConfiguration(), newCategory.getCategoryId(), bpCategory.getCategoryId(),
+			configurationChangeService.addConfigurationChangeRequest(bpCategory.getConfiguration(), newCategory.getCategoryId(), bpCategory.getCategoryId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, UPDATE,
 					bpCategory.getConfiguration().getBusinessPartner().getCompany(), effectiveUpdatedBy,
-					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			if (!changedFields.isEmpty()) {
 				String newSnapshot = safeSerialize(buildCategorySnapshot(newCategory));
@@ -1347,7 +1359,7 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
-				String userName = effectiveUpdatedBy != null ? loadUserNameByUserId(effectiveUpdatedBy) : null;
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 					newCategory.getCategoryId(),
 					UPDATE,
@@ -1393,7 +1405,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						request != null ? request.getUpdatedBy() : null,
-						request != null && request.getUpdatedBy() != null ? loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getDescription()), e);
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1428,7 +1440,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						request != null ? request.getUpdatedBy() : null,
-						request != null && request.getUpdatedBy() != null ? loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getMessage()), e);
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerCategoryConfiguration method in BusinessPartnerService", e);
@@ -1436,12 +1448,12 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerCategoryConfiguration(String categoryId, Long userId) {
+	public void deleteBusinessPartnerCategoryConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerCategoryConfiguration", this.getClass().getName()));
 		BPCategory bpCategory = null;
 		try {
 			Optional<BPCategory> existingCategory = bpCategoryRepository
-					.findByCategoryIdAndIsActive(Long.valueOf(categoryId), ACTIVE);
+					.findByCategoryIdAndIsActive(Long.valueOf(request.getCategoryId()), ACTIVE);
 			if (existingCategory.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
@@ -1460,16 +1472,16 @@ public class BusinessPartnerService {
 
 			bpCategoryRepository.delete(bpCategory);
 
-			addConfigurationChangeRequest(bpCategory.getConfiguration(), bpCategory.getCategoryId(), bpCategory.getCategoryId(),
+			configurationChangeService.addConfigurationChangeRequest(bpCategory.getConfiguration(), bpCategory.getCategoryId(), bpCategory.getCategoryId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpCategory.getConfiguration().getBusinessPartner().getCompany(), userId,
-					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					bpCategory.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
 					.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
 			for (BPSubCategory subCategory : existingSubCategories) {
 				subCategory.setIsActive(Boolean.FALSE);
-				subCategory.setUpdatedBy(userId);
+				subCategory.setUpdatedBy(request.getDeletedBy());
 				bpSubCategoryRepository.save(subCategory);
 			}
 			
@@ -1488,8 +1500,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
 					companyId,
 					SUCCESS,
 					null));
@@ -1499,7 +1511,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(categoryId);
+					entityId = Long.valueOf(request.getCategoryId());
 				} catch (Exception ignore) {
 				}
 				if (bpCategory != null && bpCategory.getConfiguration() != null 
@@ -1509,7 +1521,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1519,7 +1531,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(categoryId);
+					entityId = Long.valueOf(request.getCategoryId());
 				} catch (Exception ignore) {
 				}
 				if (bpCategory != null && bpCategory.getConfiguration() != null 
@@ -1529,7 +1541,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
@@ -1715,10 +1727,10 @@ public class BusinessPartnerService {
 					.updatedBy(request.getUpdatedBy()).build();
 			bpSupportGroupRepository.save(supportGroup);
 
-			addConfigurationChangeRequest(config, supportGroup.getSupportGroupId(), null, Boolean.FALSE, Boolean.FALSE,
+			configurationChangeService.addConfigurationChangeRequest(config, supportGroup.getSupportGroupId(), null, Boolean.FALSE, Boolean.FALSE,
 					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, CREATE,
 					businessPartner.get().getCompany(), request.getCreatedBy(),
-					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin());
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			for (Long agentId : agentIds) {
 				AgentMaster agent = agentMasterRepository.findById(agentId)
@@ -1804,7 +1816,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1824,7 +1836,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1844,7 +1856,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -1983,10 +1995,10 @@ public class BusinessPartnerService {
 				bpSupportGroupManagerRepository.save(manager);
 			}
 
-			addConfigurationChangeRequest(supportGroup.getConfiguration(), newSupportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
+			configurationChangeService.addConfigurationChangeRequest(supportGroup.getConfiguration(), newSupportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, UPDATE,
 					supportGroup.getConfiguration().getBusinessPartner().getCompany(), effectiveUpdatedBy,
-					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			if (!changedFields.isEmpty()) {
 				String newSnapshot = safeSerialize(buildSupportGroupSnapshot(newSupportGroup, incomingAgentIds, incomingInternalManagerIds, incomingBpManagerIds));
@@ -1999,7 +2011,7 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
-				String userName = effectiveUpdatedBy != null ? loadUserNameByUserId(effectiveUpdatedBy) : null;
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						newSupportGroup.getSupportGroupId(),
 						UPDATE,
@@ -2048,7 +2060,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						auditUserId,
-						auditUserId != null ? loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getDescription()), e);
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2086,7 +2098,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						auditUserId,
-						auditUserId != null ? loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getMessage()), e);
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2094,12 +2106,12 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerSupportGroupConfiguration(String supportGroupId, Long userId) {
+	public void deleteBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
 		BPSupportGroup supportGroup = null;
 		try {
 			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
-					.findBySupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
+					.findBySupportGroupIdAndIsActive(Long.valueOf(request.getSupportGroupId()), ACTIVE);
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
@@ -2121,10 +2133,10 @@ public class BusinessPartnerService {
 
 			bpSupportGroupRepository.delete(supportGroup);
 
-			addConfigurationChangeRequest(supportGroup.getConfiguration(), supportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
+			configurationChangeService.addConfigurationChangeRequest(supportGroup.getConfiguration(), supportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, DELETE,
-					supportGroup.getConfiguration().getBusinessPartner().getCompany(), userId,
-					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					supportGroup.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
 					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
@@ -2153,8 +2165,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
 					companyId,
 					SUCCESS,
 					null));
@@ -2164,7 +2176,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(supportGroupId);
+					entityId = request.getSupportGroupId();
 				} catch (Exception ignore) {
 				}
 				if (supportGroup != null && supportGroup.getConfiguration() != null 
@@ -2174,7 +2186,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2184,7 +2196,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(supportGroupId);
+					entityId = Long.valueOf(request.getSupportGroupId());
 				} catch (Exception ignore) {
 				}
 				if (supportGroup != null && supportGroup.getConfiguration() != null 
@@ -2194,7 +2206,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2399,10 +2411,10 @@ public class BusinessPartnerService {
 			}
 			bpAssignmentRepository.save(assignment);
 
-			addConfigurationChangeRequest(config, assignment.getAssignmentId(), null, Boolean.FALSE, Boolean.FALSE,
+			configurationChangeService.addConfigurationChangeRequest(config, assignment.getAssignmentId(), null, Boolean.FALSE, Boolean.FALSE,
 					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, CREATE,
 					businessPartner.get().getCompany(), request.getCreatedBy(),
-					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin());
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			// Record CREATE audit
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
@@ -2418,7 +2430,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -2436,7 +2448,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -2454,7 +2466,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -2473,7 +2485,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(request.getSupportGroupId(), ACTIVE);
+					.findByAssignmentIdAndIsActive(request.getAssignmentId(), ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
@@ -2519,10 +2531,10 @@ public class BusinessPartnerService {
 			assignment.setSubCategory(targetSubCategory.get());
 			bpAssignmentRepository.save(assignment);
 
-			addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
+			configurationChangeService.addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, UPDATE,
 					assignment.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
-					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
@@ -2551,7 +2563,7 @@ public class BusinessPartnerService {
 						oldValue,
 						changedStr,
 						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
 						companyId,
 						SUCCESS,
 						null));
@@ -2592,7 +2604,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2629,7 +2641,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
@@ -2637,12 +2649,12 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerAssignmentConfiguration(String assignmentId, Long userId) {
+	public void deleteBusinessPartnerAssignmentConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
 		BPAssignment assignment = null;
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findByAssignmentIdAndIsActive(Long.valueOf(assignmentId), ACTIVE);
+					.findByAssignmentIdAndIsActive(request.getAssignmentId(), ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
@@ -2659,10 +2671,10 @@ public class BusinessPartnerService {
 
 			bpAssignmentRepository.delete(assignment);
 
-			addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
+			configurationChangeService.addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, DELETE,
-					assignment.getConfiguration().getBusinessPartner().getCompany(), userId,
-					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE);
+					assignment.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -2679,8 +2691,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
 					companyId,
 					SUCCESS,
 					null));
@@ -2690,7 +2702,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(assignmentId);
+					entityId = request.getAssignmentId();
 				} catch (Exception ignore) {
 				}
 				if (assignment != null && assignment.getConfiguration() != null 
@@ -2700,7 +2712,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2710,7 +2722,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(assignmentId);
+					entityId = Long.valueOf(request.getAssignmentId());
 				} catch (Exception ignore) {
 				}
 				if (assignment != null && assignment.getConfiguration() != null 
@@ -2720,7 +2732,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
@@ -2771,71 +2783,6 @@ public class BusinessPartnerService {
 		} catch (Exception e) {
 			log.error("Exception in getBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-		}
-	}
-
-	public String loadUserNameByUserId(Long userId) {
-		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-				.findById(userId).orElse(null);
-		if (enquiryRegistration != null) {
-			return buildName(enquiryRegistration.getFirstName(), enquiryRegistration.getMiddleName(), enquiryRegistration.getLastName());
-		}
-
-		User user = userRepository.findById(userId).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-				getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
-		return buildName(user.getFirstName(), user.getMiddleName(), user.getLastName());
-	}
-
-	private void addConfigurationChangeRequest(BPConfiguration configuration, Long changedRequestId, Long sourceChangeId,
-			Boolean isBpPriority, Boolean isBpSla, Boolean isCategory, Boolean isSupportGroup, Boolean isAssignment,
-			String operation, CompanyMaster requestedByOrg, Long requestedByUserId, CompanyMaster approvalOrg,
-			Boolean isCreatorAdmin) {
-		try {
-			BPConfigurationChangeRequest changeRequest = BPConfigurationChangeRequest.builder()
-					.configuration(configuration)
-					.changedRequestId(changedRequestId)
-					.sourceChangeId(sourceChangeId)
-					.bpPriority(isBpPriority != null ? isBpPriority : Boolean.FALSE)
-					.bpSla(isBpSla != null ? isBpSla : Boolean.FALSE)
-					.category(isCategory != null ? isCategory : Boolean.FALSE)
-					.supportGroup(isSupportGroup != null ? isSupportGroup : Boolean.FALSE)
-					.assignment(isAssignment != null ? isAssignment : Boolean.FALSE)
-					.operation(operation)
-					.requestedByOrg(requestedByOrg)
-					.requestedByUserId(requestedByUserId)
-					.approvalOrg(approvalOrg)
-					.status(DRAFTED)
-					.createdBy(requestedByUserId)
-					.isCreatorAdmin(isCreatorAdmin)
-					.createdOn(java.time.LocalDateTime.now())
-					.build();
-
-			int totalInternalApprovals = (int) companyApproverRepository
-					.findAll()
-					.stream()
-					.filter(approver -> approver.getCompany() != null && approver.getCompany().getCompanyId().equals(requestedByOrg.getCompanyId())
-							&& approver.getIsActive())
-					.map(CompanyApprover::getLevel)
-					.distinct()
-					.count();
-
-			int totalBpApprovals = (int) companyApproverRepository
-					.findAll()
-					.stream()
-					.filter(approver -> approver.getCompany() != null && approver.getCompany().getCompanyId().equals(approvalOrg.getCompanyId())
-							&& approver.getIsActive())
-					.map(CompanyApprover::getLevel)
-					.distinct()
-					.count();
-
-			changeRequest.setTotalInternalApprovalLevels(totalInternalApprovals > 0 ? totalInternalApprovals : 0);
-			changeRequest.setTotalBpApprovalLevels(totalBpApprovals > 0 ? totalBpApprovals : 0);
-			changeRequest.setCurrentInternalApprovalLevel(0);
-			changeRequest.setCurrentBpApprovalLevel(0);
-
-			bpConfigurationChangeRequestRepository.save(changeRequest);
-		} catch (Exception e) {
-			log.error("Error adding configuration change request", e);
 		}
 	}
 }
