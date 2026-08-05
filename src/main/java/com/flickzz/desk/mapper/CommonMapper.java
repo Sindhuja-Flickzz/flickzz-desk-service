@@ -1065,6 +1065,7 @@ public class CommonMapper {
 				.title(notification.getTitle())
 				.message(notification.getMessage())
 				.notificationType(notification.getNotificationType())
+				.action(notification.getAction())
 				.referenceType(notification.getReferenceType())
 				.referenceId(notification.getReferenceId())
 				.recipientUserId(notification.getRecipientUserId())

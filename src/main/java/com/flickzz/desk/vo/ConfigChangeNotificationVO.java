@@ -26,6 +26,8 @@ public class ConfigChangeNotificationVO implements Serializable {
 
     private String notificationType;
 
+    private String action;
+
     private String referenceType;
 
     private Long referenceId;

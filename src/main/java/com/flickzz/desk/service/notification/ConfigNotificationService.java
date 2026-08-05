@@ -1,11 +1,9 @@
 package com.flickzz.desk.service.notification;
 
 import com.flickzz.desk.mapper.CommonMapper;
-import com.flickzz.desk.model.BPConfigurationChangeRequest;
-import com.flickzz.desk.model.CompanyApprover;
-import com.flickzz.desk.model.ConfigChangeNotification;
-import com.flickzz.desk.model.User;
+import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.CompanyApproverRepository;
+import com.flickzz.desk.repo.ConfigChangeApprovalRepository;
 import com.flickzz.desk.repo.ConfigChangeNotificationRepository;
 import com.flickzz.desk.repo.UserRepository;
 import com.flickzz.desk.service.CommonService;
@@ -23,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 
+import static com.flickzz.desk.config.FlickzzDeskConstants.PENDING;
 import static com.flickzz.desk.config.FlickzzDeskConstants.UNREAD;
 
 @Service
@@ -37,6 +36,9 @@ public class ConfigNotificationService {
 
     @Autowired
     ConfigChangeNotificationRepository configChangeNotificationRepository;
+
+    @Autowired
+    ConfigChangeApprovalRepository configChangeApprovalRepository;
 
     @Autowired
     CompanyApproverRepository companyApproverRepository;
@@ -82,13 +84,30 @@ public class ConfigNotificationService {
             }
 
             for (CompanyApprover approver : approvers) {
-                ConfigChangeNotification notification = buildNotification(changeRequest, approver, changeType, stage);
+                ConfigChangeApproval approval = buildChangeApproval(changeRequest, approver, changeType);
+                configChangeApprovalRepository.saveAndFlush(approval);
+                ConfigChangeNotification notification = buildNotification(changeRequest, approver, stage);
                 ConfigChangeNotification savedNotification = configChangeNotificationRepository.saveAndFlush(notification);
                 publishNotification(savedNotification);
             }
         } catch (Exception e) {
             log.error("Error notifying configuration change for stage {}", stage, e);
         }
+    }
+
+    private ConfigChangeApproval buildChangeApproval(BPConfigurationChangeRequest changeRequest, CompanyApprover approver, String changeType) {
+        return ConfigChangeApproval.builder()
+                .configChangeRequest(changeRequest)
+                .approvalType(changeType)
+                .approverLevel(approver.getLevel())
+                .approverUserId(approver.getAgent().getAgentId())
+                .approverOrgId(approver.getCompany().getCompanyId())
+                .status(PENDING)
+                .mandatory(approver.getLevel() == 1)
+                .createdBy(changeRequest.getRequestedByUserId())
+                .createdOn(LocalDateTime.now())
+                .createdOn(LocalDateTime.now())
+                .build();
     }
 
     private List<CompanyApprover> resolveApprovers(BPConfigurationChangeRequest changeRequest, NotificationStage stage) {
@@ -111,14 +130,14 @@ public class ConfigNotificationService {
 
     private ConfigChangeNotification buildNotification(BPConfigurationChangeRequest changeRequest,
                                                       CompanyApprover approver,
-                                                      String changeType,
                                                       NotificationStage stage) {
         return ConfigChangeNotification.builder()
                 .changeRequest(changeRequest)
-                .title(buildNotificationTitle(changeRequest, stage))
+                .title(buildNotificationTitle(changeRequest))
                 .message(buildNotificationMessage(changeRequest, stage))
-                .notificationType(changeType)
-                .referenceType(changeRequest.getOperation())
+                .notificationType(resolveConfigurationType(changeRequest))
+                .action(changeRequest.getOperation())
+                .referenceType(stage == NotificationStage.INTERNAL ? "Internal" : "BP")
                 .referenceId(changeRequest.getChangedRequestId())
                 .recipientUserId(approver.getAgent().getAgentId())
                 .recipientUserName(resolveRecipientUserName(approver))
@@ -129,18 +148,16 @@ public class ConfigNotificationService {
                 .build();
     }
 
-    private String buildNotificationTitle(BPConfigurationChangeRequest changeRequest, NotificationStage stage) {
-        String stageLabel = stage == NotificationStage.INTERNAL ? "Internal Approval" : "BP Approval";
+    private String buildNotificationTitle(BPConfigurationChangeRequest changeRequest) {
+
         String configurationType = resolveConfigurationType(changeRequest);
         String operation = normalizeOperation(changeRequest.getOperation());
-        return stageLabel + " - " + configurationType + " " + operation;
+        return configurationType + " " + operation;
     }
 
     private String buildNotificationMessage(BPConfigurationChangeRequest changeRequest, NotificationStage stage) {
-        String stageLabel = stage == NotificationStage.INTERNAL ? "internal approval" : "BP approval";
         String configurationType = resolveConfigurationType(changeRequest);
-        String operation = normalizeOperation(changeRequest.getOperation());
-        return "A " + configurationType + " configuration change request (" + operation + ") requires your " + stageLabel + " review.";
+        return "A " + configurationType + " configuration change request requires your review.";
     }
 
     private String resolveConfigurationType(BPConfigurationChangeRequest changeRequest) {
@@ -188,9 +205,6 @@ public class ConfigNotificationService {
         }
 
         ConfigChangeNotificationVO notificationVO = mapper.toNotificationVO(notification);
-//        String userDest = notification.getRecipientUserName() != null && !notification.getRecipientUserName().isBlank()
-//                ? notification.getRecipientUserName()
-//                : String.valueOf(notification.getRecipientUserId());
         User user = userRepository.findById(notification.getRecipientUserId()).orElse(null);
 
         String userDest = user.getEmail();

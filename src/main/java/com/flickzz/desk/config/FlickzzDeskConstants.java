@@ -72,6 +72,8 @@ public class FlickzzDeskConstants {
 	public static final String FAILED = "FAILED";
 	public static final String DRAFTED = "DRAFTED";
 
+	public static final String PENDING = "PENDING";
+
 	public static final Boolean READ = Boolean.TRUE;
 	public static final Boolean UNREAD = Boolean.FALSE;
 

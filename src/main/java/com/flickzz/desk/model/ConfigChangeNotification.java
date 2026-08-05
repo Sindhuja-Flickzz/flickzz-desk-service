@@ -35,6 +35,9 @@ public class    ConfigChangeNotification {
     @Column(name = "NOTIFICATION_TYPE", nullable = false, length = 50)
     private String notificationType;
 
+    @Column(name = "NOTIFICATION_ACTION", length = 20)
+    private String action;
+
     @Column(name = "REFERENCE_TYPE", length = 50)
     private String referenceType;
 
