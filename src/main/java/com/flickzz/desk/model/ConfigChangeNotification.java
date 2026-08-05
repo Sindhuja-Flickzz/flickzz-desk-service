@@ -56,6 +56,7 @@ public class    ConfigChangeNotification {
     @Column(name = "READ_ON")
     private LocalDateTime readOn;
 
+    @Builder.Default
     @Column(name = "IS_ACTIVE")
     private Boolean active = Boolean.TRUE;
 

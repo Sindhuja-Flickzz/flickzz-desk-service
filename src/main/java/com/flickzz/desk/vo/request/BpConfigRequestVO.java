@@ -51,5 +51,6 @@ public class BpConfigRequestVO implements Serializable {
 	private Long deletedBy;
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
+	private Boolean isDeletedByAdmin;
 
 }

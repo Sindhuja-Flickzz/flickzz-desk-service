@@ -15,6 +15,7 @@ public class FlickzzDeskConstants {
 	public static final String PLANT = "Plant";
 	public static final String SKILL = "Skill";
 	public static final String AGENT = "Agent";
+	public static final String NOTIFICATION = "NOTIFICATION";
 	public static final String COMPANY = "Company";
 	public static final String TICKET_TYPE = "Ticket Type";
 	public static final String COMPANY_ROLE = "Company Role";

@@ -203,11 +203,13 @@ public class CommonService {
 		}
 	}
 
-	public String loadUserNameByUserId(Long userId) {
-		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-				.findById(userId).orElse(null);
-		if (enquiryRegistration != null) {
-			return buildName(enquiryRegistration.getFirstName(), enquiryRegistration.getMiddleName(), enquiryRegistration.getLastName());
+	public String loadUserNameByUserId(Long userId, boolean isAdmin) {
+		if(isAdmin) {
+			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
+					.findById(userId).orElse(null);
+			if (enquiryRegistration != null) {
+				return buildName(enquiryRegistration.getFirstName(), enquiryRegistration.getMiddleName(), enquiryRegistration.getLastName());
+			}
 		}
 
 		User user = userRepository.findById(userId).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,

@@ -176,7 +176,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getCompanyId(),
 					SUCCESS,
 					null));
@@ -201,7 +201,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getDescription()), e);
@@ -225,7 +225,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -381,7 +381,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -399,7 +399,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -418,7 +418,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -491,7 +491,7 @@ public class BusinessPartnerService {
 			String changedValue = safeSerialize(changedFields);
 			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 					newPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue,
-					request.getUpdatedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+					request.getUpdatedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 					request.getOrgId(), SUCCESS, null));
 
 			return mapper.toBPPriorityVo(newPriority);
@@ -512,7 +512,7 @@ public class BusinessPartnerService {
 				}
 			} catch (Exception ignore) {
 			}
-			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", existingPriority != null ? existingPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), FAILED, e.getMessage()), e);
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", existingPriority != null ? existingPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), request.getOrgId(), FAILED, e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
 			// Attempt to save error audit
@@ -554,7 +554,7 @@ public class BusinessPartnerService {
 							oldValue,
 							null,
 							request != null ? request.getUpdatedBy() : null,
-							commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+							commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsUpdatedByAdmin()),
 							request.getOrgId(),
 							FAILED,
 							e.getMessage()), e);
@@ -613,7 +613,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request.getDeletedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -633,7 +633,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -653,7 +653,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
@@ -801,7 +801,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -822,7 +822,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -844,7 +844,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -948,7 +948,7 @@ public class BusinessPartnerService {
 						oldValue,
 						changedStr,
 						request.getUpdatedBy(),
-						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 						companyId,
 						SUCCESS,
 						null));
@@ -991,7 +991,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1031,7 +1031,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSLAConfiguration method in BusinessPartnerService", e);
@@ -1082,7 +1082,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request.getDeletedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -1102,7 +1102,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1122,7 +1122,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSLAConfiguration method in BusinessPartnerService");
@@ -1222,7 +1222,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1238,7 +1238,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1255,7 +1255,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -1359,7 +1359,7 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
-				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy) : null;
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy, request.getIsUpdatedByAdmin()) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 					newCategory.getCategoryId(),
 					UPDATE,
@@ -1405,7 +1405,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						request != null ? request.getUpdatedBy() : null,
-						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getDescription()), e);
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy(), request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1440,7 +1440,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						request != null ? request.getUpdatedBy() : null,
-						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy()) : null, companyId, FAILED, e.getMessage()), e);
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy(), request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerCategoryConfiguration method in BusinessPartnerService", e);
@@ -1501,7 +1501,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request.getDeletedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -1521,7 +1521,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1541,7 +1541,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
@@ -1816,7 +1816,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1836,7 +1836,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1856,7 +1856,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -2011,7 +2011,7 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
-				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy) : null;
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy, request.getIsUpdatedByAdmin()) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						newSupportGroup.getSupportGroupId(),
 						UPDATE,
@@ -2060,7 +2060,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						auditUserId,
-						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getDescription()), e);
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId, request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2098,7 +2098,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null,
 						auditUserId,
-						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId) : null, companyId, FAILED, e.getMessage()), e);
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId, request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2166,7 +2166,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request.getDeletedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -2186,7 +2186,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2206,7 +2206,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2430,7 +2430,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -2448,7 +2448,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -2466,7 +2466,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -2563,7 +2563,7 @@ public class BusinessPartnerService {
 						oldValue,
 						changedStr,
 						request.getUpdatedBy(),
-						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 						companyId,
 						SUCCESS,
 						null));
@@ -2604,7 +2604,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2641,7 +2641,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
@@ -2692,7 +2692,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request.getDeletedBy(),
-					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -2712,7 +2712,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2732,7 +2732,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy())), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");

@@ -32,9 +32,9 @@ public class ConfigChangeNotificationVO implements Serializable {
 
     private Long recipientUserId;
 
-    private Long recipientOrgId;
+    private String recipientUserName;
 
-    private String actionUrl;
+    private Long recipientOrgId;
 
     private Boolean isRead;
 

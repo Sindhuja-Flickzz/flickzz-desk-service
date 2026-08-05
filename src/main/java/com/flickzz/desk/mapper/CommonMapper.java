@@ -1054,4 +1054,28 @@ public class CommonMapper {
                 .createdAt(systemAudit.getCreatedAt())
                 .build();
     }
+
+	public ConfigChangeNotificationVO toNotificationVO(ConfigChangeNotification notification) {
+		if (notification == null) {
+			return null;
+		}
+
+		return ConfigChangeNotificationVO.builder()
+				.notificationId(notification.getNotificationId())
+				.title(notification.getTitle())
+				.message(notification.getMessage())
+				.notificationType(notification.getNotificationType())
+				.referenceType(notification.getReferenceType())
+				.referenceId(notification.getReferenceId())
+				.recipientUserId(notification.getRecipientUserId())
+				.recipientUserName(notification.getRecipientUserName())
+				.recipientOrgId(notification.getRecipientOrgId())
+				.isRead(notification.getIsRead())
+				.active(notification.getActive())
+				.createdBy(notification.getCreatedBy())
+				.createdOn(notification.getCreatedOn())
+				.updatedBy(notification.getUpdatedBy())
+				.updatedOn(notification.getUpdatedOn())
+				.build();
+	}
 }
