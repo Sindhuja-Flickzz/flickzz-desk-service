@@ -34,8 +34,9 @@ public class BPPriority {
 	@Column(name = "DESCRIPTION", nullable = false)
 	private String description;
 
+	@Builder.Default
 	@Column(name = "VERSION", nullable = false)
-	private Integer version;
+	private Integer version = 1;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "TICKET_TYPE_ID", nullable = false)

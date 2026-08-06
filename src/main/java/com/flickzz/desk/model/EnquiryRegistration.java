@@ -43,6 +43,7 @@ public class EnquiryRegistration {
 	@Column(name = "EMAIL", nullable = false, length = 150)
 	private String email;
 
+	@Builder.Default
 	@Column(name = "VERSION", nullable = false)
 	private Integer version = 1;
 

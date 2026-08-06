@@ -443,6 +443,9 @@ public class BusinessPartnerService {
 			if (existingPriorityOpt.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
+			} else if (existingPriorityOpt.get().getIsUnderApproval() != null && existingPriorityOpt.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Priority change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			existingPriority = existingPriorityOpt.get();
@@ -464,9 +467,12 @@ public class BusinessPartnerService {
 				ticketType = ticketTypeOpt.get();
 			}
 
+			existingPriority.setIsUnderApproval(UNDER_APPROVAL);
+			bPPriorityRepository.save(existingPriority);
+
 			BPPriority newPriority = mapper.toBPPriority(request, existingPriority.getConfiguration(), ticketType);
 			newPriority.setIsActive(INACTIVE);
-
+			newPriority.setIsUnderApproval(UNDER_APPROVAL);
 			int nextVersion = existingPriority.getVersion() + 1;
 			newPriority.setVersion(nextVersion);
 			newPriority = bPPriorityRepository.save(newPriority);
@@ -581,6 +587,9 @@ public class BusinessPartnerService {
 			if (existingPriority.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
+			} else if (existingPriority.get().getIsUnderApproval() != null && existingPriority.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Priority change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpPriority = existingPriority.get();
@@ -593,13 +602,29 @@ public class BusinessPartnerService {
 			}
 
 			validatePrioritySlaForDeletion(bpPriority);
-			bpPriority.setIsActive(DEACTIVATE);
+
+			bpPriority.setIsUnderApproval(UNDER_APPROVAL);
 			bPPriorityRepository.save(bpPriority);
 
-			configurationChangeService.addConfigurationChangeRequest(bpPriority.getConfiguration(), bpPriority.getPriorityId(), bpPriority.getPriorityId(),
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPPriority newPriority = BPPriority.builder()
+					.configuration(bpPriority.getConfiguration())
+					.level(bpPriority.getLevel())
+					.code(bpPriority.getCode())
+					.description(bpPriority.getDescription())
+					.version(bpPriority.getVersion() != null ? bpPriority.getVersion() + 1 : 1)
+					.ticketType(bpPriority.getTicketType())
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(bpPriority.getCreatedBy())
+					.updatedBy((request.getDeletedBy() != null) ? Long.valueOf(request.getDeletedBy()) : bpPriority.getUpdatedBy())
+					.build();
+			bPPriorityRepository.save(newPriority);
+
+			configurationChangeService.addConfigurationChangeRequest(newPriority.getConfiguration(), newPriority.getPriorityId(), newPriority.getPriorityId(),
 					Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpPriority.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
-					bpPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+					newPriority.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			Long companyId = bpPriority.getConfiguration() != null
 					&& bpPriority.getConfiguration().getBusinessPartner() != null
@@ -672,7 +697,7 @@ public class BusinessPartnerService {
 				ACTIVE);
 		if (hasSla) {
 			throw new FlickzzDeskException(INVALID_FIELD,
-					bpPriority.getCode() + " cannot be be deleted, as it has SLA configured");
+					bpPriority.getCode() + " cannot be be deleted, as it associates SLA configured");
 		}
 	}
 
@@ -780,6 +805,8 @@ public class BusinessPartnerService {
 				newSnapshot = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
 			} catch (Exception ignore) {
 			}
+			bpSla.setIsActive(INACTIVE);
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
 			bpSlaRepository.save(bpSla);
 
 			configurationChangeService.addConfigurationChangeRequest(config, bpSla.getSlaId(), null, Boolean.FALSE, Boolean.TRUE,
@@ -876,7 +903,7 @@ public class BusinessPartnerService {
 			}
 
 			List<BPSla> slas = bpSlaRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return slas.stream().map(mapper::toBPSlaVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -900,6 +927,9 @@ public class BusinessPartnerService {
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
+			} else if (existingSla.get().getIsUnderApproval() != null && existingSla.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"SLA change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			oldSla = existingSla.get();
@@ -919,10 +949,14 @@ public class BusinessPartnerService {
 			addChangedField(changedFields, "updateFrequencyTerm", oldSla.getUpdateFrequencyTerm(), request.getUpdateFrequencyTerm());
 			addChangedField(changedFields, "updatedBy", oldSla.getUpdatedBy(), request.getUpdatedBy());
 
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
+			bpSlaRepository.save(bpSla);
+
 			BPSla newSla = mapper.toBPSla(request, oldSla.getConfiguration(), oldSla.getPriority());
 			newSla.setCreatedBy(oldSla.getCreatedBy());
 			newSla.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : oldSla.getUpdatedBy());
 			newSla.setIsActive(INACTIVE);
+			newSla.setIsUnderApproval(UNDER_APPROVAL);
 			newSla.setVersion(oldSla.getVersion() != null ? oldSla.getVersion() + 1 : INITIAL_VERSION);
 			newSla = bpSlaRepository.save(newSla);
 
@@ -1052,6 +1086,9 @@ public class BusinessPartnerService {
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
+			} else if (existingSla.get().getIsUnderApproval() != null && existingSla.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"SLA change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpSla = existingSla.get();
@@ -1063,12 +1100,33 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 
-			bpSlaRepository.delete(bpSla);
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
+			bpSlaRepository.save(bpSla);
 
-			configurationChangeService.addConfigurationChangeRequest(bpSla.getConfiguration(), bpSla.getSlaId(), bpSla.getSlaId(),
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPSla newSla = BPSla.builder()
+					.configuration(bpSla.getConfiguration())
+					.priority(bpSla.getPriority())
+					.firstResponseTime(bpSla.getFirstResponseTime())
+					.firstResponseTerm(bpSla.getFirstResponseTerm())
+					.resolutionTime(bpSla.getResolutionTime())
+					.resolutionTerm(bpSla.getResolutionTerm())
+					.updateFrequency(bpSla.getUpdateFrequency())
+					.updateFrequencyTerm(bpSla.getUpdateFrequencyTerm())
+					.version(bpSla.getVersion() != null ? bpSla.getVersion() + 1 : 1)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(bpSla.getCreatedBy())
+					.updatedBy((request.getDeletedBy() != null) ? Long.valueOf(request.getDeletedBy()) : bpSla.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newSla.setSlaId(null);
+			bpSlaRepository.save(newSla);
+
+			configurationChangeService.addConfigurationChangeRequest(newSla.getConfiguration(), newSla.getSlaId(), newSla.getSlaId(),
 					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpSla.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
-					bpSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+					newSla.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1197,6 +1255,8 @@ public class BusinessPartnerService {
 				newSnapshot = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
 			} catch (Exception ignore) {
 			}
+			bpCategory.setIsActive(INACTIVE);
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
 			bpCategoryRepository.save(bpCategory);
 
 			configurationChangeService.addConfigurationChangeRequest(config, bpCategory.getCategoryId(), null, Boolean.FALSE, Boolean.FALSE,
@@ -1282,6 +1342,9 @@ public class BusinessPartnerService {
 			if (existingCategory.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
+			} else if (existingCategory.get().getIsUnderApproval() != null && existingCategory.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Category change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpCategory = existingCategory.get();
@@ -1326,12 +1389,16 @@ public class BusinessPartnerService {
 					new ArrayList<>(incomingSubCategories));
 			addChangedField(changedFields, "updatedBy", bpCategory.getUpdatedBy(), effectiveUpdatedBy);
 
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
+			bpCategoryRepository.save(bpCategory);
+			
 			BPCategory newCategory = mapper.toBPCategory(request, bpCategory.getConfiguration());
 			newCategory.setCategoryName(trimmedCategoryName);
 			newCategory.setConfiguration(bpCategory.getConfiguration());
 			newCategory.setCreatedBy(bpCategory.getCreatedBy());
 			newCategory.setUpdatedBy(effectiveUpdatedBy);
 			newCategory.setIsActive(INACTIVE);
+			newCategory.setIsUnderApproval(UNDER_APPROVAL);
 			newCategory.setVersion(bpCategory.getVersion() != null ? bpCategory.getVersion() + 1 : INITIAL_VERSION);
 			newCategory = bpCategoryRepository.save(newCategory);
 
@@ -1474,20 +1541,41 @@ public class BusinessPartnerService {
 
 			validateSubCategoryAssignmentsForDeletion(bpCategory);
 
-			bpCategoryRepository.delete(bpCategory);
-
-			configurationChangeService.addConfigurationChangeRequest(bpCategory.getConfiguration(), bpCategory.getCategoryId(), bpCategory.getCategoryId(),
-					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, DELETE,
-					bpCategory.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
-					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
+			bpCategoryRepository.save(bpCategory);
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPCategory newCategory = BPCategory.builder()
+					.categoryName(bpCategory.getCategoryName())
+					.configuration(bpCategory.getConfiguration())
+					.createdBy(bpCategory.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : bpCategory.getUpdatedBy())
+					.isActive(INACTIVE)
+					.version(bpCategory.getVersion() != null ? bpCategory.getVersion() + 1 : INITIAL_VERSION)
+					.build();
+			// ensure new entity will be inserted (no id)
+			newCategory.setCategoryId(null);
+			newCategory = bpCategoryRepository.save(newCategory);
 
 			List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
 					.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
+			List<BPSubCategory> newSubCategories = new ArrayList<>();
 			for (BPSubCategory subCategory : existingSubCategories) {
-				subCategory.setIsActive(Boolean.FALSE);
-				subCategory.setUpdatedBy(request.getDeletedBy());
-				bpSubCategoryRepository.save(subCategory);
+				BPSubCategory newSub = BPSubCategory.builder().category(newCategory)
+					.subCategoryName(subCategory.getSubCategoryName())
+					.createdBy(subCategory.getCreatedBy())
+					.updatedBy(request.getDeletedBy())
+					.isActive(Boolean.FALSE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.build();
+				newSub = bpSubCategoryRepository.save(newSub);
+				newSubCategories.add(newSub);
 			}
+			newCategory.setSubCategories(newSubCategories);
+
+			configurationChangeService.addConfigurationChangeRequest(newCategory.getConfiguration(), newCategory.getCategoryId(), bpCategory.getCategoryId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, DELETE,
+					newCategory.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1655,7 +1743,7 @@ public class BusinessPartnerService {
 			}
 
 			List<BPCategory> categories = bpCategoryRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return categories.stream().map(mapper::toBPCategoryVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -1728,6 +1816,7 @@ public class BusinessPartnerService {
 
 			BPSupportGroup supportGroup = BPSupportGroup.builder().configuration(config)
 					.groupName(request.getGroupName().trim()).createdBy(request.getCreatedBy())
+					.isActive(INACTIVE).isUnderApproval(UNDER_APPROVAL)
 					.updatedBy(request.getUpdatedBy()).build();
 			bpSupportGroupRepository.save(supportGroup);
 
@@ -1892,6 +1981,9 @@ public class BusinessPartnerService {
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			} else if (existingGroup.get().getIsUnderApproval() != null && existingGroup.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Support group change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			supportGroup = existingGroup.get();
@@ -1962,11 +2054,16 @@ public class BusinessPartnerService {
 				changedFields.put("bpManagers", true);
 			}
 
+			supportGroup.setIsUnderApproval(ACTIVE);
+			bpSupportGroupRepository.save(supportGroup);
+
 			BPSupportGroup newSupportGroup = BPSupportGroup.builder()
 					.configuration(supportGroup.getConfiguration())
 					.groupName(trimmedGroupName)
 					.createdBy(supportGroup.getCreatedBy())
 					.updatedBy(effectiveUpdatedBy)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
 					.build();
 			newSupportGroup.setIsActive(INACTIVE);
 			newSupportGroup.setVersion(supportGroup.getVersion() != null ? supportGroup.getVersion() + 1 : INITIAL_VERSION);
@@ -2119,6 +2216,9 @@ public class BusinessPartnerService {
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			} else if (existingGroup.get().getIsUnderApproval() != null && existingGroup.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Support group change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			supportGroup = existingGroup.get();
@@ -2135,24 +2235,58 @@ public class BusinessPartnerService {
 
 			validateSupportGroupAssignmentForRemoval(supportGroup);
 
-			bpSupportGroupRepository.delete(supportGroup);
+			supportGroup.setIsUnderApproval(ACTIVE);
+			bpSupportGroupRepository.save(supportGroup);
 
-			configurationChangeService.addConfigurationChangeRequest(supportGroup.getConfiguration(), supportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
-					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, DELETE,
-					supportGroup.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
-					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPSupportGroup newGroup = BPSupportGroup.builder()
+					.configuration(supportGroup.getConfiguration())
+					.groupName(supportGroup.getGroupName())
+					.version(supportGroup.getVersion() != null ? supportGroup.getVersion() + 1 : 1)
+					.createdBy(supportGroup.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : supportGroup.getUpdatedBy())
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.build();
+			// ensure new entity will be inserted (no id)
+			newGroup.setSupportGroupId(null);
+			newGroup = bpSupportGroupRepository.save(newGroup);
 
-			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			// copy members (mark inactive) and attach to new group
+			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			List<BPSupportGroupMember> newMembers = new ArrayList<>();
 			for (BPSupportGroupMember member : members) {
-				bpSupportGroupMemberRepository.delete(member);
+				BPSupportGroupMember newMember = BPSupportGroupMember.builder()
+					.supportGroup(newGroup)
+					.agent(member.getAgent())
+					.isGroupLead(member.getIsGroupLead())
+					.isActive(Boolean.FALSE)
+					.build();
+				newMember = bpSupportGroupMemberRepository.save(newMember);
+				newMembers.add(newMember);
 			}
+			newGroup.setMembers(newMembers);
 
-			List<BPSupportGroupManager> managers = bpSupportGroupManagerRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			// copy managers (mark inactive) and attach to new group
+			List<BPSupportGroupManager> managers = bpSupportGroupManagerRepository.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			List<BPSupportGroupManager> newManagers = new ArrayList<>();
 			for (BPSupportGroupManager manager : managers) {
-				bpSupportGroupManagerRepository.delete(manager);
+				BPSupportGroupManager newManager = BPSupportGroupManager.builder()
+					.supportGroup(newGroup)
+					.agent(manager.getAgent())
+					.isInternal(manager.getIsInternal())
+					.isBP(manager.getIsBP())
+					.isActive(Boolean.FALSE)
+					.build();
+				newManager = bpSupportGroupManagerRepository.save(newManager);
+				newManagers.add(newManager);
 			}
+			newGroup.setManagers(newManagers);
+
+			configurationChangeService.addConfigurationChangeRequest(newGroup.getConfiguration(), newGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, DELETE,
+					newGroup.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			// Record DELETE audit
 			Long companyId = null;
@@ -2267,7 +2401,7 @@ public class BusinessPartnerService {
 			}
 
 			List<BPSupportGroup> groups = bpSupportGroupRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return groups.stream().map(mapper::toNoBakcRefSupportGroupVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -2295,7 +2429,7 @@ public class BusinessPartnerService {
 			}
 
 			List<BPCategory> categories = bpCategoryRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 
 			List<BPSubCategoryVO> subCategoryVOs = new ArrayList<>();
 			for (BPCategory category : categories) {
@@ -2398,12 +2532,15 @@ public class BusinessPartnerService {
 			BPAssignment assignment;
 
 			if (existingAssignment.isPresent()) {
-				assignment = existingAssignment.get();
-				assignment.setIsActive(Boolean.TRUE);
-				assignment.setUpdatedBy(request.getUpdatedBy());
+//				assignment = existingAssignment.get();
+//				assignment.setIsActive(Boolean.TRUE);
+//				assignment.setUpdatedBy(request.getUpdatedBy());
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for support group and sub category"));
 			} else {
 				assignment = BPAssignment.builder().configuration(config).subCategory(subCategory.get())
 						.supportGroup(supportGroup.get()).createdBy(request.getCreatedBy())
+						.isActive(INACTIVE).isUnderApproval(UNDER_APPROVAL)
 						.updatedBy(request.getUpdatedBy()).build();
 			}
 			
@@ -2493,6 +2630,9 @@ public class BusinessPartnerService {
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			} else if (existingAssignment.get().getIsUnderApproval() != null && existingAssignment.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Assignment change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			assignment = existingAssignment.get();
@@ -2531,20 +2671,34 @@ public class BusinessPartnerService {
 						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for sub category"));
 			}
 
-			assignment.setUpdatedBy(request.getUpdatedBy());
-			assignment.setSubCategory(targetSubCategory.get());
+			assignment.setIsUnderApproval(UNDER_APPROVAL);
 			bpAssignmentRepository.save(assignment);
 
-			configurationChangeService.addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
+			// Create a new inactive copy for update (leave existing record untouched)
+			BPAssignment newAssignment = BPAssignment.builder()
+					.configuration(assignment.getConfiguration())
+					.subCategory(targetSubCategory.get())
+					.supportGroup(assignment.getSupportGroup())
+					.version(assignment.getVersion() != null ? assignment.getVersion() + 1 : INITIAL_VERSION)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(assignment.getCreatedBy())
+					.updatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : assignment.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newAssignment.setAssignmentId(null);
+			newAssignment = bpAssignmentRepository.save(newAssignment);
+
+			configurationChangeService.addConfigurationChangeRequest(newAssignment.getConfiguration(), newAssignment.getAssignmentId(), assignment.getAssignmentId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, UPDATE,
-					assignment.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
-					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+					newAssignment.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
+					newAssignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
 				String newSnapshot = null;
 				try {
-					newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+					newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(newAssignment));
 				} catch (Exception ignore) {
 				}
 				String changedStr = null;
@@ -2554,18 +2708,18 @@ public class BusinessPartnerService {
 				}
 				Long companyId = null;
 				try {
-					if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
-						&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
-						companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					if (newAssignment.getConfiguration() != null && newAssignment.getConfiguration().getBusinessPartner() != null
+						&& newAssignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = newAssignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
 					}
 				} catch (Exception ignore) {
 				}
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
-						assignment.getAssignmentId(),
+						newAssignment.getAssignmentId(),
 						UPDATE,
 						newSnapshot,
 						oldValue,
-						changedStr,
+						changedStr, 
 						request.getUpdatedBy(),
 						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 						companyId,
@@ -2662,10 +2816,16 @@ public class BusinessPartnerService {
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			} else if (existingAssignment.get().getIsUnderApproval() != null && existingAssignment.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Assignment change is already under approval. Please wait for the approval process to complete.");
 			}
-			
+
 			assignment = existingAssignment.get();
-			
+
+			assignment.setIsUnderApproval(UNDER_APPROVAL);
+			bpAssignmentRepository.save(assignment);
+
 			// Capture old snapshot before deletion
 			String oldValue = null;
 			try {
@@ -2673,12 +2833,25 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 
-			bpAssignmentRepository.delete(assignment);
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPAssignment newAssignment = BPAssignment.builder()
+					.configuration(assignment.getConfiguration())
+					.subCategory(assignment.getSubCategory())
+					.supportGroup(assignment.getSupportGroup())
+					.version(assignment.getVersion() != null ? assignment.getVersion() + 1 : 1)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(assignment.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : assignment.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newAssignment.setAssignmentId(null);
+			newAssignment = bpAssignmentRepository.save(newAssignment);
 
-			configurationChangeService.addConfigurationChangeRequest(assignment.getConfiguration(), assignment.getAssignmentId(), assignment.getAssignmentId(),
+			configurationChangeService.addConfigurationChangeRequest(newAssignment.getConfiguration(), newAssignment.getAssignmentId(), assignment.getAssignmentId(),
 					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, DELETE,
-					assignment.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
-					assignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+					newAssignment.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newAssignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -2780,7 +2953,7 @@ public class BusinessPartnerService {
 			}
 
 			List<BPAssignment> assignments = bpAssignmentRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return assignments.stream().map(mapper::toBPAssignmentVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;

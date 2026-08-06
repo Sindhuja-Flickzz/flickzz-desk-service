@@ -9,6 +9,8 @@ import com.flickzz.desk.model.BPCategory;
 
 public interface BPCategoryRepository extends JpaRepository<BPCategory, Long> {
 
+	List<BPCategory> findByConfigurationConfigurationId(Long configurationId);
+
 	List<BPCategory> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
 
 	Optional<BPCategory> findByCategoryIdAndIsActive(Long categoryId, Boolean active);

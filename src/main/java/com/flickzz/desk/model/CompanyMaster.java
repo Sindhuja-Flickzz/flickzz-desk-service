@@ -64,6 +64,7 @@ public class CompanyMaster {
 	@Column(name = "MAIL", length = 100, nullable = false, unique = true)
 	private String mail;
 
+	@Builder.Default
 	@Column(name = "VERSION", nullable = false)
 	private Integer version = 1;
 

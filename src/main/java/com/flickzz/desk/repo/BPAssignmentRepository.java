@@ -8,6 +8,8 @@ import com.flickzz.desk.model.*;
 
 public interface BPAssignmentRepository extends JpaRepository<BPAssignment, Long> {
 
+	List<BPAssignment> findByConfigurationConfigurationId(Long configurationId);
+
 	List<BPAssignment> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
 
 	Optional<BPAssignment> findByAssignmentIdAndIsActive(Long assignmentId, Boolean active);

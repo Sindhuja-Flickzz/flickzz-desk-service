@@ -58,6 +58,7 @@ public class BusinessPartner {
 	@Column(name = "REF_DATE")
 	private Date refDate;
 
+	@Builder.Default
 	@Column(name = "VERSION", nullable = false)
 	private Integer version = 1;
 

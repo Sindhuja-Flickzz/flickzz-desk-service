@@ -810,7 +810,7 @@ public class CommonMapper {
 		return BPPriorityVO.builder().priorityId(bpPriority.getPriorityId())
 				.configuration(toBPConfigurationVO(bpPriority.getConfiguration())).level(bpPriority.getLevel())
 				.code(bpPriority.getCode()).ticketType(toTicketTypeMasterVo(bpPriority.getTicketType()))
-				.description(bpPriority.getDescription()).isActive(bpPriority.getIsActive())
+				.description(bpPriority.getDescription()).isActive(bpPriority.getIsActive()).isUnderApproval(bpPriority.getIsUnderApproval())
 				.createdBy(bpPriority.getCreatedBy()).updatedBy(bpPriority.getUpdatedBy()).build();
 	}
 
@@ -837,7 +837,8 @@ public class CommonMapper {
 				.firstResponseTerm(bpSla.getFirstResponseTerm()).resolutionTime(bpSla.getResolutionTime())
 				.resolutionTerm(bpSla.getResolutionTerm()).updateFrequency(bpSla.getUpdateFrequency())
 				.updateFrequencyTerm(bpSla.getUpdateFrequencyTerm()).isActive(bpSla.getIsActive())
-				.createdBy(bpSla.getCreatedBy()).updatedBy(bpSla.getUpdatedBy()).build();
+				.isUnderApproval(bpSla.getIsUnderApproval()).createdBy(bpSla.getCreatedBy())
+				.updatedBy(bpSla.getUpdatedBy()).build();
 	}
 
 	public BPCategory toBPCategory(BpConfigRequestVO request, BPConfiguration config) {
@@ -859,7 +860,7 @@ public class CommonMapper {
 		}
 		return BPCategoryVO.builder().categoryId(bpCategory.getCategoryId())
 				.configuration(toBPConfigurationVO(bpCategory.getConfiguration()))
-				.categoryName(bpCategory.getCategoryName()).isActive(bpCategory.getIsActive())
+				.categoryName(bpCategory.getCategoryName()).isActive(bpCategory.getIsActive()).isUnderApproval(bpCategory.getIsUnderApproval())
 				.createdBy(bpCategory.getCreatedBy()).updatedBy(bpCategory.getUpdatedBy()).subCategories(subCategories)
 				.build();
 	}
@@ -914,6 +915,7 @@ public class CommonMapper {
 				.configuration(toBPConfigurationVO(assignment.getConfiguration()))
 				.subCategory(toBPSubCategoryVo(assignment.getSubCategory()))
 				.supportGroup(toSupportGroupVo(assignment.getSupportGroup())).isActive(assignment.getIsActive())
+				.isUnderApproval(assignment.getIsUnderApproval())
 				.createdBy(assignment.getCreatedBy()).updatedBy(assignment.getUpdatedBy()).build();
 	}
 
@@ -931,7 +933,7 @@ public class CommonMapper {
                         ? supportGroup.getManagers().stream().filter(manager -> Boolean.TRUE.equals(manager.getIsActive()))
                         .map(this::toNoBackRefSupportGroupManagerVo).toList()
                         : null)
-                .groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive())
+                .groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive()).isUnderApproval(supportGroup.getIsUnderApproval())
                 .createdBy(supportGroup.getCreatedBy()).updatedBy(supportGroup.getUpdatedBy()).build();
     }
 

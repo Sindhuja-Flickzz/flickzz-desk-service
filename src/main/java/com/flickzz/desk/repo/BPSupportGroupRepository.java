@@ -9,6 +9,8 @@ import com.flickzz.desk.model.BPSupportGroup;
 
 public interface BPSupportGroupRepository extends JpaRepository<BPSupportGroup, Long> {
 
+	List<BPSupportGroup> findByConfigurationConfigurationId(Long configurationId);
+
 	List<BPSupportGroup> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
 
 	Optional<BPSupportGroup> findBySupportGroupIdAndIsActive(Long supportGroupId, Boolean active);

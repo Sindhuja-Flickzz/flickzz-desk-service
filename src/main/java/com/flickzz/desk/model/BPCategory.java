@@ -28,6 +28,7 @@ public class BPCategory {
 	@Column(name = "CATEGORY_NAME", nullable = false)
 	private String categoryName;
 
+	@Builder.Default
 	@Column(name = "VERSION", nullable = false)
 	private Integer version = 1;
 
