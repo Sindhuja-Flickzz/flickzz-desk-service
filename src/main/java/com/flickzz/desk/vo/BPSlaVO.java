@@ -32,6 +32,8 @@ public class BPSlaVO implements Serializable {
 
 	private Boolean isActive;
 
+	private Boolean isUnderApproval;
+
 	private Long createdBy;
 
 	private Long updatedBy;

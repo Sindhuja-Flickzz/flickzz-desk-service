@@ -18,14 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.CalendarService;
@@ -76,10 +69,10 @@ public class CalendarController {
 	}
 
 	@DeleteMapping("/delete/{calendarCode}")
-	public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode) {
+	public ResponseEntity<FlickzzDeskResponse> deleteCalendar(@PathVariable String calendarCode, @RequestHeader(value = "x-user-id", required = false) String userId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		calendarService.deleteCalendar(calendarCode);
+		calendarService.deleteCalendar(calendarCode, Long.valueOf(userId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR));
@@ -107,10 +100,10 @@ public class CalendarController {
 	}
 
 	@DeleteMapping("/type/delete/{calendarTypeId}")
-	public ResponseEntity<FlickzzDeskResponse> deleteCalendarType(@PathVariable String calendarTypeId) {
+	public ResponseEntity<FlickzzDeskResponse> deleteCalendarType(@PathVariable String calendarTypeId, @RequestHeader(value = "x-user-id", required = false) String userId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		calendarService.deleteCalendarType(calendarTypeId);
+		calendarService.deleteCalendarType(calendarTypeId, Long.valueOf(userId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CALENDAR_TYPE));

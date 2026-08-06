@@ -72,11 +72,11 @@ public class AgentController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
 	}
 
-	@GetMapping("/email/{agentName}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String agentName) {
+	@GetMapping("/email/{email}")
+	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String email) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO response = agentService.getAgentInfoByEmail(agentName);
+		AgentMasterVO response = agentService.getAgentInfoByEmail(email);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);

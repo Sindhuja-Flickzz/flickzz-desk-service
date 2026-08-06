@@ -29,7 +29,7 @@ public class RefreshTokenService {
 	private EnquiryRegistrationRepository enquiryRegistrationRepository;
 
 	public Auth createRefreshToken(User user, boolean keepMeLoggedIn) {
-		User fDUser = userRepository.findByUserName(user.getUserName())
+		User fDUser = userRepository.findByUserNameAndIsActiveTrue(user.getUserName())
 				.orElseThrow(() -> new RuntimeException("User not found"));
 
 		// Refresh token lifetime depends on "keep me logged in"
@@ -47,7 +47,7 @@ public class RefreshTokenService {
 
 	public Auth createRefreshToken(EnquiryRegistration enquiryRegistration, boolean keepMeLoggedIn) {
 		EnquiryRegistration registration = enquiryRegistrationRepository
-				.findByUserNameAndIsActive(enquiryRegistration.getUserName(), ACTIVE)
+				.findByUserNameAndIsActiveTrue(enquiryRegistration.getUserName())
 				.orElseThrow(() -> new RuntimeException("User not found"));
 
 		// Refresh token lifetime depends on "keep me logged in"

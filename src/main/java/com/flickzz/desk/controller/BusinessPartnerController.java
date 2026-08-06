@@ -74,12 +74,12 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), PRIORITY), respVO);
 	}
 
-	@DeleteMapping("/priority/delete/{priorityId}")
+	@DeleteMapping("/priority/delete")
 	public ResponseEntity<FlickzzDeskResponse> deleteBusinessPartnerPriorityConfiguration(
-			@PathVariable String priorityId, @RequestHeader(value = "x-user-id", required = false) String userId) throws Exception {
+			@RequestBody BpConfigRequestVO request) throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		businessPartnerService.deleteBusinessPartnerPriorityConfiguration(priorityId, Long.valueOf(userId));
+		businessPartnerService.deleteBusinessPartnerPriorityConfiguration(request);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), PRIORITY), null);
@@ -103,7 +103,19 @@ public class BusinessPartnerController {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<BPPriorityVO> response = businessPartnerService
-				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId));
+				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId), INACTIVE);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
+	}
+
+	@GetMapping("/config/priority/active/{businessPartnerId}")
+	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerActivePriorityConfiguration(
+			@PathVariable String businessPartnerId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<BPPriorityVO> response = businessPartnerService
+				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId), ACTIVE);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
@@ -131,12 +143,12 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), SLA), respVO);
 	}
 
-	@DeleteMapping("/sla/delete/{slaId}")
+	@DeleteMapping("/sla/delete")
 	public ResponseEntity<FlickzzDeskResponse> deleteBusinessPartnerSLAConfiguration(
-			@PathVariable String slaId, @RequestHeader(value = "x-user-id", required = false) String userId) throws Exception {
+			@RequestBody BpConfigRequestVO request) throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		businessPartnerService.deleteBusinessPartnerSLAConfiguration(slaId, Long.valueOf(userId));
+		businessPartnerService.deleteBusinessPartnerSLAConfiguration(request);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), SLA), null);
@@ -186,12 +198,12 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), CATEGORY), respVO);
 	}
 
-	@DeleteMapping("/category/delete/{categoryId}")
+	@DeleteMapping("/category/delete")
 	public ResponseEntity<FlickzzDeskResponse> deleteBusinessPartnerCategoryConfiguration(
-			@PathVariable String categoryId, @RequestHeader(value = "x-user-id", required = false) String userId) throws Exception {
+			@RequestBody BpConfigRequestVO request) throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		businessPartnerService.deleteBusinessPartnerCategoryConfiguration(categoryId, Long.valueOf(userId));
+		businessPartnerService.deleteBusinessPartnerCategoryConfiguration(request);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), CATEGORY), null);
@@ -245,12 +257,12 @@ public class BusinessPartnerController {
 				respVO);
 	}
 
-	@DeleteMapping("/support-group/delete/{supportGroupId}")
+	@DeleteMapping("/support-group/delete")
 	public ResponseEntity<FlickzzDeskResponse> deleteBusinessPartnerSupportGroupConfiguration(
-			@PathVariable String supportGroupId, @RequestHeader(value = "x-user-id", required = false) String userId) throws Exception {
+			@RequestBody BpConfigRequestVO request) throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		businessPartnerService.deleteBusinessPartnerSupportGroupConfiguration(supportGroupId, Long.valueOf(userId));
+		businessPartnerService.deleteBusinessPartnerSupportGroupConfiguration(request);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "Support Group"),
@@ -318,24 +330,24 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), "Assignment"), respVO);
 	}
 
-	@DeleteMapping("/assignment/delete/{assignmentId}")
+	@DeleteMapping("/assignment/delete")
 	public ResponseEntity<FlickzzDeskResponse> deleteBusinessPartnerAssignmentConfiguration(
-			@PathVariable String assignmentId, @RequestHeader(value = "x-user-id", required = false) String userId) throws Exception {
+			@RequestBody BpConfigRequestVO request) throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		businessPartnerService.deleteBusinessPartnerAssignmentConfiguration(assignmentId, Long.valueOf(userId));
+		businessPartnerService.deleteBusinessPartnerAssignmentConfiguration(request);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "Assignment"), null);
 	}
 
-	@GetMapping("/assignment/{supportGroupId}")
+	@GetMapping("/assignment/{assignmentId}")
 	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerAssignmentConfigurationBySupportGroupId(
-			@PathVariable String supportGroupId) {
+			@PathVariable String assignmentId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		BPAssignmentVO response = businessPartnerService
-				.getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long.valueOf(supportGroupId));
+				.getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long.valueOf(assignmentId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Assignment"), response);
@@ -351,5 +363,17 @@ public class BusinessPartnerController {
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Assignment"), response);
+	}
+
+	@GetMapping("/config/approval/list/{userId}")
+	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerApprovalList(
+			@PathVariable String userId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<ConfigChangeApprovalVO> response = businessPartnerService
+				.getBusinessPartnerApprovalList(Long.valueOf(userId));
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval"), response);
 	}
 }

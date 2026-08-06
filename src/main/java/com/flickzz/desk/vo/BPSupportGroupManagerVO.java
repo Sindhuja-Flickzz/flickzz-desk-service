@@ -21,4 +21,5 @@ public class BPSupportGroupManagerVO implements Serializable {
     private Boolean isInternal;
     private Boolean isBP;
     private Boolean isActive;
+    private Boolean isUnderApproval;
 }

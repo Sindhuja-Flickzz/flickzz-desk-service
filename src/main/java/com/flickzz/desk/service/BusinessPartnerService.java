@@ -5,6 +5,7 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
@@ -79,10 +80,28 @@ public class BusinessPartnerService {
 	AuditService auditService;
 
 	@Autowired
+	CommonService commonService;
+
+	@Autowired
 	CommonMapper mapper;
 
 	@Autowired
 	ObjectMapper objectMapper;
+
+	@Autowired
+	BPConfigurationChangeRequestRepository bpConfigurationChangeRequestRepository;
+
+	@Autowired
+	BPConfigurationChangeRequestRemarkRepository bpConfigurationChangeRequestRemarkRepository;
+
+	@Autowired
+	CompanyApproverRepository companyApproverRepository;
+
+	@Autowired
+	ConfigChangeApprovalRepository configChangeApprovalRepository;
+
+	@Autowired
+	ConfigurationChangeService configurationChangeService;
 
 	public BusinessPartnerVO createBusinessPartner(CompanyMasterRequestVO request) {
 		log.info(generateLog("createBusinessPartner", this.getClass().getName()));
@@ -106,11 +125,15 @@ public class BusinessPartnerService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
 
-			if (businessPartnerRepository.existsBusinessPartnerMapping(request.getCompanyId(),
-					bpCompany.getCompanyId()) > 0) {
-				throw new FlickzzDeskException(ALREADY_EXISTS,
-						getDescription(ALREADY_EXISTS.getDescription(), "Business Partner mapping"));
-			}
+			AtomicInteger newVersion = new AtomicInteger(INITIAL_VERSION);
+			businessPartnerRepository.getBusinessPartnerMapping(request.getCompanyId(), bpCompany.getCompanyId()).ifPresent(bp -> {
+				if(bp.getIsActive()) {
+					throw new FlickzzDeskException(ALREADY_EXISTS,
+							getDescription(ALREADY_EXISTS.getDescription(), "Business Partner mapping"));
+				} else {
+					newVersion.set(bp.getVersion() + 1);
+				}
+			});
 
 			BusinessPartner entity = new BusinessPartner();
 			entity.setCompany(companyMasterRepository.findById(request.getCompanyId())
@@ -125,6 +148,7 @@ public class BusinessPartnerService {
 			entity.setValidTo(request.getValidTo());
 			entity.setRefNo(request.getRefNumber());
 			entity.setRefDate(request.getRefDate());
+			entity.setVersion(newVersion.get());
 			businessPartnerRepository.save(entity);
 
 			// Record CREATE audit
@@ -138,6 +162,7 @@ public class BusinessPartnerService {
 			changed.put("isBoth", entity.getIsBoth());
 			changed.put("callHorizon", entity.getCallHorizon());
 			changed.put("validFrom", entity.getValidFrom());
+			changed.put("version", entity.getVersion());
 			changed.put("validTo", entity.getValidTo());
 			String changedStr = null;
 			try {
@@ -152,7 +177,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getCompanyId(),
 					SUCCESS,
 					null));
@@ -177,7 +202,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getDescription()), e);
@@ -201,7 +226,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getCompanyId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -226,6 +251,7 @@ public class BusinessPartnerService {
 			snapshot.put("refDate", bp.getRefDate());
 			snapshot.put("createdBy", bp.getCreatedBy());
 			snapshot.put("updatedBy", bp.getUpdatedBy());
+			snapshot.put("version", bp.getVersion());
 			snapshot.put("createdAt", bp.getCreatedAt());
 			snapshot.put("updatedAt", bp.getUpdatedAt());
 			try {
@@ -245,11 +271,28 @@ public class BusinessPartnerService {
 		return snapshot;
 	}
 
+	private void addChangedField(Map<String, Object> changedFields, String field, Object oldValue, Object newValue) {
+		if (!Objects.equals(oldValue, newValue)) {
+			Map<String, Object> change = new HashMap<>();
+			change.put("old", oldValue);
+			change.put("new", newValue);
+			changedFields.put(field, change);
+		}
+	}
+
+	private String safeSerialize(Object value) {
+		try {
+			return objectMapper.writeValueAsString(value);
+		} catch (Exception ignore) {
+			return null;
+		}
+	}
+
 	public BPConfigurationVO getBusinessPartnerConfigurationList(String businessPartnerId) {
 		log.info(generateLog("getBusinessPartnerConfigurationList", this.getClass().getName()));
 		try {
 			Optional<BPConfiguration> configurations = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(Long.valueOf(businessPartnerId), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(Long.valueOf(businessPartnerId));
 			return mapper.toBPConfigurationVO(configurations.get());
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -283,7 +326,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(request.getBusinessPartnerId());
 
 			BPConfiguration config = new BPConfiguration();
 
@@ -309,6 +352,9 @@ public class BusinessPartnerService {
 			}
 
 			BPPriority bpPriority = mapper.toBPPriority(request, config, ticketType.get());
+			bpPriority.setIsActive(INACTIVE);
+			bpPriority.setVersion(INITIAL_VERSION);
+			bpPriority.setIsUnderApproval(UNDER_APPROVAL);
 			// Prepare new snapshot for audit
 			String newSnapshot = null;
 			try {
@@ -317,10 +363,14 @@ public class BusinessPartnerService {
 			}
 			bPPriorityRepository.save(bpPriority);
 
-			// Record CREATE audit
+			configurationChangeService.addConfigurationChangeRequest(config, bpPriority.getPriorityId(), null, Boolean.TRUE, Boolean.FALSE,
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, CREATE,
+					businessPartner.get().getCompany(), request.getCreatedBy(),
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
 			changed.put("level", bpPriority.getLevel());
 			changed.put("code", bpPriority.getCode());
+            changed.put("isActive", bpPriority.getIsActive());
 			changed.put("description", bpPriority.getDescription());
 			String changedStr = null;
 			try { changedStr = objectMapper.writeValueAsString(changed); } catch (Exception ignore) {}
@@ -332,7 +382,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -350,7 +400,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -369,7 +419,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -380,66 +430,78 @@ public class BusinessPartnerService {
 
 	public BPPriorityVO updateBusinessPartnerPriorityConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerPriorityConfiguration", this.getClass().getName()));
-		BPPriority bpPriority = null;
+		BPPriority existingPriority = null;
 		try {
 			if (request == null || request.getPriorityId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
 			}
 
-			Optional<BPPriority> existingPriority = bPPriorityRepository
+			Optional<BPPriority> existingPriorityOpt = bPPriorityRepository
 					.findByPriorityIdAndIsActive(request.getPriorityId(), ACTIVE);
 
-			if (existingPriority.isEmpty()) {
+			if (existingPriorityOpt.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
+			} else if (existingPriorityOpt.get().getIsUnderApproval() != null && existingPriorityOpt.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Priority change is already under approval. Please wait for the approval process to complete.");
 			}
 
-			bpPriority = existingPriority.get();
-			
-			// Capture old values before update (use snapshot to avoid serializing full entity graph)
-			String oldValue = "";
+			existingPriority = existingPriorityOpt.get();
+
+			String oldValue = null;
 			try {
-				oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+				oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(existingPriority));
 			} catch (Exception ignore) {
 			}
-			
-			// Track changed fields
+
+			TicketTypeMaster ticketType = existingPriority.getTicketType();
+			if (request.getTicketTypeId() != null && !request.getTicketTypeId().equals(ticketType.getTicketTypeId())) {
+				Optional<TicketTypeMaster> ticketTypeOpt = ticketTypeMasterRepository
+						.findByTicketTypeIdAndIsActiveTrue(request.getTicketTypeId());
+				if (ticketTypeOpt.isEmpty()) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), TICKET_TYPE));
+				}
+				ticketType = ticketTypeOpt.get();
+			}
+
+			existingPriority.setIsUnderApproval(UNDER_APPROVAL);
+			bPPriorityRepository.save(existingPriority);
+
+			BPPriority newPriority = mapper.toBPPriority(request, existingPriority.getConfiguration(), ticketType);
+			newPriority.setIsActive(INACTIVE);
+			newPriority.setIsUnderApproval(UNDER_APPROVAL);
+			int nextVersion = existingPriority.getVersion() + 1;
+			newPriority.setVersion(nextVersion);
+			newPriority = bPPriorityRepository.save(newPriority);
+
+			configurationChangeService.addConfigurationChangeRequest(existingPriority.getConfiguration(), newPriority.getPriorityId(),
+					existingPriority.getPriorityId(), Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE,
+					Boolean.FALSE, UPDATE,
+					existingPriority.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
+					existingPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+
 			Map<String, Object> changedFields = new HashMap<>();
-			if (!bpPriority.getCode().equals(request.getCode())) {
-				changedFields.put("code", true);
+			addChangedField(changedFields, "code", existingPriority.getCode(), request.getCode());
+			addChangedField(changedFields, "description", existingPriority.getDescription(), request.getDescription());
+			addChangedField(changedFields, "level", existingPriority.getLevel(), request.getLevel());
+			addChangedField(changedFields, "ticketTypeId", existingPriority.getTicketType().getTicketTypeId(), ticketType.getTicketTypeId());
+			addChangedField(changedFields, "updatedBy", existingPriority.getUpdatedBy(), request.getUpdatedBy());
+
+			String newSnapshot = null;
+			try {
+				newSnapshot = objectMapper.writeValueAsString(buildPrioritySnapshot(newPriority));
+			} catch (Exception ignore) {
 			}
-			if (!bpPriority.getDescription().equals(request.getDescription())) {
-				changedFields.put("description", true);
-			}
-			if (!bpPriority.getUpdatedBy().equals(request.getUpdatedBy())) {
-				changedFields.put("updatedBy", true);
-			}
-			
-			// Update the priority
-			bpPriority.setCode(request.getCode());
-			bpPriority.setDescription(request.getDescription());
-			bpPriority.setUpdatedBy(request.getUpdatedBy());
-			bPPriorityRepository.save(bpPriority);
-			
-			// Save audit record if there are changes
-			if (!changedFields.isEmpty()) {
-				// New value snapshot
-				String newSnapshot = null;
-				try {
-					newSnapshot = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
-				} catch (Exception ignore) {
-				}
-				String changedValue = null;
-				try {
-					changedValue = objectMapper.writeValueAsString(changedFields);
-				} catch (Exception ignore) {
-					changedValue = null;
-				}
-				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue, request.getUpdatedBy(), loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), SUCCESS, null));
-			}
-			
-			return mapper.toBPPriorityVo(bpPriority);
+			String changedValue = safeSerialize(changedFields);
+			auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
+					newPriority.getPriorityId(), UPDATE, newSnapshot, oldValue, changedValue,
+					request.getUpdatedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
+					request.getOrgId(), SUCCESS, null));
+
+			return mapper.toBPPriorityVo(newPriority);
 		} catch (FlickzzDeskException e) {
 			String newValue = null;
 			try {
@@ -457,17 +519,17 @@ public class BusinessPartnerService {
 				}
 			} catch (Exception ignore) {
 			}
-			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", bpPriority != null ? bpPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), request.getOrgId(), FAILED, e.getMessage()), e);
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority", existingPriority != null ? existingPriority.getPriorityId() : null, UPDATE, newValue, null, null, request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), request.getOrgId(), FAILED, e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
 			// Attempt to save error audit
 			try {
 				String oldValue = null; String newValue = null;
 				try {
-					if (bpPriority != null) {
-						if (bpPriority.getPriorityId() != null) {
+					if (existingPriority != null) {
+						if (existingPriority.getPriorityId() != null) {
 							try {
-								oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(bpPriority));
+								oldValue = objectMapper.writeValueAsString(buildPrioritySnapshot(existingPriority));
 							} catch (Exception ignore) {
 								oldValue = null;
 							}
@@ -493,13 +555,13 @@ public class BusinessPartnerService {
 				}
 				try {
 					auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
-							bpPriority != null ? bpPriority.getPriorityId() : null,
+							existingPriority != null ? existingPriority.getPriorityId() : null,
 							UPDATE,
 							newValue,
 							oldValue,
 							null,
 							request != null ? request.getUpdatedBy() : null,
-							loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+							commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsUpdatedByAdmin()),
 							request.getOrgId(),
 							FAILED,
 							e.getMessage()), e);
@@ -514,17 +576,20 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerPriorityConfiguration(String priorityId, Long userId) {
+	public void deleteBusinessPartnerPriorityConfiguration(BpConfigRequestVO request) {
 
 		log.info(generateLog("deleteBusinessPartnerPriorityConfiguration", this.getClass().getName()));
 		BPPriority bpPriority = null;
 		try {
 			Optional<BPPriority> existingPriority = bPPriorityRepository
-					.findByPriorityIdAndIsActive(Long.valueOf(priorityId), ACTIVE);
+					.findByPriorityIdAndIsActive(request.getPriorityId(), ACTIVE);
 
 			if (existingPriority.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), PRIORITY));
+			} else if (existingPriority.get().getIsUnderApproval() != null && existingPriority.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Priority change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpPriority = existingPriority.get();
@@ -538,7 +603,29 @@ public class BusinessPartnerService {
 
 			validatePrioritySlaForDeletion(bpPriority);
 
-			bPPriorityRepository.delete(bpPriority);
+			bpPriority.setIsUnderApproval(UNDER_APPROVAL);
+			bPPriorityRepository.save(bpPriority);
+
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPPriority newPriority = BPPriority.builder()
+					.configuration(bpPriority.getConfiguration())
+					.level(bpPriority.getLevel())
+					.code(bpPriority.getCode())
+					.description(bpPriority.getDescription())
+					.version(bpPriority.getVersion() != null ? bpPriority.getVersion() + 1 : 1)
+					.ticketType(bpPriority.getTicketType())
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(bpPriority.getCreatedBy())
+					.updatedBy((request.getDeletedBy() != null) ? Long.valueOf(request.getDeletedBy()) : bpPriority.getUpdatedBy())
+					.build();
+			bPPriorityRepository.save(newPriority);
+
+			configurationChangeService.addConfigurationChangeRequest(newPriority.getConfiguration(), newPriority.getPriorityId(), newPriority.getPriorityId(),
+					Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
+					newPriority.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newPriority.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+
 			Long companyId = bpPriority.getConfiguration() != null
 					&& bpPriority.getConfiguration().getBusinessPartner() != null
 					&& bpPriority.getConfiguration().getBusinessPartner().getCompany() != null
@@ -551,8 +638,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -562,7 +649,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(priorityId);
+					entityId = Long.valueOf(request.getPriorityId());
 				} catch (Exception ignore) {
 				}
 				if (bpPriority != null && bpPriority.getConfiguration() != null 
@@ -572,7 +659,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -582,7 +669,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(priorityId);
+					entityId = Long.valueOf(request.getPriorityId());
 				} catch (Exception ignore) {
 				}
 				if (bpPriority != null && bpPriority.getConfiguration() != null 
@@ -592,7 +679,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Priority", "BPPriority",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerPriorityConfiguration method in BusinessPartnerService");
@@ -610,7 +697,7 @@ public class BusinessPartnerService {
 				ACTIVE);
 		if (hasSla) {
 			throw new FlickzzDeskException(INVALID_FIELD,
-					bpPriority.getCode() + " cannot be be deleted, as it has SLA configured");
+					bpPriority.getCode() + " cannot be be deleted, as it associates SLA configured");
 		}
 	}
 
@@ -634,7 +721,7 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public List<BPPriorityVO> getBusinessPartnerPriorityConfiguration(Long businessPartnerId) {
+	public List<BPPriorityVO> getBusinessPartnerPriorityConfiguration(Long businessPartnerId, Boolean fetchActive) {
 		log.info(generateLog("getBusinessPartnerPriorityConfiguration", this.getClass().getName()));
 		try {
 
@@ -646,14 +733,17 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(businessPartnerId);
 
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPPriority> priorities = bPPriorityRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
+			if(fetchActive) {
+				return priorities.stream().filter(p -> p.getIsActive()).map(mapper::toBPPriorityVo).toList();
+			}
 			return priorities.stream().map(mapper::toBPPriorityVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -694,7 +784,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(request.getBusinessPartnerId());
 
 			BPConfiguration config = new BPConfiguration();
 
@@ -715,7 +805,14 @@ public class BusinessPartnerService {
 				newSnapshot = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
 			} catch (Exception ignore) {
 			}
+			bpSla.setIsActive(INACTIVE);
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
 			bpSlaRepository.save(bpSla);
+
+			configurationChangeService.addConfigurationChangeRequest(config, bpSla.getSlaId(), null, Boolean.FALSE, Boolean.TRUE,
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, CREATE,
+					businessPartner.get().getCompany(), request.getCreatedBy(),
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			// Record CREATE audit
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
@@ -735,7 +832,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -756,7 +853,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -778,7 +875,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -799,14 +896,14 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(valueOf, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(valueOf);
 
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPSla> slas = bpSlaRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return slas.stream().map(mapper::toBPSlaVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -820,6 +917,7 @@ public class BusinessPartnerService {
 
 		log.info(generateLog("updateBusinessPartnerSLAConfiguration", this.getClass().getName()));
 		BPSla bpSla = null;
+		BPSla oldSla = null;
 		try {
 			if (request == null || request.getSlaId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
@@ -829,67 +927,54 @@ public class BusinessPartnerService {
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
+			} else if (existingSla.get().getIsUnderApproval() != null && existingSla.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"SLA change is already under approval. Please wait for the approval process to complete.");
 			}
 
-			bpSla = existingSla.get();
-			
-			// Capture old values before update
+			oldSla = existingSla.get();
+
 			String oldValue = null;
 			try {
-				oldValue = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
+				oldValue = objectMapper.writeValueAsString(buildSlaSnapshot(oldSla));
 			} catch (Exception ignore) {
 			}
-			
-			// Track changed fields
+
 			Map<String, Object> changedFields = new HashMap<>();
-			if (!Objects.equals(bpSla.getFirstResponseTime(), request.getFirstResponseTime())) {
-				changedFields.put("firstResponseTime", true);
-			}
-			if (!Objects.equals(bpSla.getFirstResponseTerm(), request.getFirstResponseTerm())) {
-				changedFields.put("firstResponseTerm", true);
-			}
-			if (!Objects.equals(bpSla.getResolutionTime(), request.getResolutionTime())) {
-				changedFields.put("resolutionTime", true);
-			}
-			if (!Objects.equals(bpSla.getResolutionTerm(), request.getResolutionTerm())) {
-				changedFields.put("resolutionTerm", true);
-			}
-			if (!Objects.equals(bpSla.getUpdateFrequency(), request.getUpdateFrequency())) {
-				changedFields.put("updateFrequency", true);
-			}
-			if (!Objects.equals(bpSla.getUpdateFrequencyTerm(), request.getUpdateFrequencyTerm())) {
-				changedFields.put("updateFrequencyTerm", true);
-			}
-			if (!Objects.equals(bpSla.getUpdatedBy(), request.getUpdatedBy())) {
-				changedFields.put("updatedBy", true);
-			}
-			
-			// Update the SLA
-			bpSla.setFirstResponseTime(request.getFirstResponseTime());
-			bpSla.setFirstResponseTerm(request.getFirstResponseTerm());
-			bpSla.setResolutionTime(request.getResolutionTime());
-			bpSla.setResolutionTerm(request.getResolutionTerm());
-			bpSla.setUpdateFrequency(request.getUpdateFrequency());
-			bpSla.setUpdateFrequencyTerm(request.getUpdateFrequencyTerm());
-			bpSla.setUpdatedBy(request.getUpdatedBy());
+			addChangedField(changedFields, "firstResponseTime", oldSla.getFirstResponseTime(), request.getFirstResponseTime());
+			addChangedField(changedFields, "firstResponseTerm", oldSla.getFirstResponseTerm(), request.getFirstResponseTerm());
+			addChangedField(changedFields, "resolutionTime", oldSla.getResolutionTime(), request.getResolutionTime());
+			addChangedField(changedFields, "resolutionTerm", oldSla.getResolutionTerm(), request.getResolutionTerm());
+			addChangedField(changedFields, "updateFrequency", oldSla.getUpdateFrequency(), request.getUpdateFrequency());
+			addChangedField(changedFields, "updateFrequencyTerm", oldSla.getUpdateFrequencyTerm(), request.getUpdateFrequencyTerm());
+			addChangedField(changedFields, "updatedBy", oldSla.getUpdatedBy(), request.getUpdatedBy());
+
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
 			bpSlaRepository.save(bpSla);
+
+			BPSla newSla = mapper.toBPSla(request, oldSla.getConfiguration(), oldSla.getPriority());
+			newSla.setCreatedBy(oldSla.getCreatedBy());
+			newSla.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : oldSla.getUpdatedBy());
+			newSla.setIsActive(INACTIVE);
+			newSla.setIsUnderApproval(UNDER_APPROVAL);
+			newSla.setVersion(oldSla.getVersion() != null ? oldSla.getVersion() + 1 : INITIAL_VERSION);
+			newSla = bpSlaRepository.save(newSla);
+
+			bpSla = newSla;
+
+			configurationChangeService.addConfigurationChangeRequest(oldSla.getConfiguration(), newSla.getSlaId(), oldSla.getSlaId(),
+					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, UPDATE,
+					oldSla.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
+					oldSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
-				String newSnapshot = null;
-				try {
-					newSnapshot = objectMapper.writeValueAsString(buildSlaSnapshot(bpSla));
-				} catch (Exception ignore) {
-				}
-				String changedStr = null;
-				try {
-					changedStr = objectMapper.writeValueAsString(changedFields);
-				} catch (Exception ignore) {
-				}
+				String newSnapshot = safeSerialize(buildSlaSnapshot(newSla));
+				String changedStr = safeSerialize(changedFields);
 				Long companyId = null;
 				try {
-					if (bpSla.getConfiguration() != null && bpSla.getConfiguration().getBusinessPartner() != null
-						&& bpSla.getConfiguration().getBusinessPartner().getCompany() != null) {
+					if (oldSla.getConfiguration() != null && oldSla.getConfiguration().getBusinessPartner() != null
+						&& oldSla.getConfiguration().getBusinessPartner().getCompany() != null) {
 						companyId = bpSla.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
 					}
 				} catch (Exception ignore) {
@@ -901,7 +986,7 @@ public class BusinessPartnerService {
 						oldValue,
 						changedStr,
 						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 						companyId,
 						SUCCESS,
 						null));
@@ -944,7 +1029,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -984,7 +1069,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSLAConfiguration method in BusinessPartnerService", e);
@@ -992,15 +1077,18 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerSLAConfiguration(String slaId, Long userId) {
+	public void deleteBusinessPartnerSLAConfiguration(BpConfigRequestVO request) {
 
 		log.info(generateLog("deleteBusinessPartnerSLAConfiguration", this.getClass().getName()));
 		BPSla bpSla = null;
 		try {
-			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(Long.valueOf(slaId), ACTIVE);
+			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(Long.valueOf(request.getSlaId()), ACTIVE);
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
+			} else if (existingSla.get().getIsUnderApproval() != null && existingSla.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"SLA change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpSla = existingSla.get();
@@ -1012,7 +1100,33 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 
-			bpSlaRepository.delete(bpSla);
+			bpSla.setIsUnderApproval(UNDER_APPROVAL);
+			bpSlaRepository.save(bpSla);
+
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPSla newSla = BPSla.builder()
+					.configuration(bpSla.getConfiguration())
+					.priority(bpSla.getPriority())
+					.firstResponseTime(bpSla.getFirstResponseTime())
+					.firstResponseTerm(bpSla.getFirstResponseTerm())
+					.resolutionTime(bpSla.getResolutionTime())
+					.resolutionTerm(bpSla.getResolutionTerm())
+					.updateFrequency(bpSla.getUpdateFrequency())
+					.updateFrequencyTerm(bpSla.getUpdateFrequencyTerm())
+					.version(bpSla.getVersion() != null ? bpSla.getVersion() + 1 : 1)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(bpSla.getCreatedBy())
+					.updatedBy((request.getDeletedBy() != null) ? Long.valueOf(request.getDeletedBy()) : bpSla.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newSla.setSlaId(null);
+			bpSlaRepository.save(newSla);
+
+			configurationChangeService.addConfigurationChangeRequest(newSla.getConfiguration(), newSla.getSlaId(), newSla.getSlaId(),
+					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, DELETE,
+					newSla.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newSla.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1029,8 +1143,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -1040,7 +1154,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(slaId);
+					entityId = Long.valueOf(request.getSlaId());
 				} catch (Exception ignore) {
 				}
 				if (bpSla != null && bpSla.getConfiguration() != null 
@@ -1050,7 +1164,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1060,7 +1174,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(slaId);
+					entityId = Long.valueOf(request.getSlaId());
 				} catch (Exception ignore) {
 				}
 				if (bpSla != null && bpSla.getConfiguration() != null 
@@ -1070,7 +1184,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SLA", "BPSla",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSLAConfiguration method in BusinessPartnerService");
@@ -1114,7 +1228,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(request.getBusinessPartnerId());
 
 			BPConfiguration config = new BPConfiguration();
 
@@ -1141,7 +1255,14 @@ public class BusinessPartnerService {
 				newSnapshot = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
 			} catch (Exception ignore) {
 			}
+			bpCategory.setIsActive(INACTIVE);
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
 			bpCategoryRepository.save(bpCategory);
+
+			configurationChangeService.addConfigurationChangeRequest(config, bpCategory.getCategoryId(), null, Boolean.FALSE, Boolean.FALSE,
+					Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, CREATE,
+					businessPartner.get().getCompany(), request.getCreatedBy(),
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			if (request.getSubCategories() != null && !request.getSubCategories().isEmpty()) {
 				for (String subCategoryName : request.getSubCategories()) {
@@ -1165,7 +1286,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1181,7 +1302,7 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory", null, CREATE,
-					attempted, null, null, request != null ? request.getCreatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
+					attempted, null, null, request != null ? request.getCreatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), request != null ? request.getOrgId() : null, FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1198,7 +1319,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -1221,76 +1342,86 @@ public class BusinessPartnerService {
 			if (existingCategory.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
+			} else if (existingCategory.get().getIsUnderApproval() != null && existingCategory.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Category change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			bpCategory = existingCategory.get();
-			
-			// Capture old values before update
-			String oldValue = null;
-			try {
-				oldValue = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
-			} catch (Exception ignore) {
-			}
-			
-			// Track changed fields
-			Map<String, Object> changedFields = new HashMap<>();
-			if (!bpCategory.getCategoryName().equals(request.getCategoryName())) {
-				changedFields.put("categoryName", true);
-			}
-			if (!Objects.equals(bpCategory.getSubCategories().stream().map(BPSubCategory::getSubCategoryName).toList(), request.getSubCategories())) {
-				changedFields.put("subCategories", true);
-			}
-			if (!Objects.equals(bpCategory.getUpdatedBy(), request.getUpdatedBy())) {
-				changedFields.put("updatedBy", true);
-			}
-			
-			// Update the category
-			bpCategory.setCategoryName(request.getCategoryName());
-			bpCategory.setUpdatedBy(request.getUpdatedBy());
-			bpCategoryRepository.save(bpCategory);
 
+			String trimmedCategoryName = request.getCategoryName() == null ? null : request.getCategoryName().trim();
+			if (trimmedCategoryName == null || trimmedCategoryName.isEmpty()) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), CATEGORY));
+			}
+
+			if (!bpCategory.getCategoryName().equals(trimmedCategoryName)
+					&& bpCategoryRepository.existsByConfigurationConfigurationIdAndCategoryNameAndIsActive(
+						bpCategory.getConfiguration().getConfigurationId(), trimmedCategoryName, ACTIVE)) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), CATEGORY));
+			}
+
+			String oldValue = safeSerialize(buildCategorySnapshot(bpCategory));
+
+			List<String> existingSubCategoryNames = bpCategory.getSubCategories() == null ? Collections.emptyList()
+					: bpCategory.getSubCategories().stream().filter(BPSubCategory::getIsActive)
+						.map(BPSubCategory::getSubCategoryName).toList();
+
+			Set<String> incomingSubCategories = new LinkedHashSet<>();
 			if (request.getSubCategories() != null) {
-				Set<String> incomingSubCategories = new LinkedHashSet<>();
 				for (String subCategoryName : request.getSubCategories()) {
 					if (subCategoryName == null || subCategoryName.trim().isEmpty()) {
 						continue;
 					}
 					incomingSubCategories.add(subCategoryName.trim());
 				}
-
-				validateSubCategoryAssignmentsForRemoval(bpCategory, incomingSubCategories);
-
-				List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
-						.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
-				Set<String> existingNames = existingSubCategories.stream().map(BPSubCategory::getSubCategoryName)
-						.collect(Collectors.toSet());
-
-				for (String subCategoryName : incomingSubCategories) {
-					if (existingNames.contains(subCategoryName)) {
-						continue;
-					}
-					upsertSubCategory(bpCategory, subCategoryName, request.getCreatedBy(), request.getUpdatedBy());
-				}
-
-				for (BPSubCategory subCategory : existingSubCategories) {
-					if (!incomingSubCategories.contains(subCategory.getSubCategoryName())) {
-						bpSubCategoryRepository.delete(subCategory);
-					}
-				}
+			} else {
+				incomingSubCategories.addAll(existingSubCategoryNames);
 			}
+
+			validateSubCategoryAssignmentsForRemoval(bpCategory, incomingSubCategories);
+
+			Long effectiveUpdatedBy = request.getUpdatedBy() != null ? request.getUpdatedBy() : bpCategory.getUpdatedBy();
+			Map<String, Object> changedFields = new HashMap<>();
+			addChangedField(changedFields, "categoryName", bpCategory.getCategoryName(), trimmedCategoryName);
+			addChangedField(changedFields, "subCategories", existingSubCategoryNames,
+					new ArrayList<>(incomingSubCategories));
+			addChangedField(changedFields, "updatedBy", bpCategory.getUpdatedBy(), effectiveUpdatedBy);
+
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
+			bpCategoryRepository.save(bpCategory);
 			
-			// Record UPDATE audit if there are changes
+			BPCategory newCategory = mapper.toBPCategory(request, bpCategory.getConfiguration());
+			newCategory.setCategoryName(trimmedCategoryName);
+			newCategory.setConfiguration(bpCategory.getConfiguration());
+			newCategory.setCreatedBy(bpCategory.getCreatedBy());
+			newCategory.setUpdatedBy(effectiveUpdatedBy);
+			newCategory.setIsActive(INACTIVE);
+			newCategory.setIsUnderApproval(UNDER_APPROVAL);
+			newCategory.setVersion(bpCategory.getVersion() != null ? bpCategory.getVersion() + 1 : INITIAL_VERSION);
+			newCategory = bpCategoryRepository.save(newCategory);
+
+			List<BPSubCategory> newSubCategories = new ArrayList<>();
+			for (String subCategoryName : incomingSubCategories) {
+				BPSubCategory subCategory = BPSubCategory.builder().category(newCategory)
+						.subCategoryName(subCategoryName)
+						.createdBy(bpCategory.getCreatedBy())
+						.updatedBy(effectiveUpdatedBy)
+						.build();
+				subCategory = bpSubCategoryRepository.save(subCategory);
+				newSubCategories.add(subCategory);
+			}
+			newCategory.setSubCategories(newSubCategories);
+
+			configurationChangeService.addConfigurationChangeRequest(bpCategory.getConfiguration(), newCategory.getCategoryId(), bpCategory.getCategoryId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, UPDATE,
+					bpCategory.getConfiguration().getBusinessPartner().getCompany(), effectiveUpdatedBy,
+					bpCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
+			
 			if (!changedFields.isEmpty()) {
-				String newSnapshot = null;
-				try {
-					newSnapshot = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
-				} catch (Exception ignore) {
-				}
-				String changedStr = null;
-				try {
-					changedStr = objectMapper.writeValueAsString(changedFields);
-				} catch (Exception ignore) {
-				}
+				String newSnapshot = safeSerialize(buildCategorySnapshot(newCategory));
+				String changedStr = safeSerialize(changedFields);
 				Long companyId = null;
 				try {
 					if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
@@ -1299,65 +1430,27 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy, request.getIsUpdatedByAdmin()) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
-						bpCategory.getCategoryId(),
-						UPDATE,
-						newSnapshot,
-						oldValue,
-						changedStr,
-						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
-						companyId,
-						SUCCESS,
-						null));
+					newCategory.getCategoryId(),
+					UPDATE,
+					newSnapshot,
+					oldValue,
+					changedStr,
+					effectiveUpdatedBy,
+					userName,
+					companyId,
+					SUCCESS,
+					null));
 			}
-			
-			return mapper.toBPCategoryVo(bpCategory);
+
+			return mapper.toBPCategoryVo(newCategory);
 		} catch (FlickzzDeskException e) {
-			// Attempt to save error audit
 			try {
-				Long entityId = null;
+				Long entityId = bpCategory != null ? bpCategory.getCategoryId() : null;
 				Long companyId = null;
 				String oldSnap = null;
 				if (bpCategory != null) {
-					entityId = bpCategory.getCategoryId();
-					try {
-						oldSnap = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
-					} catch (Exception ignore) {
-					}
-					try {
-						if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
-							&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
-							companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
-						}
-					} catch (Exception ignore) {
-					}
-				}
-				String newSnap = null;
-				if (request != null) {
-					try {
-						Map<String, Object> attempted = new HashMap<>();
-						attempted.put("categoryName", request.getCategoryName());
-						attempted.put("updatedBy", request.getUpdatedBy());
-						newSnap = objectMapper.writeValueAsString(attempted);
-					} catch (Exception ignore) {
-					}
-				}
-				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
-						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
-			} catch (Exception ignore) {
-			}
-			throw e;
-		} catch (Exception e) {
-			// Attempt to save error audit
-			try {
-				Long entityId = null;
-				Long companyId = null;
-				String oldSnap = null;
-				if (bpCategory != null) {
-					entityId = bpCategory.getCategoryId();
 					try {
 						oldSnap = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
 					} catch (Exception ignore) {
@@ -1382,7 +1475,43 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null,
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy(), request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
+			throw e;
+		} catch (Exception e) {
+			try {
+				Long entityId = bpCategory != null ? bpCategory.getCategoryId() : null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (bpCategory != null) {
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildCategorySnapshot(bpCategory));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (bpCategory.getConfiguration() != null && bpCategory.getConfiguration().getBusinessPartner() != null
+							&& bpCategory.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = bpCategory.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("categoryName", request.getCategoryName());
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						request != null ? request.getUpdatedBy() : null,
+						request != null && request.getUpdatedBy() != null ? commonService.loadUserNameByUserId(request.getUpdatedBy(), request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerCategoryConfiguration method in BusinessPartnerService", e);
@@ -1390,12 +1519,12 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerCategoryConfiguration(String categoryId, Long userId) {
+	public void deleteBusinessPartnerCategoryConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerCategoryConfiguration", this.getClass().getName()));
 		BPCategory bpCategory = null;
 		try {
 			Optional<BPCategory> existingCategory = bpCategoryRepository
-					.findByCategoryIdAndIsActive(Long.valueOf(categoryId), ACTIVE);
+					.findByCategoryIdAndIsActive(Long.valueOf(request.getCategoryId()), ACTIVE);
 			if (existingCategory.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
@@ -1412,14 +1541,41 @@ public class BusinessPartnerService {
 
 			validateSubCategoryAssignmentsForDeletion(bpCategory);
 
-			bpCategoryRepository.delete(bpCategory);
+			bpCategory.setIsUnderApproval(UNDER_APPROVAL);
+			bpCategoryRepository.save(bpCategory);
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPCategory newCategory = BPCategory.builder()
+					.categoryName(bpCategory.getCategoryName())
+					.configuration(bpCategory.getConfiguration())
+					.createdBy(bpCategory.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : bpCategory.getUpdatedBy())
+					.isActive(INACTIVE)
+					.version(bpCategory.getVersion() != null ? bpCategory.getVersion() + 1 : INITIAL_VERSION)
+					.build();
+			// ensure new entity will be inserted (no id)
+			newCategory.setCategoryId(null);
+			newCategory = bpCategoryRepository.save(newCategory);
+
 			List<BPSubCategory> existingSubCategories = bpSubCategoryRepository
 					.findByCategoryCategoryIdAndIsActive(bpCategory.getCategoryId(), ACTIVE);
+			List<BPSubCategory> newSubCategories = new ArrayList<>();
 			for (BPSubCategory subCategory : existingSubCategories) {
-				subCategory.setIsActive(Boolean.FALSE);
-				subCategory.setUpdatedBy(userId);
-				bpSubCategoryRepository.save(subCategory);
+				BPSubCategory newSub = BPSubCategory.builder().category(newCategory)
+					.subCategoryName(subCategory.getSubCategoryName())
+					.createdBy(subCategory.getCreatedBy())
+					.updatedBy(request.getDeletedBy())
+					.isActive(Boolean.FALSE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.build();
+				newSub = bpSubCategoryRepository.save(newSub);
+				newSubCategories.add(newSub);
 			}
+			newCategory.setSubCategories(newSubCategories);
+
+			configurationChangeService.addConfigurationChangeRequest(newCategory.getConfiguration(), newCategory.getCategoryId(), bpCategory.getCategoryId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, Boolean.FALSE, DELETE,
+					newCategory.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newCategory.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -1436,8 +1592,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -1447,7 +1603,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(categoryId);
+					entityId = Long.valueOf(request.getCategoryId());
 				} catch (Exception ignore) {
 				}
 				if (bpCategory != null && bpCategory.getConfiguration() != null 
@@ -1457,7 +1613,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -1467,7 +1623,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(categoryId);
+					entityId = Long.valueOf(request.getCategoryId());
 				} catch (Exception ignore) {
 				}
 				if (bpCategory != null && bpCategory.getConfiguration() != null 
@@ -1477,7 +1633,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Category", "BPCategory",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerCategoryConfiguration method in BusinessPartnerService");
@@ -1581,13 +1737,13 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(businessPartnerId);
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPCategory> categories = bpCategoryRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return categories.stream().map(mapper::toBPCategoryVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -1620,7 +1776,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(request.getBusinessPartnerId());
 
 			BPConfiguration config = new BPConfiguration();
 			if (!existingConfig.isPresent()) {
@@ -1660,8 +1816,14 @@ public class BusinessPartnerService {
 
 			BPSupportGroup supportGroup = BPSupportGroup.builder().configuration(config)
 					.groupName(request.getGroupName().trim()).createdBy(request.getCreatedBy())
+					.isActive(INACTIVE).isUnderApproval(UNDER_APPROVAL)
 					.updatedBy(request.getUpdatedBy()).build();
 			bpSupportGroupRepository.save(supportGroup);
+
+			configurationChangeService.addConfigurationChangeRequest(config, supportGroup.getSupportGroupId(), null, Boolean.FALSE, Boolean.FALSE,
+					Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, CREATE,
+					businessPartner.get().getCompany(), request.getCreatedBy(),
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			for (Long agentId : agentIds) {
 				AgentMaster agent = agentMasterRepository.findById(agentId)
@@ -1747,7 +1909,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -1767,7 +1929,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -1787,7 +1949,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -1799,12 +1961,14 @@ public class BusinessPartnerService {
 	public BPSupportGroupVO updateBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("updateBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
 		BPSupportGroup supportGroup = null;
+		Long auditUserId = null;
 		try {
 			if (request == null || request.getSupportGroupId() == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
 			}
-			if (request.getGroupName() == null || request.getGroupName().trim().isEmpty()) {
+			String trimmedGroupName = request.getGroupName() == null ? null : request.getGroupName().trim();
+			if (trimmedGroupName == null || trimmedGroupName.isEmpty()) {
 				throw new FlickzzDeskException(INVALID_FIELD,
 						getDescription(INVALID_FIELD.getDescription(), "Group name"));
 			}
@@ -1817,22 +1981,22 @@ public class BusinessPartnerService {
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			} else if (existingGroup.get().getIsUnderApproval() != null && existingGroup.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Support group change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			supportGroup = existingGroup.get();
+			Long effectiveUpdatedBy = request.getUpdatedBy() != null ? request.getUpdatedBy() : supportGroup.getUpdatedBy();
+			auditUserId = effectiveUpdatedBy;
+			String oldValue = safeSerialize(buildSupportGroupSnapshot(supportGroup,
+					supportGroup.getMembers().stream().filter(BPSupportGroupMember::getIsActive).map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
+					supportGroup.getManagers().stream().filter(m -> Boolean.TRUE.equals(m.getIsActive()) && Boolean.TRUE.equals(m.getIsInternal())).map(manager -> manager.getAgent().getAgentId()).collect(Collectors.toSet()),
+					supportGroup.getManagers().stream().filter(m -> Boolean.TRUE.equals(m.getIsActive()) && Boolean.TRUE.equals(m.getIsBP())).map(manager -> manager.getAgent().getAgentId()).collect(Collectors.toSet())));
 
-			// Track changed fields
 			Map<String, Object> changedFields = new HashMap<>();
-			if (!supportGroup.getGroupName().equals(request.getGroupName().trim())) {
-				changedFields.put("groupName", true);
-			}
-			if (!Objects.equals(supportGroup.getUpdatedBy(), request.getUpdatedBy())) {
-				changedFields.put("updatedBy", true);
-			}
-			
-			supportGroup.setGroupName(request.getGroupName().trim());
-			supportGroup.setUpdatedBy(request.getUpdatedBy());
-			bpSupportGroupRepository.save(supportGroup);
+			addChangedField(changedFields, "groupName", supportGroup.getGroupName(), trimmedGroupName);
+			addChangedField(changedFields, "updatedBy", supportGroup.getUpdatedBy(), effectiveUpdatedBy);
 
 			Set<Long> incomingAgentIds = new LinkedHashSet<>();
 			for (Long agentId : request.getAgents()) {
@@ -1852,39 +2016,6 @@ public class BusinessPartnerService {
 				}
 			}
 
-			List<BPSupportGroupMember> existingMembers = bpSupportGroupMemberRepository
-					.findBySupportGroupSupportGroupId(supportGroup.getSupportGroupId());
-			Set<Long> existingAgentIds = existingMembers.stream().map(member -> member.getAgent().getAgentId())
-					.collect(Collectors.toSet());
-
-			if (!existingAgentIds.equals(incomingAgentIds)) {
-				changedFields.put("members", true);
-			}
-
-			for (Long agentId : incomingAgentIds) {
-				Optional<BPSupportGroupMember> existingMember = bpSupportGroupMemberRepository
-						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), agentId);
-				if (existingMember.isPresent()) {
-					existingMember.get().setIsActive(Boolean.TRUE);
-					bpSupportGroupMemberRepository.save(existingMember.get());
-				} else {
-					AgentMaster agent = agentMasterRepository.findById(agentId)
-							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
-					BPSupportGroupMember member = BPSupportGroupMember.builder().supportGroup(supportGroup).agent(agent)
-							.isGroupLead(Boolean.FALSE).build();
-					bpSupportGroupMemberRepository.save(member);
-				}
-			}
-
-			for (BPSupportGroupMember member : existingMembers) {
-				if (!incomingAgentIds.contains(member.getAgent().getAgentId())) {
-					member.setIsActive(Boolean.FALSE);
-					bpSupportGroupMemberRepository.save(member);
-				}
-			}
-
-			// Handle managers for update: reactivate/add incoming managers and deactivate removed ones
 			Set<Long> incomingInternalManagerIds = new LinkedHashSet<>();
 			if (request.getManagerInternalAgents() != null) {
 				for (Long mId : request.getManagerInternalAgents()) {
@@ -1899,111 +2030,80 @@ public class BusinessPartnerService {
 				}
 			}
 
-			Set<Long> existingInternalManagerIds = existingGroup.get().getManagers().stream()
-					.filter(BPSupportGroupManager::getIsInternal)
+			Set<Long> existingActiveAgentIds = supportGroup.getMembers().stream()
+					.filter(BPSupportGroupMember::getIsActive)
+					.map(member -> member.getAgent().getAgentId())
+					.collect(Collectors.toSet());
+			if (!existingActiveAgentIds.equals(incomingAgentIds)) {
+				changedFields.put("members", true);
+			}
+
+			Set<Long> existingActiveInternalManagerIds = supportGroup.getManagers().stream()
+					.filter(m -> Boolean.TRUE.equals(m.getIsActive()) && Boolean.TRUE.equals(m.getIsInternal()))
 					.map(manager -> manager.getAgent().getAgentId())
 					.collect(Collectors.toSet());
-
-			if (!existingInternalManagerIds.equals(incomingInternalManagerIds)) {
+			if (!existingActiveInternalManagerIds.equals(incomingInternalManagerIds)) {
 				changedFields.put("internalManagers", true);
 			}
 
-			Set<Long> existingBpManagerIds = existingGroup.get().getManagers().stream()
-					.filter(BPSupportGroupManager::getIsBP)
+			Set<Long> existingActiveBpManagerIds = supportGroup.getManagers().stream()
+					.filter(m -> Boolean.TRUE.equals(m.getIsActive()) && Boolean.TRUE.equals(m.getIsBP()))
 					.map(manager -> manager.getAgent().getAgentId())
 					.collect(Collectors.toSet());
-
-
-			// Capture old values before update
-			String oldValue = null;
-			try {
-				oldValue = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, existingMembers.stream().map(BPSupportGroupMember::getAgent).map(AgentMaster::getAgentId).collect(Collectors.toSet()), existingInternalManagerIds, existingBpManagerIds));
-			} catch (Exception ignore) {
-			}
-
-			if (!existingBpManagerIds.equals(incomingBpManagerIds)) {
+			if (!existingActiveBpManagerIds.equals(incomingBpManagerIds)) {
 				changedFields.put("bpManagers", true);
 			}
 
-			// validate managers exist (if provided)
-			Set<Long> allIncomingManagers = new LinkedHashSet<>();
-			allIncomingManagers.addAll(incomingInternalManagerIds);
-			allIncomingManagers.addAll(incomingBpManagerIds);
-			for (Long managerId : allIncomingManagers) {
-				if (managerId == null) continue;
-				Optional<AgentMaster> am = agentMasterRepository.findById(managerId);
-				if (am.isEmpty() || !am.get().getIsActive()) {
-					throw new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
-				}
+			supportGroup.setIsUnderApproval(ACTIVE);
+			bpSupportGroupRepository.save(supportGroup);
+
+			BPSupportGroup newSupportGroup = BPSupportGroup.builder()
+					.configuration(supportGroup.getConfiguration())
+					.groupName(trimmedGroupName)
+					.createdBy(supportGroup.getCreatedBy())
+					.updatedBy(effectiveUpdatedBy)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.build();
+			newSupportGroup.setIsActive(INACTIVE);
+			newSupportGroup.setVersion(supportGroup.getVersion() != null ? supportGroup.getVersion() + 1 : INITIAL_VERSION);
+			newSupportGroup = bpSupportGroupRepository.save(newSupportGroup);
+
+			for (Long agentId : incomingAgentIds) {
+				AgentMaster agent = agentMasterRepository.findById(agentId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupMember member = BPSupportGroupMember.builder().supportGroup(newSupportGroup).agent(agent)
+						.isGroupLead(Boolean.FALSE).build();
+				bpSupportGroupMemberRepository.save(member);
 			}
 
-			List<BPSupportGroupManager> existingManagers = bpSupportGroupManagerRepository
-					.findBySupportGroupSupportGroupId(supportGroup.getSupportGroupId());
-			Set<Long> existingManagerIds = existingManagers.stream().map(m -> m.getAgent().getAgentId())
-					.collect(Collectors.toSet());
-
-			// add or reactivate incoming internal managers
 			for (Long managerId : incomingInternalManagerIds) {
-				Optional<BPSupportGroupManager> existingManager = bpSupportGroupManagerRepository
-						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), managerId);
-				if (existingManager.isPresent()) {
-					BPSupportGroupManager mgr = existingManager.get();
-					mgr.setIsActive(Boolean.TRUE);
-					mgr.setIsInternal(Boolean.TRUE);
-					mgr.setIsBP(Boolean.FALSE);
-					bpSupportGroupManagerRepository.save(mgr);
-				} else {
-					AgentMaster agent = agentMasterRepository.findById(managerId)
-							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
-					BPSupportGroupManager mgr = BPSupportGroupManager.builder().supportGroup(supportGroup)
-							.agent(agent).isInternal(Boolean.TRUE).isBP(Boolean.FALSE).build();
-					bpSupportGroupManagerRepository.save(mgr);
-				}
+				AgentMaster agent = agentMasterRepository.findById(managerId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupManager manager = BPSupportGroupManager.builder().supportGroup(newSupportGroup)
+						.agent(agent).isInternal(Boolean.TRUE).isBP(Boolean.FALSE).build();
+				bpSupportGroupManagerRepository.save(manager);
 			}
 
-			// add or reactivate incoming BP managers
 			for (Long managerId : incomingBpManagerIds) {
-				Optional<BPSupportGroupManager> existingManager = bpSupportGroupManagerRepository
-						.findBySupportGroupSupportGroupIdAndAgentAgentId(supportGroup.getSupportGroupId(), managerId);
-				if (existingManager.isPresent()) {
-					BPSupportGroupManager mgr = existingManager.get();
-					mgr.setIsActive(Boolean.TRUE);
-					mgr.setIsBP(Boolean.TRUE);
-					mgr.setIsInternal(Boolean.FALSE);
-					bpSupportGroupManagerRepository.save(mgr);
-				} else {
-					AgentMaster agent = agentMasterRepository.findById(managerId)
-							.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-									getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
-					BPSupportGroupManager mgr = BPSupportGroupManager.builder().supportGroup(supportGroup)
-							.agent(agent).isInternal(Boolean.FALSE).isBP(Boolean.TRUE).build();
-					bpSupportGroupManagerRepository.save(mgr);
-				}
+				AgentMaster agent = agentMasterRepository.findById(managerId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
+				BPSupportGroupManager manager = BPSupportGroupManager.builder().supportGroup(newSupportGroup)
+						.agent(agent).isInternal(Boolean.FALSE).isBP(Boolean.TRUE).build();
+				bpSupportGroupManagerRepository.save(manager);
 			}
 
-			// deactivate removed managers
-			for (BPSupportGroupManager mgr : existingManagers) {
-				Long aid = mgr.getAgent().getAgentId();
-				if (!allIncomingManagers.contains(aid)) {
-					mgr.setIsActive(Boolean.FALSE);
-					bpSupportGroupManagerRepository.save(mgr);
-				}
-			}
+			configurationChangeService.addConfigurationChangeRequest(supportGroup.getConfiguration(), newSupportGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, UPDATE,
+					supportGroup.getConfiguration().getBusinessPartner().getCompany(), effectiveUpdatedBy,
+					supportGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
-			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
-				String newSnapshot = null;
-				try {
-					newSnapshot = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, incomingAgentIds, incomingInternalManagerIds, incomingBpManagerIds));
-				} catch (Exception ignore) {
-				}
-				String changedStr = null;
-				try {
-					changedStr = objectMapper.writeValueAsString(changedFields);
-				} catch (Exception ignore) {
-				}
+				String newSnapshot = safeSerialize(buildSupportGroupSnapshot(newSupportGroup, incomingAgentIds, incomingInternalManagerIds, incomingBpManagerIds));
+				String changedStr = safeSerialize(changedFields);
 				Long companyId = null;
 				try {
 					if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
@@ -2012,68 +2112,27 @@ public class BusinessPartnerService {
 					}
 				} catch (Exception ignore) {
 				}
+				String userName = effectiveUpdatedBy != null ? commonService.loadUserNameByUserId(effectiveUpdatedBy, request.getIsUpdatedByAdmin()) : null;
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
-						supportGroup.getSupportGroupId(),
+						newSupportGroup.getSupportGroupId(),
 						UPDATE,
 						newSnapshot,
 						oldValue,
 						changedStr,
-						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						effectiveUpdatedBy,
+						userName,
 						companyId,
 						SUCCESS,
 						null));
 			}
 
-			return mapper.toSupportGroupVo(supportGroup);
+			return mapper.toSupportGroupVo(newSupportGroup);
 		} catch (FlickzzDeskException e) {
-			// Attempt to save error audit
 			try {
-				Long entityId = null;
+				Long entityId = supportGroup != null ? supportGroup.getSupportGroupId() : null;
 				Long companyId = null;
 				String oldSnap = null;
 				if (supportGroup != null) {
-					entityId = supportGroup.getSupportGroupId();
-					try {
-						oldSnap = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
-								supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal() == Boolean.TRUE) .map(internalManager -> internalManager.getAgent().getAgentId()).collect(Collectors.toSet()),
-								supportGroup.getManagers().stream().filter(manager -> manager.getIsBP() == Boolean.TRUE) .map(bpManager -> bpManager.getAgent().getAgentId()).collect(Collectors.toSet())));
-					} catch (Exception ignore) {
-					}
-					try {
-						if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
-							&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
-							companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
-						}
-					} catch (Exception ignore) {
-					}
-				}
-				String newSnap = null;
-				if (request != null) {
-					try {
-						Map<String, Object> attempted = new HashMap<>();
-						attempted.put("groupName", request.getGroupName());
-						attempted.put("agentCount", request.getAgents() != null ? request.getAgents().size() : 0);
-						attempted.put("updatedBy", request.getUpdatedBy());
-						newSnap = objectMapper.writeValueAsString(attempted);
-					} catch (Exception ignore) {
-					}
-				}
-				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
-						entityId, UPDATE, newSnap, oldSnap, null, 
-						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
-			} catch (Exception ignore) {
-			}
-			throw e;
-		} catch (Exception e) {
-			// Attempt to save error audit
-			try {
-				Long entityId = null;
-				Long companyId = null;
-				String oldSnap = null;
-				if (supportGroup != null) {
-					entityId = supportGroup.getSupportGroupId();
 					try {
 						oldSnap = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
 								supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal() == Boolean.TRUE) .map(internalManager -> internalManager.getAgent().getAgentId()).collect(Collectors.toSet()),
@@ -2101,7 +2160,46 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						auditUserId,
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId, request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getDescription()), e);
+			} catch (Exception ignore) {
+			}
+			throw e;
+		} catch (Exception e) {
+			try {
+				Long entityId = supportGroup != null ? supportGroup.getSupportGroupId() : null;
+				Long companyId = null;
+				String oldSnap = null;
+				if (supportGroup != null) {
+					try {
+						oldSnap = objectMapper.writeValueAsString(buildSupportGroupSnapshot(supportGroup, supportGroup.getMembers().stream().map(member -> member.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsInternal() == Boolean.TRUE) .map(internalManager -> internalManager.getAgent().getAgentId()).collect(Collectors.toSet()),
+								supportGroup.getManagers().stream().filter(manager -> manager.getIsBP() == Boolean.TRUE) .map(bpManager -> bpManager.getAgent().getAgentId()).collect(Collectors.toSet())));
+					} catch (Exception ignore) {
+					}
+					try {
+						if (supportGroup.getConfiguration() != null && supportGroup.getConfiguration().getBusinessPartner() != null
+							&& supportGroup.getConfiguration().getBusinessPartner().getCompany() != null) {
+							companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+						}
+					} catch (Exception ignore) {
+					}
+				}
+				String newSnap = null;
+				if (request != null) {
+					try {
+						Map<String, Object> attempted = new HashMap<>();
+						attempted.put("groupName", request.getGroupName());
+						attempted.put("agentCount", request.getAgents() != null ? request.getAgents().size() : 0);
+						attempted.put("updatedBy", request.getUpdatedBy());
+						newSnap = objectMapper.writeValueAsString(attempted);
+					} catch (Exception ignore) {
+					}
+				}
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
+						entityId, UPDATE, newSnap, oldSnap, null,
+						auditUserId,
+						auditUserId != null ? commonService.loadUserNameByUserId(auditUserId, request.getIsUpdatedByAdmin()) : null, companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2109,15 +2207,18 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerSupportGroupConfiguration(String supportGroupId, Long userId) {
+	public void deleteBusinessPartnerSupportGroupConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
 		BPSupportGroup supportGroup = null;
 		try {
 			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
-					.findBySupportGroupIdAndIsActive(Long.valueOf(supportGroupId), ACTIVE);
+					.findBySupportGroupIdAndIsActive(Long.valueOf(request.getSupportGroupId()), ACTIVE);
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
+			} else if (existingGroup.get().getIsUnderApproval() != null && existingGroup.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Support group change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			supportGroup = existingGroup.get();
@@ -2134,19 +2235,58 @@ public class BusinessPartnerService {
 
 			validateSupportGroupAssignmentForRemoval(supportGroup);
 
-			bpSupportGroupRepository.delete(supportGroup);
+			supportGroup.setIsUnderApproval(ACTIVE);
+			bpSupportGroupRepository.save(supportGroup);
 
-			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPSupportGroup newGroup = BPSupportGroup.builder()
+					.configuration(supportGroup.getConfiguration())
+					.groupName(supportGroup.getGroupName())
+					.version(supportGroup.getVersion() != null ? supportGroup.getVersion() + 1 : 1)
+					.createdBy(supportGroup.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : supportGroup.getUpdatedBy())
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.build();
+			// ensure new entity will be inserted (no id)
+			newGroup.setSupportGroupId(null);
+			newGroup = bpSupportGroupRepository.save(newGroup);
+
+			// copy members (mark inactive) and attach to new group
+			List<BPSupportGroupMember> members = bpSupportGroupMemberRepository.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			List<BPSupportGroupMember> newMembers = new ArrayList<>();
 			for (BPSupportGroupMember member : members) {
-				bpSupportGroupMemberRepository.delete(member);
+				BPSupportGroupMember newMember = BPSupportGroupMember.builder()
+					.supportGroup(newGroup)
+					.agent(member.getAgent())
+					.isGroupLead(member.getIsGroupLead())
+					.isActive(Boolean.FALSE)
+					.build();
+				newMember = bpSupportGroupMemberRepository.save(newMember);
+				newMembers.add(newMember);
 			}
+			newGroup.setMembers(newMembers);
 
-			List<BPSupportGroupManager> managers = bpSupportGroupManagerRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			// copy managers (mark inactive) and attach to new group
+			List<BPSupportGroupManager> managers = bpSupportGroupManagerRepository.findBySupportGroupSupportGroupIdAndIsActive(supportGroup.getSupportGroupId(), ACTIVE);
+			List<BPSupportGroupManager> newManagers = new ArrayList<>();
 			for (BPSupportGroupManager manager : managers) {
-				bpSupportGroupManagerRepository.delete(manager);
+				BPSupportGroupManager newManager = BPSupportGroupManager.builder()
+					.supportGroup(newGroup)
+					.agent(manager.getAgent())
+					.isInternal(manager.getIsInternal())
+					.isBP(manager.getIsBP())
+					.isActive(Boolean.FALSE)
+					.build();
+				newManager = bpSupportGroupManagerRepository.save(newManager);
+				newManagers.add(newManager);
 			}
+			newGroup.setManagers(newManagers);
+
+			configurationChangeService.addConfigurationChangeRequest(newGroup.getConfiguration(), newGroup.getSupportGroupId(), supportGroup.getSupportGroupId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, Boolean.FALSE, DELETE,
+					newGroup.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newGroup.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 
 			// Record DELETE audit
 			Long companyId = null;
@@ -2163,8 +2303,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -2174,7 +2314,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(supportGroupId);
+					entityId = request.getSupportGroupId();
 				} catch (Exception ignore) {
 				}
 				if (supportGroup != null && supportGroup.getConfiguration() != null 
@@ -2184,7 +2324,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2194,7 +2334,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(supportGroupId);
+					entityId = Long.valueOf(request.getSupportGroupId());
 				} catch (Exception ignore) {
 				}
 				if (supportGroup != null && supportGroup.getConfiguration() != null 
@@ -2204,7 +2344,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "SupportGroup", "BPSupportGroup",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerSupportGroupConfiguration method in BusinessPartnerService");
@@ -2255,13 +2395,13 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(businessPartnerId);
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPSupportGroup> groups = bpSupportGroupRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return groups.stream().map(mapper::toNoBakcRefSupportGroupVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -2283,13 +2423,13 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(valueOf, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(valueOf);
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPCategory> categories = bpCategoryRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 
 			List<BPSubCategoryVO> subCategoryVOs = new ArrayList<>();
 			for (BPCategory category : categories) {
@@ -2335,7 +2475,7 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(request.getBusinessPartnerId(), ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(request.getBusinessPartnerId());
 			BPConfiguration config = existingConfig.orElseGet(() -> {
 				BPConfiguration newConfig = new BPConfiguration();
 				newConfig.setBusinessPartner(businessPartner.get());
@@ -2392,12 +2532,15 @@ public class BusinessPartnerService {
 			BPAssignment assignment;
 
 			if (existingAssignment.isPresent()) {
-				assignment = existingAssignment.get();
-				assignment.setIsActive(Boolean.TRUE);
-				assignment.setUpdatedBy(request.getUpdatedBy());
+//				assignment = existingAssignment.get();
+//				assignment.setIsActive(Boolean.TRUE);
+//				assignment.setUpdatedBy(request.getUpdatedBy());
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for support group and sub category"));
 			} else {
 				assignment = BPAssignment.builder().configuration(config).subCategory(subCategory.get())
 						.supportGroup(supportGroup.get()).createdBy(request.getCreatedBy())
+						.isActive(INACTIVE).isUnderApproval(UNDER_APPROVAL)
 						.updatedBy(request.getUpdatedBy()).build();
 			}
 			
@@ -2408,6 +2551,11 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 			bpAssignmentRepository.save(assignment);
+
+			configurationChangeService.addConfigurationChangeRequest(config, assignment.getAssignmentId(), null, Boolean.FALSE, Boolean.FALSE,
+					Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, CREATE,
+					businessPartner.get().getCompany(), request.getCreatedBy(),
+					businessPartner.get().getMappedCompany(), request.getIsCreatedByAdmin(), request.getRemarks());
 
 			// Record CREATE audit
 			java.util.Map<String, Object> changed = new java.util.HashMap<>();
@@ -2423,7 +2571,7 @@ public class BusinessPartnerService {
 					null,
 					changedStr,
 					request.getCreatedBy(),
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request.getOrgId(),
 					SUCCESS,
 					null));
@@ -2441,7 +2589,7 @@ public class BusinessPartnerService {
 			}
 			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment", null, CREATE,
 					attempted, null, null, request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()), (request != null ? request.getOrgId() : null), FAILED, e.getDescription()), e);
 				throw e;
 		} catch (Exception e) {
 			String attempted = null;
@@ -2459,7 +2607,7 @@ public class BusinessPartnerService {
 					null,
 					null,
 					request != null ? request.getCreatedBy() : null,
-					loadUserNameByUserId(Long.valueOf(request.getCreatedBy())),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getCreatedBy()), request.getIsCreatedByAdmin()),
 					request != null ? request.getOrgId() : null,
 					FAILED,
 					e.getMessage()), e);
@@ -2478,10 +2626,13 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(request.getSupportGroupId(), ACTIVE);
+					.findByAssignmentIdAndIsActive(request.getAssignmentId(), ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			} else if (existingAssignment.get().getIsUnderApproval() != null && existingAssignment.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Assignment change is already under approval. Please wait for the approval process to complete.");
 			}
 
 			assignment = existingAssignment.get();
@@ -2520,15 +2671,34 @@ public class BusinessPartnerService {
 						getDescription(ALREADY_EXISTS.getDescription(), "Assignment for sub category"));
 			}
 
-			assignment.setUpdatedBy(request.getUpdatedBy());
-			assignment.setSubCategory(targetSubCategory.get());
+			assignment.setIsUnderApproval(UNDER_APPROVAL);
 			bpAssignmentRepository.save(assignment);
+
+			// Create a new inactive copy for update (leave existing record untouched)
+			BPAssignment newAssignment = BPAssignment.builder()
+					.configuration(assignment.getConfiguration())
+					.subCategory(targetSubCategory.get())
+					.supportGroup(assignment.getSupportGroup())
+					.version(assignment.getVersion() != null ? assignment.getVersion() + 1 : INITIAL_VERSION)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(assignment.getCreatedBy())
+					.updatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : assignment.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newAssignment.setAssignmentId(null);
+			newAssignment = bpAssignmentRepository.save(newAssignment);
+
+			configurationChangeService.addConfigurationChangeRequest(newAssignment.getConfiguration(), newAssignment.getAssignmentId(), assignment.getAssignmentId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, UPDATE,
+					newAssignment.getConfiguration().getBusinessPartner().getCompany(), request.getUpdatedBy(),
+					newAssignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record UPDATE audit if there are changes
 			if (!changedFields.isEmpty()) {
 				String newSnapshot = null;
 				try {
-					newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(assignment));
+					newSnapshot = objectMapper.writeValueAsString(buildAssignmentSnapshot(newAssignment));
 				} catch (Exception ignore) {
 				}
 				String changedStr = null;
@@ -2538,20 +2708,20 @@ public class BusinessPartnerService {
 				}
 				Long companyId = null;
 				try {
-					if (assignment.getConfiguration() != null && assignment.getConfiguration().getBusinessPartner() != null
-						&& assignment.getConfiguration().getBusinessPartner().getCompany() != null) {
-						companyId = assignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+					if (newAssignment.getConfiguration() != null && newAssignment.getConfiguration().getBusinessPartner() != null
+						&& newAssignment.getConfiguration().getBusinessPartner().getCompany() != null) {
+						companyId = newAssignment.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
 					}
 				} catch (Exception ignore) {
 				}
 				auditService.recordAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
-						assignment.getAssignmentId(),
+						newAssignment.getAssignmentId(),
 						UPDATE,
 						newSnapshot,
 						oldValue,
-						changedStr,
+						changedStr, 
 						request.getUpdatedBy(),
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())),
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()),
 						companyId,
 						SUCCESS,
 						null));
@@ -2592,7 +2762,7 @@ public class BusinessPartnerService {
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null, 
 						request != null ? request.getUpdatedBy() : null,
-						loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getDescription()), e);
+						commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2629,7 +2799,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, UPDATE, newSnap, oldSnap, null,
-						request != null ? request.getUpdatedBy() : null, loadUserNameByUserId(Long.valueOf(request.getUpdatedBy())), companyId, FAILED, e.getMessage()), e);
+						request != null ? request.getUpdatedBy() : null, commonService.loadUserNameByUserId(Long.valueOf(request.getUpdatedBy()), request.getIsUpdatedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in updateBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
@@ -2637,19 +2807,25 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public void deleteBusinessPartnerAssignmentConfiguration(String assignmentId, Long userId) {
+	public void deleteBusinessPartnerAssignmentConfiguration(BpConfigRequestVO request) {
 		log.info(generateLog("deleteBusinessPartnerAssignmentConfiguration", this.getClass().getName()));
 		BPAssignment assignment = null;
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findByAssignmentIdAndIsActive(Long.valueOf(assignmentId), ACTIVE);
+					.findByAssignmentIdAndIsActive(request.getAssignmentId(), ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
+			} else if (existingAssignment.get().getIsUnderApproval() != null && existingAssignment.get().getIsUnderApproval()) {
+				throw new FlickzzDeskException(ALREADY_EXISTS,
+						"Assignment change is already under approval. Please wait for the approval process to complete.");
 			}
-			
+
 			assignment = existingAssignment.get();
-			
+
+			assignment.setIsUnderApproval(UNDER_APPROVAL);
+			bpAssignmentRepository.save(assignment);
+
 			// Capture old snapshot before deletion
 			String oldValue = null;
 			try {
@@ -2657,7 +2833,25 @@ public class BusinessPartnerService {
 			} catch (Exception ignore) {
 			}
 
-			bpAssignmentRepository.delete(assignment);
+			// Create a new inactive copy for delete (leave existing record untouched)
+			BPAssignment newAssignment = BPAssignment.builder()
+					.configuration(assignment.getConfiguration())
+					.subCategory(assignment.getSubCategory())
+					.supportGroup(assignment.getSupportGroup())
+					.version(assignment.getVersion() != null ? assignment.getVersion() + 1 : 1)
+					.isActive(INACTIVE)
+					.isUnderApproval(UNDER_APPROVAL)
+					.createdBy(assignment.getCreatedBy())
+					.updatedBy(request.getDeletedBy() != null ? request.getDeletedBy() : assignment.getUpdatedBy())
+					.build();
+			// ensure new entity will be inserted (no id)
+			newAssignment.setAssignmentId(null);
+			newAssignment = bpAssignmentRepository.save(newAssignment);
+
+			configurationChangeService.addConfigurationChangeRequest(newAssignment.getConfiguration(), newAssignment.getAssignmentId(), assignment.getAssignmentId(),
+					Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.FALSE, Boolean.TRUE, DELETE,
+					newAssignment.getConfiguration().getBusinessPartner().getCompany(), request.getDeletedBy(),
+					newAssignment.getConfiguration().getBusinessPartner().getMappedCompany(), Boolean.FALSE, request.getRemarks());
 			
 			// Record DELETE audit
 			Long companyId = null;
@@ -2674,8 +2868,8 @@ public class BusinessPartnerService {
 					oldValue,
 					null,
 					null,
-					userId,
-					loadUserNameByUserId(Long.valueOf(userId)),
+					request.getDeletedBy(),
+					commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()),
 					companyId,
 					SUCCESS,
 					null));
@@ -2685,7 +2879,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(assignmentId);
+					entityId = request.getAssignmentId();
 				} catch (Exception ignore) {
 				}
 				if (assignment != null && assignment.getConfiguration() != null 
@@ -2695,7 +2889,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getDescription()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getDescription()), e);
 			} catch (Exception ignore) {
 			}
 			throw e;
@@ -2705,7 +2899,7 @@ public class BusinessPartnerService {
 				Long entityId = null;
 				Long companyId = null;
 				try {
-					entityId = Long.valueOf(assignmentId);
+					entityId = Long.valueOf(request.getAssignmentId());
 				} catch (Exception ignore) {
 				}
 				if (assignment != null && assignment.getConfiguration() != null 
@@ -2715,7 +2909,7 @@ public class BusinessPartnerService {
 				}
 				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("BusinessPartner", "Assignment", "BPAssignment",
 						entityId, DELETE,
-						null, null, null, userId, loadUserNameByUserId(Long.valueOf(userId)), companyId, FAILED, e.getMessage()), e);
+						null, null, null, request.getDeletedBy(), commonService.loadUserNameByUserId(Long.valueOf(request.getDeletedBy()), request.getIsDeletedByAdmin()), companyId, FAILED, e.getMessage()), e);
 			} catch (Exception ignore) {
 			}
 			log.error("Exception in deleteBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
@@ -2723,11 +2917,11 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public BPAssignmentVO getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long supportGroupId) {
+	public BPAssignmentVO getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long assignmentId) {
 		log.info(generateLog("getBusinessPartnerAssignmentConfigurationBySupportGroupId", this.getClass().getName()));
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroupId, ACTIVE);
+					.findByAssignmentIdAndIsActive(assignmentId, ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
@@ -2753,13 +2947,13 @@ public class BusinessPartnerService {
 			}
 
 			Optional<BPConfiguration> existingConfig = bPConfigurationRepository
-					.findByBusinessPartnerBusinessPartnerIdAndIsActive(businessPartnerId, ACTIVE);
+					.findByBusinessPartnerBusinessPartnerIdAndIsActiveTrue(businessPartnerId);
 			if (!existingConfig.isPresent()) {
 				return Collections.emptyList();
 			}
 
 			List<BPAssignment> assignments = bpAssignmentRepository
-					.findByConfigurationConfigurationIdAndIsActive(existingConfig.get().getConfigurationId(), ACTIVE);
+					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
 			return assignments.stream().map(mapper::toBPAssignmentVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -2769,15 +2963,22 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public String loadUserNameByUserId(Long userId) {
-		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-				.findById(userId).orElse(null);
-		if (enquiryRegistration != null) {
-			return buildName(enquiryRegistration.getFirstName(), enquiryRegistration.getMiddleName(), enquiryRegistration.getLastName());
-		}
+	public List<ConfigChangeApprovalVO> getBusinessPartnerApprovalList(Long userId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			if (userId == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "User ID"));
+			}
 
-		User user = userRepository.findById(userId).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-				getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
-		return buildName(user.getFirstName(), user.getMiddleName(), user.getLastName());
+			List<ConfigChangeApproval> approvals = configChangeApprovalRepository.findByApproverUserId(userId);
+			log.info(generateLog(EXIT, this.getClass().getName()));
+			return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
 	}
 }

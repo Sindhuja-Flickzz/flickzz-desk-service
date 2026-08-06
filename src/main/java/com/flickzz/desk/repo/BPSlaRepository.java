@@ -8,6 +8,8 @@ import com.flickzz.desk.model.*;
 
 public interface BPSlaRepository extends JpaRepository<BPSla, Long> {
 
+	List<BPSla> findByConfigurationConfigurationId(Long configurationId);
+
 	List<BPSla> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
 
 	Optional<BPSla> findBySlaIdAndIsActive(Long slaId, Boolean active);

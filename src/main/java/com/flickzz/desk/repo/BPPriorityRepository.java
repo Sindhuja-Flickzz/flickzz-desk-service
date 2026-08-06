@@ -8,7 +8,7 @@ import com.flickzz.desk.model.*;
 
 public interface BPPriorityRepository extends JpaRepository<BPPriority, Long> {
 
-	List<BPPriority> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
+	List<BPPriority> findByConfigurationConfigurationId(Long configurationId);
 
 	boolean existsByConfigurationConfigurationIdAndTicketTypeTicketTypeIdAndLevel(Long configurationId,
 			Long ticketTypeId, Integer level);

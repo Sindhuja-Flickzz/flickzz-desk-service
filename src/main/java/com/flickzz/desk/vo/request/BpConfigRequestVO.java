@@ -42,10 +42,15 @@ public class BpConfigRequestVO implements Serializable {
 	private List<Long> managerBpAgents;
 	private Long subCategoryId;
 
+	private Long assignmentId;
+
+	private String remarks;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;
+	private Long deletedBy;
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
+	private Boolean isDeletedByAdmin;
 
 }

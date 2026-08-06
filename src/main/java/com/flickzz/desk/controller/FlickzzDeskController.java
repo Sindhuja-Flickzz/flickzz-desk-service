@@ -5,11 +5,7 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
 import static com.flickzz.desk.config.FlickzzDeskConstants.LOGIN;
 import static com.flickzz.desk.config.FlickzzDeskConstants.USER_LIST;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.LOGOUT_ALL_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.PASSWORD_RESET_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.REGISTRATION_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.TOKEN_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
@@ -78,7 +74,17 @@ public class FlickzzDeskController {
 		return handleSuccessResponse(TOKEN_SUCCESS, TOKEN_SUCCESS.getDescription(), respVO);
 	}
 
-	@PostMapping("/logoutAll")
+	@PostMapping("logout")
+	public ResponseEntity<FlickzzDeskResponse> logout(@RequestBody CommonRequestVO request) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		flickzzDeskService.logoutUser(request);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(LOGOUT_SUCCESS, getDescription(LOGOUT_SUCCESS.getDescription(), request.getUsername()));
+	}
+
+	@PostMapping("logoutAll")
 	public ResponseEntity<FlickzzDeskResponse> logoutAll(@RequestBody CommonRequestVO request) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
@@ -118,14 +124,4 @@ public class FlickzzDeskController {
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 	}
-
-//	@PostMapping("profile/update")
-//	public ResponseEntity<FlickzzDeskResponse> updateProfile(@RequestBody UserVO request) {
-//		log.info(generateLog(ENTRY, this.getClass().getName()));
-//
-//		UserVO respVO = flickzzDeskService.updateProfile(request);
-//
-//		log.info(generateLog(EXIT, this.getClass().getName()));
-//		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
-//	}
 }

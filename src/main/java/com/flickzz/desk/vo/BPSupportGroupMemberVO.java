@@ -21,4 +21,6 @@ public class BPSupportGroupMemberVO implements Serializable {
 	private Boolean isGroupLead;
 
 	private Boolean isActive;
+
+	private Boolean isUnderApproval;
 }

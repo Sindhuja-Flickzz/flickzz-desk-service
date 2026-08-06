@@ -810,7 +810,7 @@ public class CommonMapper {
 		return BPPriorityVO.builder().priorityId(bpPriority.getPriorityId())
 				.configuration(toBPConfigurationVO(bpPriority.getConfiguration())).level(bpPriority.getLevel())
 				.code(bpPriority.getCode()).ticketType(toTicketTypeMasterVo(bpPriority.getTicketType()))
-				.description(bpPriority.getDescription()).isActive(bpPriority.getIsActive())
+				.description(bpPriority.getDescription()).isActive(bpPriority.getIsActive()).isUnderApproval(bpPriority.getIsUnderApproval())
 				.createdBy(bpPriority.getCreatedBy()).updatedBy(bpPriority.getUpdatedBy()).build();
 	}
 
@@ -837,7 +837,8 @@ public class CommonMapper {
 				.firstResponseTerm(bpSla.getFirstResponseTerm()).resolutionTime(bpSla.getResolutionTime())
 				.resolutionTerm(bpSla.getResolutionTerm()).updateFrequency(bpSla.getUpdateFrequency())
 				.updateFrequencyTerm(bpSla.getUpdateFrequencyTerm()).isActive(bpSla.getIsActive())
-				.createdBy(bpSla.getCreatedBy()).updatedBy(bpSla.getUpdatedBy()).build();
+				.isUnderApproval(bpSla.getIsUnderApproval()).createdBy(bpSla.getCreatedBy())
+				.updatedBy(bpSla.getUpdatedBy()).build();
 	}
 
 	public BPCategory toBPCategory(BpConfigRequestVO request, BPConfiguration config) {
@@ -859,7 +860,7 @@ public class CommonMapper {
 		}
 		return BPCategoryVO.builder().categoryId(bpCategory.getCategoryId())
 				.configuration(toBPConfigurationVO(bpCategory.getConfiguration()))
-				.categoryName(bpCategory.getCategoryName()).isActive(bpCategory.getIsActive())
+				.categoryName(bpCategory.getCategoryName()).isActive(bpCategory.getIsActive()).isUnderApproval(bpCategory.getIsUnderApproval())
 				.createdBy(bpCategory.getCreatedBy()).updatedBy(bpCategory.getUpdatedBy()).subCategories(subCategories)
 				.build();
 	}
@@ -914,6 +915,7 @@ public class CommonMapper {
 				.configuration(toBPConfigurationVO(assignment.getConfiguration()))
 				.subCategory(toBPSubCategoryVo(assignment.getSubCategory()))
 				.supportGroup(toSupportGroupVo(assignment.getSupportGroup())).isActive(assignment.getIsActive())
+				.isUnderApproval(assignment.getIsUnderApproval())
 				.createdBy(assignment.getCreatedBy()).updatedBy(assignment.getUpdatedBy()).build();
 	}
 
@@ -931,7 +933,7 @@ public class CommonMapper {
                         ? supportGroup.getManagers().stream().filter(manager -> Boolean.TRUE.equals(manager.getIsActive()))
                         .map(this::toNoBackRefSupportGroupManagerVo).toList()
                         : null)
-                .groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive())
+                .groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive()).isUnderApproval(supportGroup.getIsUnderApproval())
                 .createdBy(supportGroup.getCreatedBy()).updatedBy(supportGroup.getUpdatedBy()).build();
     }
 
@@ -1054,4 +1056,104 @@ public class CommonMapper {
                 .createdAt(systemAudit.getCreatedAt())
                 .build();
     }
+
+	public ConfigChangeNotificationVO toNotificationVO(ConfigChangeNotification notification) {
+		if (notification == null) {
+			return null;
+		}
+
+		return ConfigChangeNotificationVO.builder()
+				.notificationId(notification.getNotificationId())
+				.title(notification.getTitle())
+				.message(notification.getMessage())
+				.notificationType(notification.getNotificationType())
+				.action(notification.getAction())
+				.referenceType(notification.getReferenceType())
+				.referenceId(notification.getReferenceId())
+				.triggeredByUser(notification.getTriggeredByUser())
+				.triggeredUserOrg(notification.getTriggeredUserOrg())
+				.recipientUserId(notification.getRecipientUserId())
+				.recipientUserName(notification.getRecipientUserName())
+				.recipientOrgId(notification.getRecipientOrgId())
+				.isRead(notification.getIsRead())
+				.active(notification.getIsActive())
+				.createdBy(notification.getCreatedBy())
+				.createdOn(notification.getCreatedOn())
+				.updatedBy(notification.getUpdatedBy())
+				.updatedOn(notification.getUpdatedOn())
+				.build();
+	}
+
+	public ConfigChangeApprovalVO toConfigChangeApprovalVO(ConfigChangeApproval approval) {
+		if (approval == null) {
+			return null;
+		}
+
+		return ConfigChangeApprovalVO.builder()
+				.approvalId(approval.getApprovalId())
+				.changeRequest(approval.getConfigChangeRequest() != null ? toBPConfigurationChangeRequestVO(approval.getConfigChangeRequest()) : null)
+				.approvalType(approval.getApprovalType())
+				.approverLevel(approval.getApproverLevel())
+				.approverUserId(approval.getApproverUserId())
+				.approverOrgId(approval.getApproverOrgId())
+				.status(approval.getStatus())
+				.mandatory(approval.getMandatory())
+				.approvedOn(approval.getApprovedOn())
+				.remarks(approval.getRemark() != null ? approval.getRemark().stream().map(this::toBPConfigurationChangeRequestRemarkVO).toList() : List.of())
+				.createdBy(approval.getCreatedBy())
+				.createdOn(approval.getCreatedOn())
+				.updatedBy(approval.getUpdatedBy())
+				.updatedOn(approval.getUpdatedOn())
+				.build();
+	}
+
+	public BPConfigurationChangeRequestVO toBPConfigurationChangeRequestVO(BPConfigurationChangeRequest changeRequest) {
+		if (changeRequest == null) {
+			return null;
+		}
+
+		return BPConfigurationChangeRequestVO.builder()
+				.ccrId(changeRequest.getCcrId())
+				.configuration(changeRequest.getConfiguration() != null ? toBPConfigurationVO(changeRequest.getConfiguration()) : null)
+				.changedRequestId(changeRequest.getChangedRequestId())
+				.sourceChangeId(changeRequest.getSourceChangeId())
+				.bpPriority(changeRequest.getBpPriority())
+				.bpSla(changeRequest.getBpSla())
+				.category(changeRequest.getCategory())
+				.supportGroup(changeRequest.getSupportGroup())
+				.assignment(changeRequest.getAssignment())
+				.operation(changeRequest.getOperation())
+				.requestedByOrg(changeRequest.getRequestedByOrg() != null ? toCompanyMasterVO(changeRequest.getRequestedByOrg()) : null)
+				.requestedByUserId(changeRequest.getRequestedByUserId())
+				.approvalOrg(changeRequest.getApprovalOrg() != null ? toCompanyMasterVO(changeRequest.getApprovalOrg()) : null)
+				.status(changeRequest.getStatus())
+				.totalInternalApprovalLevels(changeRequest.getTotalInternalApprovalLevels())
+				.currentInternalApprovalLevel(changeRequest.getCurrentInternalApprovalLevel())
+				.totalBpApprovalLevels(changeRequest.getTotalBpApprovalLevels())
+				.currentBpApprovalLevel(changeRequest.getCurrentBpApprovalLevel())
+				.createdOn(changeRequest.getCreatedOn() != null ? java.sql.Timestamp.valueOf(changeRequest.getCreatedOn()) : null)
+				.updatedOn(changeRequest.getUpdatedOn() != null ? java.sql.Timestamp.valueOf(changeRequest.getUpdatedOn()) : null)
+				.createdBy(changeRequest.getCreatedBy())
+				.updatedBy(changeRequest.getUpdatedBy())
+				.isCreatorAdmin(changeRequest.getIsCreatorAdmin())
+				.build();
+	}
+
+	public BPConfigurationChangeRequestRemarkVO toBPConfigurationChangeRequestRemarkVO(BPConfigurationChangeRequestRemark remark) {
+		if (remark == null) {
+			return null;
+		}
+
+		return BPConfigurationChangeRequestRemarkVO.builder()
+				.remarkId(remark.getRemarkId())
+				.ccrId(remark.getConfigurationChangeRequest() != null ? toBPConfigurationChangeRequestVO(remark.getConfigurationChangeRequest()) : null)
+				.remarkType(remark.getRemarkType())
+				.approverLevel(remark.getApproverLevel())
+				.approvalStatus(remark.getApprovalStatus())
+				.userId(remark.getUserId())
+				.organizationId(remark.getOrganizationId())
+				.remark(remark.getRemark())
+				.createdOn(remark.getCreatedOn())
+				.build();
+	}
 }

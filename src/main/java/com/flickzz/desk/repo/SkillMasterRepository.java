@@ -13,9 +13,8 @@ public interface SkillMasterRepository extends JpaRepository<SkillMaster, Long> 
 
 	Optional<SkillMaster> findBySkillId(Long skillId);
 
-	Optional<SkillMaster> findBySkillNameAndCompany_CompanyIdAndIsActive(String skillName, Long companyId,
-			Boolean isActive);
+	Optional<SkillMaster> findBySkillNameAndCompany_CompanyId(String skillName, Long companyId);
 
-	List<SkillMaster> findAllByCompany_CompanyIdAndIsActive(Long companyId, Boolean isActive);
+	List<SkillMaster> findAllByCompany_CompanyId(Long companyId);
 
 }

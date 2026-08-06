@@ -12,11 +12,10 @@ public class FlickzzDeskConstants {
 	public static final String FD_USER = "User";
 	public static final String LOGIN = "Login";
 	public static final String CALENDAR = "Calender";
-	public static final String REQUESTOR = "Requestor";
-	public static final String SERVICE_PROVIDER = "Service provider";
 	public static final String PLANT = "Plant";
 	public static final String SKILL = "Skill";
 	public static final String AGENT = "Agent";
+	public static final String NOTIFICATION = "NOTIFICATION";
 	public static final String COMPANY = "Company";
 	public static final String TICKET_TYPE = "Ticket Type";
 	public static final String COMPANY_ROLE = "Company Role";
@@ -36,12 +35,12 @@ public class FlickzzDeskConstants {
 	public static final String BUSINESS_PARTNER_CONFIG = "Business Partner Config";
 	public static final String REQUEST_NUMBER = "Request Number";
 	public static final String REQUEST_CONFIG = "Request Config";
-	public static final String PHONE_NUMBER = "Phone Number";
-	public static final String RITM = "Request Item";
-	public static final String INCIDENT = "Incident";
 
 	public static final Boolean ACTIVE = true;
 	public static final Boolean INACTIVE = false;
+	public static final Boolean UNDER_APPROVAL = Boolean.TRUE;
+	public static final Boolean DEACTIVATE = Boolean.FALSE;
+	public static final Integer INITIAL_VERSION = 1;
 
 	public static final String CALENDAR_CODE = "Calender Code";
 	public static final String CALENDAR_TYPE = "Calender Type";
@@ -53,18 +52,10 @@ public class FlickzzDeskConstants {
 	public static final String AGENT_NAME = "Agent name";
 	public static final String PROJECT_NAME = "Project name";
 	public static final String PROGRESS_STATUS = "Progress status";
-	public static final String REGISTERED_NUMBER = "Registered Number";
 	public static final String CURRENCY = "Currency";
 	public static final String MAIL_ID = "Mail Id";
 	public static final String ACCESS_ID = "Access Id";
 	public static final String PHONE = "Phone";
-	public static final String YEAR = "Year";
-	public static final String MONTH = "Month";
-	public static final String PRIORITY_NAME = "Priority name";
-	public static final String PRIORITY_AND_COMPANY = "priority for selected organization";
-	public static final String RANK = "Rank";
-	public static final String RESPONSE_SLA = "Response SLA";
-	public static final String RESOLUTION_SLA = "Resolution SLA";
 
 	public static final String USERNAME_OR_EMAIL = "Username or Email";
 	public static final String USER_LIST = "User list";
@@ -79,6 +70,12 @@ public class FlickzzDeskConstants {
 	public static final String DELETE = "DELETE";
 	public static final String SUCCESS = "SUCCESS";
 	public static final String FAILED = "FAILED";
+	public static final String DRAFTED = "DRAFTED";
+
+	public static final String PENDING = "PENDING";
+
+	public static final Boolean READ = Boolean.TRUE;
+	public static final Boolean UNREAD = Boolean.FALSE;
 
 	public static final String LEAD_COMPANY = "Lead company";
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),

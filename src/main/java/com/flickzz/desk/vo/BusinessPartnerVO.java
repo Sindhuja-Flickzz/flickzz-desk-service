@@ -21,6 +21,7 @@ public class BusinessPartnerVO implements Serializable {
 	private Integer callHorizon;
 	private Date validFrom;
 	private Date validTo;
+	private Integer version;
 	private String refNo;
 	private Date refDate;
 	private Boolean isActive;

@@ -23,6 +23,26 @@ public class BPConfiguration {
 	@JoinColumn(name = "BUSINESS_PARTNER_ID", nullable = false)
 	private BusinessPartner businessPartner;
 
+//	@Builder.Default
+//	@Column(name = "PRIORITY_APPROVAL_STATUS")
+//	private Boolean priorityApprovalStatus = false;
+//
+//	@Builder.Default
+//	@Column(name = "SLA_APPROVAL_STATUS")
+//	private Boolean slaApprovalStatus = false;
+//
+//	@Builder.Default
+//	@Column(name = "CATEGORY_APPROVAL_STATUS")
+//	private Boolean categoryApprovalStatus = false;
+//
+//	@Builder.Default
+//	@Column(name = "SUPPORT_GROUP_APPROVAL_STATUS")
+//	private Boolean supportGroupApprovalStatus = false;
+//
+//	@Builder.Default
+//	@Column(name = "ASSIGNMENT_APPROVAL_STATUS")
+//	private Boolean assignmentApprovalStatus = false;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;

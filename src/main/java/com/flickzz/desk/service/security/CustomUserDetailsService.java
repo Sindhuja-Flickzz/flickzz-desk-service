@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 	@Override
 	public CustomUserDetails loadUserByUsername(String username) {
 		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-				.findByUserNameAndIsActive(username, ACTIVE).orElse(null);
+				.findByUserNameAndIsActiveTrue(username).orElse(null);
 
 		if (enquiryRegistration != null) {
 			return new CustomUserDetails(enquiryRegistration.getUserName(), enquiryRegistration.getPassword(),
@@ -40,7 +40,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 					Collections.singletonList(new SimpleGrantedAuthority(enquiryRegistration.getUserRole())));
 		}
 
-		User user = userRepository.findByUserName(username).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+		User user = userRepository.findByUserNameAndIsActiveTrue(username).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 				getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
 		return new CustomUserDetails(user.getUserName(), user.getPassword(), user.getFirstName(), user.getLastName(),

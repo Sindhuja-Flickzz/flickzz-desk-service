@@ -22,6 +22,7 @@ public class EnquiryRegistrationVO implements Serializable {
 	private String password;
 	private String userRole;
 	private String email;
+	private Integer version;
 	private CompanyMasterVO company;
 	private StateMasterVO state;
 	private CityMasterVO city;

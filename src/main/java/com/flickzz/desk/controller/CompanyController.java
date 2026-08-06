@@ -27,17 +27,6 @@ public class CompanyController {
 	@Autowired
 	private CompanyService companyService;
 
-	@PostMapping("/create")
-	public ResponseEntity<FlickzzDeskResponse> createCompany(@RequestBody CompanyMasterRequestVO request)
-			throws Exception {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
-
-		CompanyMasterVO respVO = companyService.createCompany(request);
-
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), COMPANY), respVO);
-	}
-
 	@GetMapping("/{companyId}")
 	public ResponseEntity<FlickzzDeskResponse> getCompanyInfo(@PathVariable String companyId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));

@@ -17,14 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.SkillsService;
@@ -73,10 +66,10 @@ public class SkillsController {
 	}
 
 	@DeleteMapping("/delete/{skillId}")
-	public ResponseEntity<FlickzzDeskResponse> deleteSkill(@PathVariable String skillId) {
+	public ResponseEntity<FlickzzDeskResponse> deleteSkill(@PathVariable String skillId, @RequestHeader(value = "x-user-id", required = false) String userId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		skillsService.deleteSkill(skillId);
+		skillsService.deleteSkill(skillId, Long.valueOf(userId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), SKILL));

@@ -144,7 +144,8 @@ public class SettingsService {
 			BusinessService existing = businessServiceRepository.findByServiceId(Long.valueOf(serviceId))
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), "Business Service")));
-			businessServiceRepository.delete(existing);
+			existing.setIsActive(DEACTIVATE);
+			businessServiceRepository.save(existing);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

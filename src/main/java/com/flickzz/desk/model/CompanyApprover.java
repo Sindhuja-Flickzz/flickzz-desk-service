@@ -23,11 +23,11 @@ public class CompanyApprover {
     private Long approverId;
 
     @ManyToOne
-    @JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_COMPANY"))
+    @JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_COMPANY"), nullable = false)
     private CompanyMaster company;
 
     @ManyToOne
-    @JoinColumn(name = "AGENT_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_AGENT"))
+    @JoinColumn(name = "AGENT_ID", foreignKey = @ForeignKey(name = "FK_COMPANY_APPROVER_AGENT"), nullable = false)
     private AgentMaster agent;
 
     @Column(name = "LEVEL", nullable = false)

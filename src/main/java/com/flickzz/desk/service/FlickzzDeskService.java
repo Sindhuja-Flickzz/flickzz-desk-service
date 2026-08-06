@@ -24,6 +24,7 @@ import com.flickzz.desk.repo.*;
 import com.flickzz.desk.security.*;
 import com.flickzz.desk.vo.*;
 import com.warrenstrange.googleauth.*;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class FlickzzDeskService {
@@ -54,10 +55,16 @@ public class FlickzzDeskService {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 
-	public RegisterLoginResponseVO verifyCode(VerificationRequestVO verificationRequestVO) {
+	@Autowired
+	private AuditService auditService;
+
+	@Autowired
+	private ObjectMapper objectMapper;
+
+		public RegisterLoginResponseVO verifyCode(VerificationRequestVO verificationRequestVO) {
 		log.info(generateLog("verifyCode", this.getClass().getName()));
 		try {
-			User user = userRepository.findByUserName(verificationRequestVO.getEmail())
+			User user = userRepository.findByUserNameAndIsActiveTrue(verificationRequestVO.getEmail())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
@@ -68,17 +75,42 @@ public class FlickzzDeskService {
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
 			user.setMfaEnabled(true);
 
-			AgentMaster agent = agentMasterRepository.findByUser(user);
+			AgentMaster agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
 			userRepository.save(user);
-			return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
-					agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
-		} catch (FlickzzDeskException e) {
-			throw e;
-		} catch (Exception e) {
-			log.error("Exception in register method in FlickzzDeskService");
-			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+
+				// Audit: successful TFA verification / login
+				Map<String, Object> changed = new HashMap<>();
+				changed.put("mfaEnabled", true);
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changed);
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "TFA", "User",
+						user.getUserId(),
+						"VERIFY_CODE",
+						null,
+						null,
+						changedStr,
+						user.getUserId(),
+						user.getUserName(),
+						null,
+						"SUCCESS",
+						null));
+
+				return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
+						agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
+			} catch (FlickzzDeskException e) {
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "TFA", "User",
+						null, "VERIFY_CODE", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
+				throw e;
+			} catch (Exception e) {
+				auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "TFA", "User",
+						null, "VERIFY_CODE", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
+				log.error("Exception in register method in FlickzzDeskService");
+				throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+			}
 		}
-	}
 
 	public RegisterLoginResponseVO userLogin(RegisterLoginRequestVO request) {
 		log.info(generateLog("userLogin", this.getClass().getName()));
@@ -94,7 +126,7 @@ public class FlickzzDeskService {
 			}
 
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-					.findByEmailAndIsActive(request.getEmail(), ACTIVE).orElse(null);
+					.findTopByEmailAndIsActiveTrueOrderByVersionDesc(request.getEmail()).orElse(null);
 
 			if (enquiryRegistration != null) {
 				if (!passwordEncoder.matches(request.getPassword(), enquiryRegistration.getPassword())) {
@@ -104,12 +136,35 @@ public class FlickzzDeskService {
 
 				var jwtToken = jwtUtil.generateToken(enquiryRegistration.getUserName());
 				var refreshToken = refreshTokenService.createRefreshToken(enquiryRegistration, false).getToken();
-				return generateLoginResponse(jwtToken, refreshToken, Boolean.TRUE, Boolean.TRUE,
+				RegisterLoginResponseVO resp = generateLoginResponse(jwtToken, refreshToken, Boolean.TRUE, Boolean.TRUE,
 						enquiryRegistration.getCompany(), enquiryRegistration.getUserRole(), null,
 						enquiryRegistration.getEnquiryId());
+
+				// Audit: enquiry login success
+				Map<String, Object> changed = new HashMap<>();
+				changed.put("loginType", "ENQUIRY");
+				changed.put("userName", enquiryRegistration.getUserName());
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changed);
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "Login", "EnquiryRegistration",
+							enquiryRegistration.getEnquiryId(),
+							"LOGIN",
+							null,
+							null,
+							changedStr,
+							enquiryRegistration.getEnquiryId(),
+							enquiryRegistration.getUserName(),
+							enquiryRegistration.getCompany() != null ? enquiryRegistration.getCompany().getCompanyId() : null,
+							"SUCCESS",
+							null));
+
+				return resp;
 			}
 
-			var user = userRepository.findByUserNameAndIsActive(request.getEmail(), ACTIVE).orElseThrow(
+			var user = userRepository.findByUserNameAndIsActiveTrue(request.getEmail()).orElseThrow(
 					() -> new FlickzzDeskException(INVALID_TEXT, getDescription(INVALID_TEXT.getDescription(), EMAIL)));
 
 			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -120,19 +175,69 @@ public class FlickzzDeskService {
 				GoogleAuthenticatorKey key = tfaService.generateNewSecret();
 				user.setSecret(key.getKey());
 				userRepository.save(user);
-				return generateLoginResponse(null, null, Boolean.FALSE, user.isMfaEnabled(), null, user.getRole(),
+				RegisterLoginResponseVO resp = generateLoginResponse(null, null, Boolean.FALSE, user.isMfaEnabled(), null, user.getRole(),
 						tfaService.generateQrCodeImageUri(key, user.getUserName()), user.getUserId());
+
+				// Audit: MFA setup required
+				Map<String, Object> changed = new HashMap<>();
+				changed.put("mfaSetup", true);
+				changed.put("userName", user.getUserName());
+				String changedStr = null;
+				try {
+					changedStr = objectMapper.writeValueAsString(changed);
+				} catch (Exception ignore) {
+				}
+				auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "Login", "User",
+							user.getUserId(),
+							"LOGIN_MFA_SETUP",
+							null,
+							null,
+							changedStr,
+							user.getUserId(),
+							user.getUserName(),
+							null,
+							"SUCCESS",
+							null));
+
+				return resp;
 			}
 
-			AgentMaster agent = agentMasterRepository.findByUser(user);
+			AgentMaster agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
 
 			var jwtToken = jwtUtil.generateToken(user.getUserName());
 			var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
-			return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
-					agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
+			RegisterLoginResponseVO resp = generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
+								agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
+
+			// Audit: user login success
+			Map<String, Object> changed = new HashMap<>();
+			changed.put("loginType", "USER");
+			changed.put("userName", user.getUserName());
+			String changedStr = null;
+			try {
+				changedStr = objectMapper.writeValueAsString(changed);
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "Login", "User",
+					user.getUserId(),
+					"LOGIN",
+					null,
+					null,
+					changedStr,
+					user.getUserId(),
+					user.getUserName(),
+					agent != null && agent.getOrganization() != null ? Long.valueOf(agent.getOrganization().getCompanyId()) : null,
+					"SUCCESS",
+					null));
+
+			return resp;
 		} catch (FlickzzDeskException | AuthenticationException e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Login", "User",
+					null, "LOGIN", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Login", "User",
+					null, "LOGIN", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
 			log.error("Exception in register method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -161,9 +266,32 @@ public class FlickzzDeskService {
 		log.info(generateLog("logoutUser", this.getClass().getName()));
 		try {
 			refreshTokenService.revokeRefreshToken(request.getRefreshToken());
+			// Audit logout
+			Map<String, Object> changed = new HashMap<>();
+			changed.put("refreshTokenRevoked", true);
+			String changedStr = null;
+			try {
+				changedStr = objectMapper.writeValueAsString(changed);
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "Logout", "Auth",
+					null,
+					"LOGOUT",
+					null,
+					null,
+					changedStr,
+					0L,
+					request.getUsername(),
+					null,
+					"SUCCESS",
+					null));
 		} catch (FlickzzDeskException e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Logout", "Auth",
+					null, "LOGOUT", null, null, null, 0L, request != null ? request.getUsername() : null, null, "FAILED", e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Logout", "Auth",
+					null, "LOGOUT", null, null, null, 0L, request != null ? request.getUsername() : null, null, "FAILED", e.getMessage()), e);
 			log.error("Exception in logoutUser method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -173,7 +301,7 @@ public class FlickzzDeskService {
 		log.info(generateLog("logoutAllUsers", this.getClass().getName()));
 		try {
 			String username = request.getUsername();
-			User user = userRepository.findByUserName(username)
+			User user = userRepository.findByUserNameAndIsActiveTrue(username)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 			refreshTokenService.revokeAllTokensForUser(user);
@@ -188,19 +316,39 @@ public class FlickzzDeskService {
 	public void resetPassword(RegisterLoginRequestVO request) {
 		log.info(generateLog("resetPassword", this.getClass().getName()));
 		try {
-			User user = userRepository.findByUserName(request.getEmail())
+			User user = userRepository.findByUserNameAndIsActiveTrue(request.getEmail())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
-
-//			if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-//				throw new FlickzzDeskException(INCORRECT_PASSWORD);
-//			}
-
 			user.setPassword(passwordEncoder.encode(request.getPassword()));
 			userRepository.save(user);
+
+			// Audit password reset
+			Map<String, Object> changed = new HashMap<>();
+			changed.put("passwordReset", true);
+			changed.put("userName", user.getUserName());
+			String changedStr = null;
+			try {
+				changedStr = objectMapper.writeValueAsString(changed);
+			} catch (Exception ignore) {
+			}
+			auditService.recordAudit(mapper.toSystemAuditRequest("Auth", "Password", "User",
+					user.getUserId(),
+					"RESET_PASSWORD",
+					null,
+					null,
+					changedStr,
+					user.getUserId(),
+					user.getUserName(),
+					null,
+					"SUCCESS",
+					null));
 		} catch (FlickzzDeskException e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Password", "User",
+					null, "RESET_PASSWORD", null, null, null, 0L, null, null, "FAILED", e.getMessage()), e);
 			throw e;
 		} catch (Exception e) {
+			auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "Password", "User",
+					null, "RESET_PASSWORD", null, null, null, 0L, null, null, "FAILED", e.getMessage()), e);
 			log.error("Exception in resetPassword method in FlickzzDeskService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
@@ -209,7 +357,7 @@ public class FlickzzDeskService {
 	public List<UserVO> getUserList() {
 		log.info(generateLog("getUserList", this.getClass().getName()));
 		try {
-			var users = userRepository.findAllByIsActive(ACTIVE);
+			var users = userRepository.findAll();
 			return mapper.usersToUserVO(users);
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -222,7 +370,7 @@ public class FlickzzDeskService {
 	public UserVO getUserInfo(String userEmail) {
 		log.info(generateLog("getUserInfo", this.getClass().getName()));
 		try {
-			User user = userRepository.findByUserName(userEmail)
+			User user = userRepository.findByUserNameAndIsActiveTrue(userEmail)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 			return mapper.userToUserVO(user);

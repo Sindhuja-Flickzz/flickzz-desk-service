@@ -48,7 +48,7 @@ public class PlantService {
                         getDescription(INVALID_FIELD.getDescription(), PLANT_NAME));
             }
 
-            Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
+            Optional<CountryMaster> countryMaster = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
             if (countryMaster == null) {
                 throw new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
@@ -64,10 +64,14 @@ public class PlantService {
                         getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR_CODE));
             }
 
-            plantMasterRepository.findByPlantNameAndCompany_CompanyIdAndIsActive(request.getPlantName(),
-                    request.getCompanyId(), ACTIVE).ifPresent(c -> {
-                throw new FlickzzDeskException(ALREADY_EXISTS,
-                        getDescription(ALREADY_EXISTS.getDescription(), PLANT));
+            plantMasterRepository.findByPlantNameAndCompany_CompanyId(request.getPlantName(),
+                request.getCompanyId()).ifPresent(plant -> {
+                    if(plant.getIsActive()) {
+                        throw new FlickzzDeskException(ALREADY_EXISTS,
+                                getDescription(ALREADY_EXISTS.getDescription(), PLANT));
+                    } else {
+                        throw new FlickzzDeskException(DELETED_ERROR, getDescription(DELETED_ERROR.getDescription(), "Plant Code"));
+                    }
             });
 
             PlantMaster plant = PlantMaster.builder().plantName(request.getPlantName()).region(countryMaster.get())
@@ -108,7 +112,7 @@ public class PlantService {
                 throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), PLANT));
             }
 
-            Optional<CountryMaster> countryMaster = countryMasterRepository.findById(request.getCountryId());
+            Optional<CountryMaster> countryMaster = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId());
             if (!countryMaster.isPresent()) {
                 throw new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY));
@@ -171,7 +175,7 @@ public class PlantService {
     public List<PlantMasterVO> getPlantList(String orgId) {
         log.info(generateLog("getPlantList", this.getClass().getName()));
         try {
-            return plantMasterRepository.findAllByCompany_CompanyIdAndIsActive(Long.valueOf(orgId), ACTIVE).stream()
+            return plantMasterRepository.findAllByCompany_CompanyId(Long.valueOf(orgId)).stream()
                     .map(plant -> mapper.toPlantMasterVO(plant)).toList();
         } catch (FlickzzDeskException e) {
             throw e;

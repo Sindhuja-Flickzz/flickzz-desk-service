@@ -96,7 +96,7 @@ public class AgentService {
 			});
 
 			Optional<EnquiryRegistration> enquiryRegistration = enquiryRegistrationRepository
-					.findByEmailAndIsActive(request.getMailId(), ACTIVE);
+					.findTopByEmailAndIsActiveTrueOrderByVersionDesc(request.getMailId());
 
 			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActive(request.getOrgId(),
 					ACTIVE);
@@ -119,15 +119,15 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
-			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+			CountryMaster country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
 
-			CityMaster city = cityMasterRepository.findById(request.getCityId())
+			CityMaster city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
 
@@ -195,7 +195,7 @@ public class AgentService {
 	public AgentMasterVO getAgentInfoByName(String agentName) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentName(agentName);
+			Optional<AgentMaster> agentMaster = agentMasterRepository.findByAgentNameAndIsActiveTrue(agentName);
 			agentMaster.ifPresent(agent -> {
 				throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), AGENT));
 			});
@@ -232,15 +232,15 @@ public class AgentService {
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
 
-			CountryMaster country = countryMasterRepository.findById(request.getCountryId())
+			CountryMaster country = countryMasterRepository.findByCountryIdAndIsActiveTrue(request.getCountryId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), COUNTRY)));
 
-			CityMaster city = cityMasterRepository.findById(request.getCityId())
+			CityMaster city = cityMasterRepository.findByCityIdAndIsActiveTrue(request.getCityId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findById(request.getLanguageId())
+			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
 
@@ -286,7 +286,9 @@ public class AgentService {
 			if (existing == null) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
 			}
-			agentMasterRepository.delete(existing.get());
+			AgentMaster agent = existing.get();
+			agent.setIsActive(DEACTIVATE);
+			agentMasterRepository.save(agent);
 		} catch (DataIntegrityViolationException e) {
 			log.error("DataIntegrityViolationException in deleteAgent method in FlickzzDeskService");
 			throw new FlickzzDeskException(DB_SAVE_ERROR, "Unassign agent from all assignment to delete");
@@ -326,13 +328,13 @@ public class AgentService {
 		}
 	}
 
-	public AgentMasterVO getAgentInfoByEmail(String agentName) {
+	public AgentMasterVO getAgentInfoByEmail(String email) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			AgentMaster agentMaster = agentMasterRepository.findByMailId(agentName)
+			AgentMaster agentMaster = agentMasterRepository.findByMailIdAndIsActiveTrue(email)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), AGENT)));
-			return new AgentMasterVO();
+			return mapper.toAgentMasterVO(agentMaster);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {

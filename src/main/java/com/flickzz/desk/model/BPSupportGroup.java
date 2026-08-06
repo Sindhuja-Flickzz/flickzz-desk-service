@@ -14,7 +14,7 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "FD_BP_SUPPORT_GROUP", uniqueConstraints = {
-		@UniqueConstraint(name = "UK_SUPPORT_GROUP", columnNames = { "CONFIGURATION_ID", "GROUP_NAME" }) })
+		@UniqueConstraint(name = "UK_SUPPORT_GROUP_NAME_VERSION", columnNames = { "CONFIGURATION_ID", "GROUP_NAME", "VERSION" }) })
 @ToString(exclude = {"configuration", "members", "managers"})
 public class BPSupportGroup {
 
@@ -39,9 +39,17 @@ public class BPSupportGroup {
 	@JsonManagedReference
 	private List<BPSupportGroupManager> managers;
 
+	@Column(name = "VERSION", nullable = false)
+	@Builder.Default
+	private Integer version = 1;
+
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
+
+	@Builder.Default
+	@Column(name = "IS_UNDER_APPROVAL")
+	private Boolean isUnderApproval = false;
 
 	@Column(name = "CREATED_BY")
 	private Long createdBy;

@@ -11,8 +11,8 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "FD_BP_PRIORITY", uniqueConstraints = {
-		@UniqueConstraint(name = "UK_PRIORITY_LEVEL", columnNames = { "CONFIGURATION_ID", "TICKET_TYPE_ID", "LEVEL" }),
-		@UniqueConstraint(name = "UK_PRIORITY_CODE", columnNames = { "CONFIGURATION_ID", "TICKET_TYPE_ID", "CODE" }) })
+		@UniqueConstraint(name = "UK_PRIORITY_LEVEL_VERSION", columnNames = { "CONFIGURATION_ID", "TICKET_TYPE_ID", "LEVEL", "VERSION" }),
+		@UniqueConstraint(name = "UK_PRIORITY_CODE_VERSION", columnNames = { "CONFIGURATION_ID", "TICKET_TYPE_ID", "CODE", "VERSION" }) })
 public class BPPriority {
 
 	@Id
@@ -34,6 +34,10 @@ public class BPPriority {
 	@Column(name = "DESCRIPTION", nullable = false)
 	private String description;
 
+	@Builder.Default
+	@Column(name = "VERSION", nullable = false)
+	private Integer version = 1;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "TICKET_TYPE_ID", nullable = false)
 	private TicketTypeMaster ticketType;
@@ -43,7 +47,11 @@ public class BPPriority {
 
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
-	private Boolean isActive = true;
+	private Boolean isActive = false;
+
+	@Builder.Default
+	@Column(name = "IS_UNDER_APPROVAL")
+	private Boolean isUnderApproval = false;
 
 	@Column(name = "CREATED_BY")
 	private Long createdBy;

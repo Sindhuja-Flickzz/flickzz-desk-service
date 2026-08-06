@@ -144,24 +144,4 @@ public class CommonController {
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), COUNTRY), response);
 	}
-
-	@GetMapping("audit/list/{orgId}")
-	public ResponseEntity<FlickzzDeskResponse> getAuditListByOrg(@PathVariable String orgId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
-
-		List<SystemAuditVO> response = commonService.getAuditListByOrg(Long.valueOf(orgId));
-
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Audit"), response);
-	}
-
-	@GetMapping("audit/list")
-	public ResponseEntity<FlickzzDeskResponse> getAuditListByFilter(@ModelAttribute SystemAuditFilterRequestVO filter) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
-
-		List<SystemAuditVO> response = commonService.getAuditListByFilter(filter);
-
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Audit"), response);
-	}
 }
