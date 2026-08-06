@@ -1,6 +1,5 @@
 package com.flickzz.desk.vo;
 
-import com.flickzz.desk.model.BPConfiguration;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +15,7 @@ import java.util.Date;
 public class BPConfigurationChangeRequestVO implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long ccrId;
-    private BPConfigurationVO configurationId;
+    private BPConfigurationVO configuration;
     private Long changedRequestId;
     private Long sourceChangeId;
     private Boolean bpPriority;

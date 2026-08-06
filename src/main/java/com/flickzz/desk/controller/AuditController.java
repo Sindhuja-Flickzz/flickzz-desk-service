@@ -29,7 +29,7 @@ public class AuditController {
     @Autowired
     private AuditService auditService;
 
-    @GetMapping("audit/list/{orgId}")
+    @GetMapping("/list/{orgId}")
     public ResponseEntity<FlickzzDeskResponse> getAuditListByOrg(@PathVariable String orgId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
@@ -39,7 +39,7 @@ public class AuditController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Audit"), response);
     }
 
-    @GetMapping("audit/list")
+    @GetMapping("/list")
     public ResponseEntity<FlickzzDeskResponse> getAuditListByFilter(@ModelAttribute SystemAuditFilterRequestVO filter) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 

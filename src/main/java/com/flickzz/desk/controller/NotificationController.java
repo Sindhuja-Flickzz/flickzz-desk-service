@@ -35,4 +35,37 @@ public class NotificationController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), response);
     }
+
+    @PutMapping("/read/{notificationId}")
+    public ResponseEntity<FlickzzDeskResponse> markNotificationAsRead(@PathVariable Long notificationId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        notificationService.markNotificationAsRead(notificationId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
+    }
+
+    @PutMapping("/read/all/{recipientId}")
+    public ResponseEntity<FlickzzDeskResponse> markAllNotificationsAsRead(@PathVariable Long recipientId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        notificationService.markAllNotificationsAsRead(recipientId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
+    }
+
+    @DeleteMapping("/clear/{notificationId}")
+    public ResponseEntity<FlickzzDeskResponse> clearNotification(@PathVariable Long notificationId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        notificationService.clearNotification(notificationId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
+    }
+
+    @DeleteMapping("/clear/all/{recipientId}")
+    public ResponseEntity<FlickzzDeskResponse> clearAllNotifications(@PathVariable Long recipientId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        notificationService.clearAllNotifications(recipientId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
+    }
 }

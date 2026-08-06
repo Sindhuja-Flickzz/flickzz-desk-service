@@ -103,7 +103,19 @@ public class BusinessPartnerController {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		List<BPPriorityVO> response = businessPartnerService
-				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId));
+				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId), INACTIVE);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
+	}
+
+	@GetMapping("/config/priority/active/{businessPartnerId}")
+	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerActivePriorityConfiguration(
+			@PathVariable String businessPartnerId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<BPPriorityVO> response = businessPartnerService
+				.getBusinessPartnerPriorityConfiguration(Long.valueOf(businessPartnerId), ACTIVE);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PRIORITY), response);
@@ -329,13 +341,13 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "Assignment"), null);
 	}
 
-	@GetMapping("/assignment/{supportGroupId}")
+	@GetMapping("/assignment/{assignmentId}")
 	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerAssignmentConfigurationBySupportGroupId(
-			@PathVariable String supportGroupId) {
+			@PathVariable String assignmentId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
 		BPAssignmentVO response = businessPartnerService
-				.getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long.valueOf(supportGroupId));
+				.getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long.valueOf(assignmentId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Assignment"), response);
@@ -351,5 +363,17 @@ public class BusinessPartnerController {
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Assignment"), response);
+	}
+
+	@GetMapping("/config/approval/list/{userId}")
+	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerApprovalList(
+			@PathVariable String userId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<ConfigChangeApprovalVO> response = businessPartnerService
+				.getBusinessPartnerApprovalList(Long.valueOf(userId));
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval"), response);
 	}
 }

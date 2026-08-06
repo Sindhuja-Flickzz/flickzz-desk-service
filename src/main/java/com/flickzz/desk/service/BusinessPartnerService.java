@@ -4,12 +4,10 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.flickzz.desk.config.RemarkType;
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
 import org.slf4j.Logger;
@@ -98,6 +96,9 @@ public class BusinessPartnerService {
 
 	@Autowired
 	CompanyApproverRepository companyApproverRepository;
+
+	@Autowired
+	ConfigChangeApprovalRepository configChangeApprovalRepository;
 
 	@Autowired
 	ConfigurationChangeService configurationChangeService;
@@ -695,7 +696,7 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public List<BPPriorityVO> getBusinessPartnerPriorityConfiguration(Long businessPartnerId) {
+	public List<BPPriorityVO> getBusinessPartnerPriorityConfiguration(Long businessPartnerId, Boolean fetchActive) {
 		log.info(generateLog("getBusinessPartnerPriorityConfiguration", this.getClass().getName()));
 		try {
 
@@ -715,6 +716,9 @@ public class BusinessPartnerService {
 
 			List<BPPriority> priorities = bPPriorityRepository
 					.findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
+			if(fetchActive) {
+				return priorities.stream().filter(p -> p.getIsActive()).map(mapper::toBPPriorityVo).toList();
+			}
 			return priorities.stream().map(mapper::toBPPriorityVo).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
@@ -2740,11 +2744,11 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public BPAssignmentVO getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long supportGroupId) {
+	public BPAssignmentVO getBusinessPartnerAssignmentConfigurationBySupportGroupId(Long assignmentId) {
 		log.info(generateLog("getBusinessPartnerAssignmentConfigurationBySupportGroupId", this.getClass().getName()));
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findBySupportGroupSupportGroupIdAndIsActive(supportGroupId, ACTIVE);
+					.findByAssignmentIdAndIsActive(assignmentId, ACTIVE);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
@@ -2782,6 +2786,25 @@ public class BusinessPartnerService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in getBusinessPartnerAssignmentConfiguration method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public List<ConfigChangeApprovalVO> getBusinessPartnerApprovalList(Long userId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			if (userId == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "User ID"));
+			}
+
+			List<ConfigChangeApproval> approvals = configChangeApprovalRepository.findByApproverUserId(userId);
+			log.info(generateLog(EXIT, this.getClass().getName()));
+			return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

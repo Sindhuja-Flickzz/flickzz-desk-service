@@ -1,5 +1,6 @@
 package com.flickzz.desk.service;
 
+import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.ConfigChangeNotification;
 import com.flickzz.desk.repo.ConfigChangeNotificationRepository;
@@ -9,10 +10,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.UNREAD_ERROR;
 
 @Service
 public class NotificationService {
@@ -28,11 +31,85 @@ public class NotificationService {
     public List<ConfigChangeNotificationVO> getNotificationsByRecipientId(Long recipientId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
-            List<ConfigChangeNotification> notifications = configChangeNotificationRepository.findAllByRecipientUserIdOrderByNotificationIdDesc(recipientId);
+            List<ConfigChangeNotification> notifications = configChangeNotificationRepository.findAllByRecipientUserIdAndIsActiveTrueOrderByNotificationIdDesc(recipientId);
             if (notifications == null) {
                 return List.of();
             }
             return notifications.stream().map(mapper :: toNotificationVO).toList();
+        } catch (Exception e) {
+            log.error(generateLog(ENTRY, this.getClass().getName()), e);
+            throw e;
+        }
+    }
+
+    public void markNotificationAsRead(Long notificationId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            if(notificationId != null) {
+                ConfigChangeNotification notification = configChangeNotificationRepository.findById(notificationId).orElse(null);
+                if (notification != null) {
+                    notification.setIsRead(READ);
+                    notification.setReadOn(LocalDateTime.now());
+                    notification.setUpdatedBy(notification.getRecipientOrgId());
+                    notification.setUpdatedOn(LocalDateTime.now());
+                    configChangeNotificationRepository.save(notification);
+                }
+            }
+        } catch (Exception e) {
+            log.error(generateLog(ENTRY, this.getClass().getName()), e);
+            throw e;
+        }
+    }
+
+    public void markAllNotificationsAsRead(Long recipientId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            List<ConfigChangeNotification> notifications = configChangeNotificationRepository.findAllByRecipientUserIdAndIsActiveTrueOrderByNotificationIdDesc(recipientId);
+            for (ConfigChangeNotification notification : notifications) {
+                notification.setIsRead(READ);
+                notification.setReadOn(LocalDateTime.now());
+                notification.setUpdatedBy(notification.getRecipientOrgId());
+                notification.setUpdatedOn(LocalDateTime.now());
+            }
+            configChangeNotificationRepository.saveAll(notifications);
+        } catch (Exception e) {
+            log.error(generateLog(ENTRY, this.getClass().getName()), e);
+            throw e;
+        }
+    }
+
+    public void clearNotification(Long notificationId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            if(notificationId != null) {
+                ConfigChangeNotification notification = configChangeNotificationRepository.findById(notificationId).orElse(null);
+                if (notification != null) {
+                    if(notification.getIsRead()) {
+                        notification.setIsActive(INACTIVE);
+                        notification.setUpdatedBy(notification.getRecipientOrgId());
+                        notification.setUpdatedOn(LocalDateTime.now());
+                        configChangeNotificationRepository.save(notification);
+                    } else {
+                        throw new FlickzzDeskException(UNREAD_ERROR, UNREAD_ERROR.getDescription());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(generateLog(ENTRY, this.getClass().getName()), e);
+            throw e;
+        }
+    }
+
+    public void clearAllNotifications(Long recipientId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            List<ConfigChangeNotification> notifications = configChangeNotificationRepository.findAllByRecipientUserIdAndIsActiveTrueAndIsReadTrueOrderByNotificationIdDesc(recipientId);
+            for (ConfigChangeNotification notification : notifications) {
+                notification.setIsActive(INACTIVE);
+                notification.setUpdatedBy(notification.getRecipientOrgId());
+                notification.setUpdatedOn(LocalDateTime.now());
+            }
+            configChangeNotificationRepository.saveAll(notifications);
         } catch (Exception e) {
             log.error(generateLog(ENTRY, this.getClass().getName()), e);
             throw e;

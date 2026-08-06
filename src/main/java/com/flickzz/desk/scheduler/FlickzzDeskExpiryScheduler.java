@@ -23,13 +23,13 @@ public class FlickzzDeskExpiryScheduler {
     @Autowired
     ConfigChangeNotificationRepository configChangeNotificationRepository;
 
-    @Scheduled(cron = "0 * * * * ?")
-    @Transactional
-    public void deactivateExpiredBusinessPartners() {
-        ConfigChangeNotification notification = configChangeNotificationRepository.findById(Long.valueOf(1)).orElse(null);
-        if (notification != null) {
-            configNotificationService.publishNotification(notification);
-        }
-        log.info("Checked for expired business partners and sent notifications if any. - Checked at {}", Date.from(Instant.now()));
-    }
+//    @Scheduled(cron = "0/15 * * * * ?")
+//    @Transactional
+//    public void deactivateExpiredBusinessPartners() {
+//        ConfigChangeNotification notification = configChangeNotificationRepository.findById(Long.valueOf(8)).orElse(null);
+//        if (notification != null) {
+//            configNotificationService.publishNotification(notification);
+//        }
+//        log.info("Checked for expired business partners and sent notifications if any. - Checked at {}", Date.from(Instant.now()));
+//    }
 }

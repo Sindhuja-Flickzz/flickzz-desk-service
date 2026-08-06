@@ -8,5 +8,8 @@ import java.util.List;
 
 @Repository
 public interface ConfigChangeNotificationRepository extends JpaRepository<ConfigChangeNotification, Long> {
-    List<ConfigChangeNotification> findAllByRecipientUserIdOrderByNotificationIdDesc(Long recipientId);
+
+    List<ConfigChangeNotification> findAllByRecipientUserIdAndIsActiveTrueOrderByNotificationIdDesc(Long recipientId);
+
+    List<ConfigChangeNotification> findAllByRecipientUserIdAndIsActiveTrueAndIsReadTrueOrderByNotificationIdDesc(Long recipientId);
 }

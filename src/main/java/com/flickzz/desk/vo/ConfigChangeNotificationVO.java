@@ -18,7 +18,7 @@ public class ConfigChangeNotificationVO implements Serializable {
 
     private Long notificationId;
 
-    private BPConfigurationChangeRequestVO changeRequestId;
+    private BPConfigurationChangeRequestVO changeRequest;
 
     private String title;
 
@@ -26,9 +26,15 @@ public class ConfigChangeNotificationVO implements Serializable {
 
     private String notificationType;
 
+    private String action;
+
     private String referenceType;
 
     private Long referenceId;
+
+    private String triggeredByUser;
+
+    private String triggeredUserOrg;
 
     private Long recipientUserId;
 

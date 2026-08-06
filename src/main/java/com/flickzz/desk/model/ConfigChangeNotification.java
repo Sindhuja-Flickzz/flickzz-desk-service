@@ -35,11 +35,20 @@ public class    ConfigChangeNotification {
     @Column(name = "NOTIFICATION_TYPE", nullable = false, length = 50)
     private String notificationType;
 
+    @Column(name = "NOTIFICATION_ACTION", length = 20)
+    private String action;
+
     @Column(name = "REFERENCE_TYPE", length = 50)
     private String referenceType;
 
     @Column(name = "REFERENCE_ID")
     private Long referenceId;
+
+    @Column(name = "TRIGGERED_BY_USER", length = 100)
+    private String triggeredByUser;
+
+    @Column(name = "TRIGGERED_USER_ORG", length = 100)
+    private String triggeredUserOrg;
 
     @Column(name = "RECIPIENT_USER_ID", nullable = false)
     private Long recipientUserId;
@@ -58,7 +67,7 @@ public class    ConfigChangeNotification {
 
     @Builder.Default
     @Column(name = "IS_ACTIVE")
-    private Boolean active = Boolean.TRUE;
+    private Boolean isActive = Boolean.TRUE;
 
     @Column(name = "CREATED_BY")
     private Long createdBy;

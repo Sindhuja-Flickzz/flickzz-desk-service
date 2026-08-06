@@ -12,8 +12,6 @@ public interface BPAssignmentRepository extends JpaRepository<BPAssignment, Long
 
 	Optional<BPAssignment> findByAssignmentIdAndIsActive(Long assignmentId, Boolean active);
 
-	Optional<BPAssignment> findBySupportGroupSupportGroupIdAndIsActive(Long supportGroupId, Boolean active);
-
 	Optional<BPAssignment> findByConfigurationConfigurationIdAndSupportGroupSupportGroupIdAndIsActive(
 			Long configurationId, Long supportGroupId, Boolean active);
 
