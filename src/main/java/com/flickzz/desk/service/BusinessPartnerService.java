@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
+import com.flickzz.desk.vo.response.ApprovalProgressRemarkResponseVO;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +21,10 @@ import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
+import com.flickzz.desk.service.notification.ConfigNotificationService;
 import com.flickzz.desk.vo.*;
 import tools.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 
 @Service
 @SuppressWarnings("unused")
@@ -99,6 +103,9 @@ public class BusinessPartnerService {
 
 	@Autowired
 	ConfigChangeApprovalRepository configChangeApprovalRepository;
+
+	@Autowired
+	ConfigNotificationService configNotificationService;
 
 	@Autowired
 	ConfigurationChangeService configurationChangeService;
@@ -2984,30 +2991,417 @@ public class BusinessPartnerService {
 	public ConfigChangeApprovalVO actionOnConfigApproval(BpConfigRequestVO request) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			if (request == null) {
-				throw new FlickzzDeskException(INVALID_FIELD,
-						getDescription(INVALID_FIELD.getDescription(), "Request"));
+			if (request == null || StringUtils.isBlank(request.getAction())) {
+				throw new FlickzzDeskException(INVALID_TEXT,
+						getDescription(INVALID_TEXT.getDescription(), "Request"));
 			}
 
 			Optional<CompanyApprover> approver = companyApproverRepository.findByAgentUserUserId(request.getUpdatedBy());
-			if (!approver.isPresent()) {
+			if (approver.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Company Approver"));
-			} else if (approver.get().getIsActive() == null || !approver.get().getIsActive()) {
+			}
+
+			CompanyApprover companyApprover = approver.get();
+			if (companyApprover.getIsActive() == null || !companyApprover.getIsActive()) {
 				throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
 			}
 
-			if(approver.get().getLevel() == null || approver.get().getLevel() <= 0) {
+			if (companyApprover.getLevel() == null || companyApprover.getLevel() <= 0) {
 				throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
-			} else if (approver.get().getLevel() == MANDATORY_APPROVER_LEVEL) {
-
 			}
 
+			if (request.getApprovalId() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Approval Id"));
+			}
+
+			ConfigChangeApproval approval = configChangeApprovalRepository.findById(request.getApprovalId())
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
+
+			if (!Objects.equals(approval.getApproverUserId(), request.getUpdatedBy())) {
+				throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
+			}
+
+			String action = request.getAction();
+
+			approval.setUpdatedBy(request.getUpdatedBy());
+			approval.setUpdatedOn(LocalDateTime.now());
+			approval.setStatus(request.getAction().equalsIgnoreCase(APPROVE) ? APPROVED : request.getAction().equalsIgnoreCase(DECLINE) ? DECLINED : REQUEST_CLARIFICATION);
+			saveChangeRequestRemark(approval, request.getAction(), request.getRemarks());
+
+			if (approval.getApproverLevel().equals(MANDATORY_APPROVER_LEVEL)) {
+				if (DECLINE.equalsIgnoreCase(action)) {
+					if ("BP".equalsIgnoreCase(approval.getApproverType())) {
+						applyDeclineApproval(approval, request);
+					} else if ("Internal".equalsIgnoreCase(approval.getApproverType())) {
+						approval.setApprovedOn(LocalDateTime.now());
+						if(approval.getConfigChangeRequest() != null && approval.getConfigChangeRequest().getChangedRequestId() != null
+								&& approval.getConfigChangeRequest().getSourceChangeId() != null &&
+								approval.getConfigChangeRequest().getChangedRequestId().equals(approval.getConfigChangeRequest().getSourceChangeId())) {
+							applyDeclineApproval(approval, request);
+						} else {
+							configNotificationService.notifyBpApprovalConfigChange(approval.getConfigChangeRequest(), approval.getApprovalType());
+						}
+					}
+				} else if (REQUEST_CLARIFICATION.equalsIgnoreCase(action)) {
+					requestClarification(approval, request);
+				} else if (APPROVE.equalsIgnoreCase(action) && "BP".equalsIgnoreCase(approval.getApproverType())) {
+					applyApproval(approval);
+					approval.setApprovedOn(LocalDateTime.now());
+				} else if (APPROVE.equalsIgnoreCase(action) && "Internal".equalsIgnoreCase(approval.getApproverType())) {
+					approval.setApprovedOn(LocalDateTime.now());
+					if(approval.getConfigChangeRequest() != null && approval.getConfigChangeRequest().getChangedRequestId() != null
+							&& approval.getConfigChangeRequest().getSourceChangeId() != null &&
+							approval.getConfigChangeRequest().getChangedRequestId().equals(approval.getConfigChangeRequest().getSourceChangeId())) {
+						applyApproval(approval);
+					} else {
+						configNotificationService.notifyBpApprovalConfigChange(approval.getConfigChangeRequest(), approval.getApprovalType());
+					}
+				}
+			} else {
+				approval.setStatus(action);
+			}
+
+			updateChangeRequestProgress(approval, action);
+			configChangeApprovalRepository.save(approval);
+			return mapper.toConfigChangeApprovalVO(approval);
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in actionOnConfigApproval method in BusinessPartnerService");
+			log.error("Exception in actionOnConfigApproval method in BusinessPartnerService", e);
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
+
+	private void applyDeclineApproval(ConfigChangeApproval approval, BpConfigRequestVO request) {
+		BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+		if (changeRequest == null || changeRequest.getChangedRequestId() == null) {
+			return;
+		}
+
+		Long changedId = changeRequest.getChangedRequestId();
+		if (Boolean.TRUE.equals(changeRequest.getBpPriority())) {
+			bPPriorityRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(INACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bPPriorityRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bPPriorityRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bPPriorityRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getBpSla())) {
+			bpSlaRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(INACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpSlaRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpSlaRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpSlaRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getCategory())) {
+			bpCategoryRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(INACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpCategoryRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpCategoryRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpCategoryRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getSupportGroup())) {
+			bpSupportGroupRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(INACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpSupportGroupRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpSupportGroupRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpSupportGroupRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getAssignment())) {
+			bpAssignmentRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(INACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpAssignmentRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpAssignmentRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpAssignmentRepository.save(entity);
+				});
+			}
+		}
+
+		changeRequest.setStatus(DECLINED);
+		changeRequest.setUpdatedBy(approval.getUpdatedBy());
+		changeRequest.setUpdatedOn(LocalDateTime.now());
+		changeRequest.setCompletedOn(LocalDateTime.now());
+		bpConfigurationChangeRequestRepository.save(changeRequest);
+		approval.setStatus(DECLINED);
+	}
+
+	private void requestClarification(ConfigChangeApproval approval, BpConfigRequestVO request) {
+		approval.setStatus(REQUEST_CLARIFICATION);
+		BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+		if (changeRequest == null) {
+			return;
+		}
+		changeRequest.setStatus(REQUEST_CLARIFICATION);
+		changeRequest.setUpdatedBy(approval.getUpdatedBy());
+		changeRequest.setUpdatedOn(LocalDateTime.now());
+		bpConfigurationChangeRequestRepository.save(changeRequest);
+
+	}
+
+	private void applyApproval(ConfigChangeApproval approval) {
+		BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+		if (changeRequest == null || changeRequest.getChangedRequestId() == null) {
+			return;
+		}
+
+		Long changedId = changeRequest.getChangedRequestId();
+		if (Boolean.TRUE.equals(changeRequest.getBpPriority())) {
+			bPPriorityRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(ACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bPPriorityRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bPPriorityRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bPPriorityRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getBpSla())) {
+			bpSlaRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(ACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpSlaRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpSlaRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpSlaRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getCategory())) {
+			bpCategoryRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(ACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpCategoryRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpCategoryRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpCategoryRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getSupportGroup())) {
+			bpSupportGroupRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(ACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpSupportGroupRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpSupportGroupRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpSupportGroupRepository.save(entity);
+				});
+			}
+		} else if (Boolean.TRUE.equals(changeRequest.getAssignment())) {
+			bpAssignmentRepository.findById(changedId).ifPresent(entity -> {
+				entity.setIsActive(ACTIVE);
+				entity.setIsUnderApproval(Boolean.FALSE);
+				bpAssignmentRepository.save(entity);
+			});
+			if(changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
+				bpAssignmentRepository.findById(changeRequest.getSourceChangeId()).ifPresent(entity -> {
+					entity.setIsActive(INACTIVE);
+					entity.setIsUnderApproval(Boolean.FALSE);
+					bpAssignmentRepository.save(entity);
+				});
+			}
+		}
+		approval.setStatus(APPROVE);
+	}
+
+	private void saveChangeRequestRemark(ConfigChangeApproval approval, String action, String remarkText) {
+		BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+		if (changeRequest == null) {
+			return;
+		}
+		BPConfigurationChangeRequestRemark remark = BPConfigurationChangeRequestRemark.builder()
+			.configurationChangeRequest(changeRequest)
+			.remarkType(action)
+			.approverLevel(approval.getApproverLevel())
+			.approvalStatus(action.equalsIgnoreCase(APPROVE) ? APPROVED : action.equalsIgnoreCase(DECLINE) ? DECLINED : REQUEST_CLARIFICATION)
+			.userId(approval.getApproverUserId())
+			.organizationId(approval.getApproverOrgId())
+			.remark(remarkText != null ? remarkText : "")
+			.createdOn(LocalDateTime.now())
+			.build();
+		bpConfigurationChangeRequestRemarkRepository.save(remark);
+	}
+
+	private void updateChangeRequestProgress(ConfigChangeApproval approval, String action) {
+		BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+		if (changeRequest == null) {
+			return;
+		}
+
+		boolean saveRequest = false;
+		if (APPROVE.equalsIgnoreCase(action) || DECLINE.equalsIgnoreCase(action)) {
+			if ("Internal".equalsIgnoreCase(approval.getApproverType())) {
+				changeRequest.setInternalApprovalCompleted(Boolean.TRUE);
+				changeRequest.setCurrentInternalApprovalLevel(approval.getApproverLevel());
+				changeRequest.setStatus(INTERNAL_APPROVED);
+				saveRequest = true;
+			} else if ("BP".equalsIgnoreCase(approval.getApproverType())) {
+				changeRequest.setBpApprovalCompleted(Boolean.TRUE);
+				changeRequest.setCurrentBpApprovalLevel(approval.getApproverLevel());
+				changeRequest.setStatus(APPROVED);
+				changeRequest.setCompletedOn(LocalDateTime.now());
+				saveRequest = true;
+			}
+		} else if (REQUEST_CLARIFICATION.equalsIgnoreCase(action)) {
+			changeRequest.setStatus(REQUEST_CLARIFICATION);
+			saveRequest = true;
+		} else {
+			changeRequest.setStatus(action);
+			saveRequest = true;
+		}
+
+		if (saveRequest) {
+			changeRequest.setUpdatedBy(approval.getUpdatedBy());
+			changeRequest.setUpdatedOn(LocalDateTime.now());
+			bpConfigurationChangeRequestRepository.save(changeRequest);
+		}
+	}
+
+	public List<ApprovalProgressRemarkResponseVO> getBusinessPartnerApprovalProgressRemark(Long approvalId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			if (approvalId == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Approval Id"));
+			}
+
+			ConfigChangeApproval approval = configChangeApprovalRepository.findById(approvalId)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
+
+			BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+			if (changeRequest == null || changeRequest.getCcrId() == null) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Request"));
+			}
+
+			List<BPConfigurationChangeRequestRemark> remarks = changeRequest.getRemarks();
+			List<ConfigChangeApproval> relatedApprovals = configChangeApprovalRepository
+					.findByConfigChangeRequestCcrId(changeRequest.getCcrId());
+
+			Map<String, ConfigChangeApproval> approvalMap = new HashMap<>();
+			for (ConfigChangeApproval relatedApproval : relatedApprovals) {
+				if (relatedApproval != null && relatedApproval.getApproverLevel() != null
+						&& relatedApproval.getApproverUserId() != null) {
+					String key = buildApprovalKey(relatedApproval.getApproverLevel(), relatedApproval.getApproverUserId());
+					approvalMap.putIfAbsent(key, relatedApproval);
+				}
+			}
+
+			return remarks.stream()
+					.map(remark -> mapRemarkToProgressResponse(remark, approvalMap, changeRequest))
+					.toList();
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	private ApprovalProgressRemarkResponseVO mapRemarkToProgressResponse(
+			BPConfigurationChangeRequestRemark remark,
+			Map<String, ConfigChangeApproval> approvalMap,
+			BPConfigurationChangeRequest changeRequest) {
+		String stage = determineRemarkStage(remark, approvalMap, changeRequest);
+		String userName = null;
+		if (remark != null && remark.getUserId() != null) {
+			try {
+				userName = commonService.loadUserNameByUserId(remark.getUserId(), false);
+			} catch (Exception ignored) {
+				userName = null;
+			}
+		}
+
+		return ApprovalProgressRemarkResponseVO.builder()
+				.remarkId(remark != null ? remark.getRemarkId() : null)
+				.stage(stage)
+				.remarkType(remark != null ? remark.getRemarkType() : null)
+				.approverLevel(remark != null ? remark.getApproverLevel() : null)
+				.approvalStatus(remark != null ? remark.getApprovalStatus() : null)
+				.userId(remark != null ? remark.getUserId() : null)
+				.userName(userName)
+				.organizationId(remark != null ? remark.getOrganizationId() : null)
+				.remark(remark != null ? remark.getRemark() : null)
+				.createdOn(remark != null ? remark.getCreatedOn() : null)
+				.build();
+	}
+
+	private String determineRemarkStage(BPConfigurationChangeRequestRemark remark,
+			Map<String, ConfigChangeApproval> approvalMap,
+			BPConfigurationChangeRequest changeRequest) {
+		if (remark == null) {
+			return null;
+		}
+
+		if (DRAFTED.equalsIgnoreCase(remark.getApprovalStatus())) {
+			return "Drafted";
+		}
+
+		String key = buildApprovalKey(remark.getApproverLevel(), remark.getUserId());
+		ConfigChangeApproval relatedApproval = approvalMap.get(key);
+		if (relatedApproval != null && relatedApproval.getApproverType() != null) {
+			if ("Internal".equalsIgnoreCase(relatedApproval.getApproverType())) {
+				return "Internal";
+			}
+			if ("BP".equalsIgnoreCase(relatedApproval.getApproverType())) {
+				return "BP";
+			}
+		}
+
+		if (APPROVED.equalsIgnoreCase(remark.getApprovalStatus())
+				&& changeRequest != null
+				&& APPROVED.equalsIgnoreCase(changeRequest.getStatus())
+				&& changeRequest.getCompletedOn() != null) {
+			return "Activation";
+		}
+
+		return remark.getApprovalStatus();
+	}
+
+	private String buildApprovalKey(Integer approverLevel, Long userId) {
+		return (approverLevel != null ? approverLevel.toString() : "") + "|" + (userId != null ? userId.toString() : "");
+	}
+
 }

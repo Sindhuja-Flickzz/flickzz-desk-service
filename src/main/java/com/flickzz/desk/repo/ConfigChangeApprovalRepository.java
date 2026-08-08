@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface ConfigChangeApprovalRepository  extends JpaRepository<ConfigChangeApproval, Long> {
 	List<ConfigChangeApproval> findByApproverUserId(Long approverUserId);
+
+    List<ConfigChangeApproval> findByConfigChangeRequestCcrId(Long ccrId);
 }

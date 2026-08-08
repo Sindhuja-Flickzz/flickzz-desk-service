@@ -7,5 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BPConfigurationChangeRequestRemarkRepository extends JpaRepository<BPConfigurationChangeRequestRemark, Long> {
-
+    List<BPConfigurationChangeRequestRemark> findAllByConfigurationChangeRequestCcrIdOrderByCreatedOnAsc(Long ccrId);
 }
+
