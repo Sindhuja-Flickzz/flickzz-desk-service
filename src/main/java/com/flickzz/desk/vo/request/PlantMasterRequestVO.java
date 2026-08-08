@@ -18,6 +18,7 @@ public class PlantMasterRequestVO implements Serializable {
 	private Long calendarId; // reference to CalendarMaster
 	private Long companyId;
     private List<String> weekOff;
+	private List<Long> agents;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

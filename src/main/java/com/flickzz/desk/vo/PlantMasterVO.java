@@ -3,6 +3,7 @@ package com.flickzz.desk.vo;
 import java.io.Serializable;
 import java.util.List;
 
+import com.flickzz.desk.model.AgentPlantMapping;
 import lombok.*;
 
 @Data
@@ -18,6 +19,7 @@ public class PlantMasterVO implements Serializable {
 	private CalendarMasterVO calendar; // reference to CalendarMaster
 	private CompanyMasterVO company; // reference to CompanyMaster
 	private List<PlantWeekoffVO> weekOff;
+	private List<AgentPlantMappingVO> agentPlantMappings;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

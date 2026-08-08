@@ -112,6 +112,16 @@ public class AgentController {
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
 	}
 
+	@GetMapping("/list/active/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getActiveAgentList(@PathVariable String orgId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<AgentMasterVO> response = agentService.getActiveAgentList(orgId);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+	}
+
 	@GetMapping("/skills/{agentId}")
 	public ResponseEntity<FlickzzDeskResponse> getAgentSkills(@PathVariable String agentId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));

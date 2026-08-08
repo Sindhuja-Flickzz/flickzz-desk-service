@@ -1,5 +1,6 @@
 package com.flickzz.desk.mapper;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -181,6 +182,9 @@ public class CommonMapper {
                 .weekOff(entity.getWeekoff() == null ? null
                         : entity.getWeekoff().stream().filter(PlantWeekoff::isActive)
                         .map(this::toPlantWeekoffVo).toList())
+				.agentPlantMappings(entity.getAgentPlantMappings() == null ? null
+                        : entity.getAgentPlantMappings().stream().filter(AgentPlantMapping::getIsActive)
+                        .map(this::toAgentPlantMappingVo).toList())
                 .createdBy(entity.getCreatedBy())
                 .isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
                 .updatedBy(entity.getUpdatedBy())
@@ -188,7 +192,20 @@ public class CommonMapper {
                 .isActive(entity.getIsActive()).build();
     }
 
-    private PlantWeekoffVO toPlantWeekoffVo(PlantWeekoff plantWeekoff) {
+	private AgentPlantMappingVO toAgentPlantMappingVo(AgentPlantMapping agentPlantMapping) {
+		if (agentPlantMapping == null) {
+			return null;
+		}
+		return AgentPlantMappingVO.builder().mappingId(agentPlantMapping.getMappingId())
+				.agent(toNoBackRefAgentMasterVO(agentPlantMapping.getAgent()))
+				.active(agentPlantMapping.getIsActive()).createdBy(agentPlantMapping.getCreatedBy())
+				.creatorAdmin(agentPlantMapping.getCreatorAdmin() != null ? agentPlantMapping.getCreatorAdmin() : false)
+				.updatedBy(agentPlantMapping.getUpdatedBy())
+				.updaterAdmin(agentPlantMapping.getUpdaterAdmin() != null ? agentPlantMapping.getUpdaterAdmin() : false)
+				.build();
+	}
+
+	private PlantWeekoffVO toPlantWeekoffVo(PlantWeekoff plantWeekoff) {
         if (plantWeekoff == null) {
             return null;
         }
