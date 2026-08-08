@@ -17,6 +17,8 @@ public class BPConfigurationChangeRequestRemarkVO implements Serializable {
 
     private BPConfigurationChangeRequestVO ccrId;
 
+    private ConfigChangeApprovalVO approval;
+
     private String remarkType;
 
     private Integer approverLevel;
