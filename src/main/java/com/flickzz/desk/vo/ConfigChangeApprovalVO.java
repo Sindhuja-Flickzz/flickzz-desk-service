@@ -22,6 +22,7 @@ public class ConfigChangeApprovalVO implements Serializable {
     private Long approverUserId;
     private Long approverOrgId;
     private String status;
+    private String approverType;
     private Boolean mandatory;
     private LocalDateTime approvedOn;
     private List<BPConfigurationChangeRequestRemarkVO> remarks;

@@ -53,6 +53,14 @@ public class BPConfigurationChangeRequest {
     @Column(name = "IS_ASSIGNMENT")
     private Boolean assignment = Boolean.FALSE;
 
+    @Builder.Default
+    @Column(name = "IS_INTERNAL_APPROVAL_COMPLETED")
+    private Boolean internalApprovalCompleted = Boolean.FALSE;
+
+    @Builder.Default
+    @Column(name = "IS_BP_APPROVAL_COMPLETED")
+    private Boolean bpApprovalCompleted = Boolean.FALSE;
+
     @Column(name = "OPERATION", nullable = false, length = 20)
     private String operation;
 

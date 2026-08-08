@@ -26,6 +26,7 @@ public class CompanyMasterRequestVO implements Serializable {
 	private String mail;
 	private Long createdBy;
 	private Long updatedBy;
+	private Boolean enforceApprovalHierarchy;
 	private Boolean isCreatedByAdmin;
 	private Boolean isUpdatedByAdmin;
 	private String bpUid;

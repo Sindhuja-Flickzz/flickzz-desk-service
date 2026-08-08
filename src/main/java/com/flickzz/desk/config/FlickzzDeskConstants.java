@@ -67,15 +67,23 @@ public class FlickzzDeskConstants {
 	public static final String APPROVERS = "Approvers";
 	public static final String CREATE = "CREATE";
 	public static final String UPDATE = "UPDATE";
+	public static final String APPROVE = "APPROVE";
 	public static final String DELETE = "DELETE";
+	public static final String APPROVED = "Approved";
+	public static final String INTERNAL_APPROVED = "Internal Approved";
+	public static final String DECLINE = "Decline";
+	public static final String DECLINED = "Declined";
+	public static final String REQUEST_CLARIFICATION = "Clarify";
 	public static final String SUCCESS = "SUCCESS";
 	public static final String FAILED = "FAILED";
 	public static final String DRAFTED = "DRAFTED";
 
-	public static final String PENDING = "PENDING";
+	public static final String PENDING = "Pending";
 
 	public static final Boolean READ = Boolean.TRUE;
 	public static final Boolean UNREAD = Boolean.FALSE;
+
+	public static final Integer MANDATORY_APPROVER_LEVEL = 1;
 
 	public static final String LEAD_COMPANY = "Lead company";
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),

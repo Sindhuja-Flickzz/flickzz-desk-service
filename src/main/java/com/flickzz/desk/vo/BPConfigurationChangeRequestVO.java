@@ -23,6 +23,8 @@ public class BPConfigurationChangeRequestVO implements Serializable {
     private Boolean category;
     private Boolean supportGroup;
     private Boolean assignment;
+    private Boolean internalApprovalCompleted;
+    private Boolean bpApprovalCompleted;
     private String operation;
     private CompanyMasterVO requestedByOrg;
     private Long requestedByUserId;

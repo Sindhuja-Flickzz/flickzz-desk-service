@@ -124,4 +124,14 @@ public class FlickzzDeskController {
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
 	}
+
+	@GetMapping("/get/user/{userId}")
+	public ResponseEntity<FlickzzDeskResponse> getUserInfoById(@PathVariable Long userId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		UserVO respVO = flickzzDeskService.getUserInfoById(userId);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), LOGIN), respVO);
+	}
 }

@@ -69,6 +69,10 @@ public class CompanyMaster {
 	private Integer version = 1;
 
 	@Builder.Default
+	@Column(name= "ENFORCE_APPROVAL_HIERARCHY")
+	private Boolean enforceApprovalHierarchy = false;
+
+	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
 

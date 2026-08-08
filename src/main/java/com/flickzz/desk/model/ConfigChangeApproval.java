@@ -33,6 +33,9 @@ public class ConfigChangeApproval {
     @Column(name = "APPROVAL_TYPE", nullable = false, length = 20)
     private String approvalType;
 
+    @Column(name = "APPROVER_TYPE", nullable = false, length = 20)
+    private String approverType;
+
     @Column(name = "APPROVER_LEVEL", nullable = false)
     private Integer approverLevel;
 
