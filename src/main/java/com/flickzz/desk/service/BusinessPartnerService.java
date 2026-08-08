@@ -3253,6 +3253,7 @@ public class BusinessPartnerService {
 		BPConfigurationChangeRequestRemark remark = BPConfigurationChangeRequestRemark.builder()
 			.configurationChangeRequest(changeRequest)
 			.remarkType(action)
+			.approval(approval)
 			.approverLevel(approval.getApproverLevel())
 			.approvalStatus(action.equalsIgnoreCase(APPROVE) ? APPROVED : action.equalsIgnoreCase(DECLINE) ? DECLINED : REQUEST_CLARIFICATION)
 			.userId(approval.getApproverUserId())

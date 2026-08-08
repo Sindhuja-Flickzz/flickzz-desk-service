@@ -29,6 +29,11 @@ public class BPConfigurationChangeRequestRemark {
     @JsonBackReference
     private BPConfigurationChangeRequest configurationChangeRequest;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "APPROVAL_ID")
+    @JsonBackReference
+    private ConfigChangeApproval approval;
+
     @Column(name = "REMARK_TYPE", nullable = false, length = 30)
     private String remarkType;
 
