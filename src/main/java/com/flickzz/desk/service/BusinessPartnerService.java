@@ -705,7 +705,7 @@ public class BusinessPartnerService {
 
 		log.info(generateLog("getBusinessPartnerPriorityConfigurationById", this.getClass().getName()));
 		try {
-			Optional<BPPriority> existingPriority = bPPriorityRepository.findByPriorityIdAndIsActive(valueOf, ACTIVE);
+			Optional<BPPriority> existingPriority = bPPriorityRepository.findById(valueOf);
 
 			if (existingPriority.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
@@ -1196,7 +1196,7 @@ public class BusinessPartnerService {
 
 		log.info(generateLog("getBusinessPartnerSLAConfigurationById", this.getClass().getName()));
 		try {
-			Optional<BPSla> existingSla = bpSlaRepository.findBySlaIdAndIsActive(valueOf, ACTIVE);
+			Optional<BPSla> existingSla = bpSlaRepository.findById(valueOf);
 
 			if (existingSla.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
@@ -1711,8 +1711,7 @@ public class BusinessPartnerService {
 	public BPCategoryVO getBusinessPartnerCategoryConfigurationById(Long categoryId) {
 		log.info(generateLog("getBusinessPartnerCategoryConfigurationById", this.getClass().getName()));
 		try {
-			Optional<BPCategory> existingCategory = bpCategoryRepository.findByCategoryIdAndIsActive(categoryId,
-					ACTIVE);
+			Optional<BPCategory> existingCategory = bpCategoryRepository.findById(categoryId);
 			if (existingCategory.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CATEGORY));
@@ -2370,7 +2369,7 @@ public class BusinessPartnerService {
 		log.info(generateLog("getBusinessPartnerSupportGroupConfigurationById", this.getClass().getName()));
 		try {
 			Optional<BPSupportGroup> existingGroup = bpSupportGroupRepository
-					.findBySupportGroupIdAndIsActive(supportGroupId, ACTIVE);
+					.findById(supportGroupId);
 			if (existingGroup.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Support group"));
@@ -2921,7 +2920,7 @@ public class BusinessPartnerService {
 		log.info(generateLog("getBusinessPartnerAssignmentConfigurationBySupportGroupId", this.getClass().getName()));
 		try {
 			Optional<BPAssignment> existingAssignment = bpAssignmentRepository
-					.findByAssignmentIdAndIsActive(assignmentId, ACTIVE);
+					.findById(assignmentId);
 			if (existingAssignment.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Assignment"));
@@ -2978,6 +2977,36 @@ public class BusinessPartnerService {
 			throw e;
 		} catch (Exception e) {
 			log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
+	public ConfigChangeApprovalVO actionOnConfigApproval(BpConfigRequestVO request) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			if (request == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "Request"));
+			}
+
+			Optional<CompanyApprover> approver = companyApproverRepository.findByAgentUserUserId(request.getUpdatedBy());
+			if (!approver.isPresent()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), "Company Approver"));
+			} else if (approver.get().getIsActive() == null || !approver.get().getIsActive()) {
+				throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
+			}
+
+			if(approver.get().getLevel() == null || approver.get().getLevel() <= 0) {
+				throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
+			} else if (approver.get().getLevel() == MANDATORY_APPROVER_LEVEL) {
+
+			}
+
+		} catch (FlickzzDeskException e) {
+			throw e;
+		} catch (Exception e) {
+			log.error("Exception in actionOnConfigApproval method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

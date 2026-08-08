@@ -381,4 +381,19 @@ public class FlickzzDeskService {
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
-}
+
+    public UserVO getUserInfoById(Long userId) {
+			log.info(generateLog("getUserInfoById", this.getClass().getName()));
+			try {
+				User user = userRepository.findById(userId)
+						.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+								getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
+				return mapper.userToUserVO(user);
+			} catch (FlickzzDeskException e) {
+				throw e;
+			} catch (Exception e) {
+				log.error("Exception in getUserInfoById method in FlickzzDeskService");
+				throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+			}
+		}
+	}

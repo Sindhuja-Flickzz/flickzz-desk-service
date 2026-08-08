@@ -894,8 +894,21 @@ public class CommonMapper {
 						? supportGroup.getMembers().stream().filter(member -> Boolean.TRUE.equals(member.getIsActive()))
 								.map(this::toSupportGroupMemberVo).toList()
 						: null)
+				.managers(supportGroup.getManagers() != null
+						? supportGroup.getManagers().stream().filter(manager -> Boolean.TRUE.equals(manager.getIsActive()))
+								.map(this::toSupportGroupManagerVo).toList()
+						: null)
 				.groupName(supportGroup.getGroupName()).isActive(supportGroup.getIsActive())
 				.createdBy(supportGroup.getCreatedBy()).updatedBy(supportGroup.getUpdatedBy()).build();
+	}
+
+	private BPSupportGroupManagerVO toSupportGroupManagerVo(BPSupportGroupManager bpSupportGroupManager) {
+		if (bpSupportGroupManager == null) {
+			return null;
+		}
+		return BPSupportGroupManagerVO.builder().managerId(bpSupportGroupManager.getManagerId()).supportGroup(null)
+				.agent(toAgentMasterVO(bpSupportGroupManager.getAgent())).isActive(bpSupportGroupManager.getIsActive())
+				.isInternal(bpSupportGroupManager.getIsInternal()).isBP(bpSupportGroupManager.getIsBP()).build();
 	}
 
 	public BPSupportGroupMemberVO toSupportGroupMemberVo(BPSupportGroupMember supportGroupMember) {
@@ -1097,6 +1110,7 @@ public class CommonMapper {
 				.approverUserId(approval.getApproverUserId())
 				.approverOrgId(approval.getApproverOrgId())
 				.status(approval.getStatus())
+				.approverType(approval.getApproverType())
 				.mandatory(approval.getMandatory())
 				.approvedOn(approval.getApprovedOn())
 				.remarks(approval.getRemark() != null ? approval.getRemark().stream().map(this::toBPConfigurationChangeRequestRemarkVO).toList() : List.of())

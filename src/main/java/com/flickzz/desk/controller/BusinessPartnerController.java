@@ -376,4 +376,12 @@ public class BusinessPartnerController {
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval"), response);
 	}
+
+	@PostMapping("/config/approval/action")
+	public ResponseEntity<FlickzzDeskResponse> actionOnConfigApproval(@RequestBody BpConfigRequestVO request) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		ConfigChangeApprovalVO response = businessPartnerService.actionOnConfigApproval(request);
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), request.getAction()), response);
+	}
 }

@@ -26,6 +26,7 @@ public class CompanyMasterVO implements Serializable {
 	private Integer employeeSize;
 	private String mail;
 	private Integer version;
+	private Boolean enforceApprovalHierarchy;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

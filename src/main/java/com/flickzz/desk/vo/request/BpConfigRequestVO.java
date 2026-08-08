@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class BpConfigRequestVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
+	private Long approvalId;
 	private Long priorityId;
 	private Long ticketTypeId;
 	private Long businessPartnerId;
@@ -44,6 +45,7 @@ public class BpConfigRequestVO implements Serializable {
 
 	private Long assignmentId;
 
+	private String action;
 	private String remarks;
 	private Boolean isActive;
 	private Long createdBy;

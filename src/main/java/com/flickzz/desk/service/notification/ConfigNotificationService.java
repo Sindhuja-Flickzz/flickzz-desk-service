@@ -84,7 +84,7 @@ public class ConfigNotificationService {
             }
 
             for (CompanyApprover approver : approvers) {
-                ConfigChangeApproval approval = buildChangeApproval(changeRequest, approver, changeType);
+                ConfigChangeApproval approval = buildChangeApproval(changeRequest, approver, changeType, stage);
                 configChangeApprovalRepository.saveAndFlush(approval);
                 ConfigChangeNotification notification = buildNotification(changeRequest, approver, stage);
                 ConfigChangeNotification savedNotification = configChangeNotificationRepository.saveAndFlush(notification);
@@ -95,7 +95,7 @@ public class ConfigNotificationService {
         }
     }
 
-    private ConfigChangeApproval buildChangeApproval(BPConfigurationChangeRequest changeRequest, CompanyApprover approver, String changeType) {
+    private ConfigChangeApproval buildChangeApproval(BPConfigurationChangeRequest changeRequest, CompanyApprover approver, String changeType, NotificationStage stage) {
         return ConfigChangeApproval.builder()
                 .configChangeRequest(changeRequest)
                 .approvalType(changeType)
@@ -103,6 +103,7 @@ public class ConfigNotificationService {
                 .approverUserId(approver.getAgent().getUser().getUserId())
                 .approverOrgId(approver.getCompany().getCompanyId())
                 .status(PENDING)
+                .approverType(stage == NotificationStage.INTERNAL ? "Internal" : "BP")
                 .mandatory(approver.getLevel() == 1)
                 .createdBy(changeRequest.getRequestedByUserId())
                 .createdOn(LocalDateTime.now())
@@ -119,13 +120,40 @@ public class ConfigNotificationService {
             if (changeRequest.getRequestedByOrg() == null || changeRequest.getRequestedByOrg().getCompanyId() == null) {
                 return List.of();
             }
-            return companyApproverRepository.findByCompany_CompanyIdAndIsActiveTrue(changeRequest.getRequestedByOrg().getCompanyId());
+            return resolveApprovers(changeRequest.getRequestedByOrg());
         }
 
         if (changeRequest.getApprovalOrg() == null || changeRequest.getApprovalOrg().getCompanyId() == null) {
             return List.of();
         }
-        return companyApproverRepository.findByCompany_CompanyIdAndIsActiveTrue(changeRequest.getApprovalOrg().getCompanyId());
+        return resolveApprovers(changeRequest.getApprovalOrg());
+    }
+
+    private List<CompanyApprover> resolveApprovers(CompanyMaster company) {
+        if (company == null || company.getCompanyId() == null) {
+            return List.of();
+        }
+
+        List<CompanyApprover> approvers = companyApproverRepository.findByCompany_CompanyIdAndIsActiveTrue(company.getCompanyId());
+        if (approvers.isEmpty()) {
+            return approvers;
+        }
+
+        if (Boolean.TRUE.equals(company.getEnforceApprovalHierarchy())) {
+            Integer topLevel = approvers.stream()
+                    .map(CompanyApprover::getLevel)
+                    .filter(level -> level != null && level > 0)
+                    .min(Integer::compareTo)
+                    .orElse(null);
+            if (topLevel == null) {
+                return List.of();
+            }
+            return approvers.stream()
+                    .filter(approver -> topLevel.equals(approver.getLevel()))
+                    .toList();
+        }
+
+        return approvers;
     }
 
     private ConfigChangeNotification buildNotification(BPConfigurationChangeRequest changeRequest,

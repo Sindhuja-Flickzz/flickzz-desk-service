@@ -72,10 +72,12 @@ public class FlickzzDeskConstants {
 	public static final String FAILED = "FAILED";
 	public static final String DRAFTED = "DRAFTED";
 
-	public static final String PENDING = "PENDING";
+	public static final String PENDING = "Pending";
 
 	public static final Boolean READ = Boolean.TRUE;
 	public static final Boolean UNREAD = Boolean.FALSE;
+
+	public static final Integer MANDATORY_APPROVER_LEVEL = 1;
 
 	public static final String LEAD_COMPANY = "Lead company";
 	public static final Map<String, String> WORK_ITEMS = Map.ofEntries(Map.entry("Incident", "INC"),

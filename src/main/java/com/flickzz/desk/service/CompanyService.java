@@ -128,6 +128,7 @@ public class CompanyService {
 			existing.setAddressLine2(request.getAddressLine2());
 			existing.setEmployeeSize(request.getEmployeeSize());
 			existing.setUpdatedBy(request.getUpdatedBy());
+			existing.setEnforceApprovalHierarchy(request.getEnforceApprovalHierarchy());
 			existing.getApprovers().clear();
 			existing.getApprovers().addAll(approvers);
 			
