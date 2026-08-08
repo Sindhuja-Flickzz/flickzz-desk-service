@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
-import com.flickzz.desk.vo.response.ApprovalProgressRemarkResponseVO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -3275,7 +3274,7 @@ public class BusinessPartnerService {
 			if ("Internal".equalsIgnoreCase(approval.getApproverType())) {
 				changeRequest.setInternalApprovalCompleted(Boolean.TRUE);
 				changeRequest.setCurrentInternalApprovalLevel(approval.getApproverLevel());
-				changeRequest.setStatus(INTERNAL_APPROVED);
+				changeRequest.setStatus(changeRequest.getChangedRequestId().equals(changeRequest.getSourceChangeId()) ? APPROVED : INTERNAL_APPROVED);
 				saveRequest = true;
 			} else if ("BP".equalsIgnoreCase(approval.getApproverType())) {
 				changeRequest.setBpApprovalCompleted(Boolean.TRUE);
@@ -3299,7 +3298,7 @@ public class BusinessPartnerService {
 		}
 	}
 
-	public List<ApprovalProgressRemarkResponseVO> getBusinessPartnerApprovalProgressRemark(Long approvalId) {
+	public List<BPConfigurationChangeRequestRemarkVO> getApprovalRemarks(Long approvalId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			if (approvalId == null) {
@@ -3307,101 +3306,19 @@ public class BusinessPartnerService {
 						getDescription(INVALID_FIELD.getDescription(), "Approval Id"));
 			}
 
-			ConfigChangeApproval approval = configChangeApprovalRepository.findById(approvalId)
-					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
-
-			BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
-			if (changeRequest == null || changeRequest.getCcrId() == null) {
+			Optional<ConfigChangeApproval> approval = configChangeApprovalRepository.findById(approvalId);
+			if (approval.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
-						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Request"));
+						getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval"));
 			}
 
-			List<BPConfigurationChangeRequestRemark> remarks = changeRequest.getRemarks();
-			List<ConfigChangeApproval> relatedApprovals = configChangeApprovalRepository
-					.findByConfigChangeRequestCcrId(changeRequest.getCcrId());
-
-			Map<String, ConfigChangeApproval> approvalMap = new HashMap<>();
-			for (ConfigChangeApproval relatedApproval : relatedApprovals) {
-				if (relatedApproval != null && relatedApproval.getApproverLevel() != null
-						&& relatedApproval.getApproverUserId() != null) {
-					String key = buildApprovalKey(relatedApproval.getApproverLevel(), relatedApproval.getApproverUserId());
-					approvalMap.putIfAbsent(key, relatedApproval);
-				}
-			}
-
-			return remarks.stream()
-					.map(remark -> mapRemarkToProgressResponse(remark, approvalMap, changeRequest))
-					.toList();
+			List<BPConfigurationChangeRequestRemark> remarks = bpConfigurationChangeRequestRemarkRepository.findByConfigurationChangeRequest_CcrId(approval.get().getConfigChangeRequest().getCcrId());
+			return remarks.stream().map(mapper::toBPConfigurationChangeRequestRemarkVO).toList();
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
+			log.error("Exception in getApprovalRemarks method in BusinessPartnerService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}
-
-	private ApprovalProgressRemarkResponseVO mapRemarkToProgressResponse(
-			BPConfigurationChangeRequestRemark remark,
-			Map<String, ConfigChangeApproval> approvalMap,
-			BPConfigurationChangeRequest changeRequest) {
-		String stage = determineRemarkStage(remark, approvalMap, changeRequest);
-		String userName = null;
-		if (remark != null && remark.getUserId() != null) {
-			try {
-				userName = commonService.loadUserNameByUserId(remark.getUserId(), false);
-			} catch (Exception ignored) {
-				userName = null;
-			}
-		}
-
-		return ApprovalProgressRemarkResponseVO.builder()
-				.remarkId(remark != null ? remark.getRemarkId() : null)
-				.stage(stage)
-				.remarkType(remark != null ? remark.getRemarkType() : null)
-				.approverLevel(remark != null ? remark.getApproverLevel() : null)
-				.approvalStatus(remark != null ? remark.getApprovalStatus() : null)
-				.userId(remark != null ? remark.getUserId() : null)
-				.userName(userName)
-				.organizationId(remark != null ? remark.getOrganizationId() : null)
-				.remark(remark != null ? remark.getRemark() : null)
-				.createdOn(remark != null ? remark.getCreatedOn() : null)
-				.build();
-	}
-
-	private String determineRemarkStage(BPConfigurationChangeRequestRemark remark,
-			Map<String, ConfigChangeApproval> approvalMap,
-			BPConfigurationChangeRequest changeRequest) {
-		if (remark == null) {
-			return null;
-		}
-
-		if (DRAFTED.equalsIgnoreCase(remark.getApprovalStatus())) {
-			return "Drafted";
-		}
-
-		String key = buildApprovalKey(remark.getApproverLevel(), remark.getUserId());
-		ConfigChangeApproval relatedApproval = approvalMap.get(key);
-		if (relatedApproval != null && relatedApproval.getApproverType() != null) {
-			if ("Internal".equalsIgnoreCase(relatedApproval.getApproverType())) {
-				return "Internal";
-			}
-			if ("BP".equalsIgnoreCase(relatedApproval.getApproverType())) {
-				return "BP";
-			}
-		}
-
-		if (APPROVED.equalsIgnoreCase(remark.getApprovalStatus())
-				&& changeRequest != null
-				&& APPROVED.equalsIgnoreCase(changeRequest.getStatus())
-				&& changeRequest.getCompletedOn() != null) {
-			return "Activation";
-		}
-
-		return remark.getApprovalStatus();
-	}
-
-	private String buildApprovalKey(Integer approverLevel, Long userId) {
-		return (approverLevel != null ? approverLevel.toString() : "") + "|" + (userId != null ? userId.toString() : "");
-	}
-
 }

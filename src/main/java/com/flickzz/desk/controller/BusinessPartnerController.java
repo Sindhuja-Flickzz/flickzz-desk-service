@@ -9,7 +9,6 @@ import java.util.*;
 
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
-import com.flickzz.desk.vo.response.ApprovalProgressRemarkResponseVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
@@ -386,13 +385,13 @@ public class BusinessPartnerController {
 		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), request.getAction()), response);
 	}
 
-	@GetMapping("/approval/progress/remark/{approvalId}")
-	public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerApprovalProgressRemark(
+	@GetMapping("/approval/remark/{approvalId}")
+	public ResponseEntity<FlickzzDeskResponse> getApprovalRemarks(
 			@PathVariable String approvalId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<ApprovalProgressRemarkResponseVO> response = businessPartnerService
-				.getBusinessPartnerApprovalProgressRemark(Long.valueOf(approvalId));
+		List<BPConfigurationChangeRequestRemarkVO> response = businessPartnerService
+				.getApprovalRemarks(Long.valueOf(approvalId));
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval Progress Remark"), response);

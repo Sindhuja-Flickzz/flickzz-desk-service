@@ -1140,6 +1140,8 @@ public class CommonMapper {
 				.requestedByOrg(changeRequest.getRequestedByOrg() != null ? toCompanyMasterVO(changeRequest.getRequestedByOrg()) : null)
 				.requestedByUserId(changeRequest.getRequestedByUserId())
 				.approvalOrg(changeRequest.getApprovalOrg() != null ? toCompanyMasterVO(changeRequest.getApprovalOrg()) : null)
+				.internalApprovalCompleted(changeRequest.getInternalApprovalCompleted())
+				.bpApprovalCompleted(changeRequest.getBpApprovalCompleted())
 				.status(changeRequest.getStatus())
 				.totalInternalApprovalLevels(changeRequest.getTotalInternalApprovalLevels())
 				.currentInternalApprovalLevel(changeRequest.getCurrentInternalApprovalLevel())
