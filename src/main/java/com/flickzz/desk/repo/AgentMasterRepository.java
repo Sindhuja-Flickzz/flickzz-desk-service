@@ -1,5 +1,6 @@
 package com.flickzz.desk.repo;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +20,6 @@ public interface AgentMasterRepository extends JpaRepository<AgentMaster, Long> 
 	Optional<AgentMaster> findByMailIdAndIsActiveTrue(String emailId);
 
     boolean existsByCalendarMaster_CalendarIdAndIsActiveTrue(Long calendarId);
+
+	List<AgentMaster> findAllByOrganization_CompanyIdAndIsActiveTrue(Long orgId);
 }

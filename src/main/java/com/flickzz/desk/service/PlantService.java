@@ -5,8 +5,9 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,12 @@ public class PlantService {
 
     @Autowired
     private PlantMasterRepository plantMasterRepository;
+
+    @Autowired
+    private AgentMasterRepository agentMasterRepository;
+
+    @Autowired
+    private AgentPlantMappingRepository agentPlantMappingRepository;
 
     @Autowired
     private CommonMapper mapper;
@@ -79,7 +86,10 @@ public class PlantService {
                     .isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 
             plant.setWeekoff(mapper.toWeekOffEntity(request.getWeekOff(), plant));
-            return mapper.toPlantMasterVO(plantMasterRepository.save(plant));
+            PlantMaster savedPlant = plantMasterRepository.save(plant);
+            persistAgentPlantMappings(savedPlant, request.getAgents(), request.getCreatedBy(), request.getIsCreatedByAdmin());
+
+            return mapper.toPlantMasterVO(savedPlant);
         } catch (FlickzzDeskException e) {
             throw e;
         } catch (Exception e) {
@@ -145,6 +155,7 @@ public class PlantService {
             }
 
             PlantMaster saved = plantMasterRepository.save(entity);
+            persistAgentPlantMappings(saved, request.getAgents(), request.getUpdatedBy(), request.getIsUpdatedByAdmin());
             return mapper.toPlantMasterVO(saved);
         } catch (FlickzzDeskException e) {
             throw e;
@@ -183,5 +194,42 @@ public class PlantService {
             log.error("Exception in getPlantList method in PlantService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
+    }
+
+    private void persistAgentPlantMappings(PlantMaster plant, List<Long> agentIds, Long userId, Boolean isAdmin) {
+        if (plant == null || plant.getPlantId() == null) {
+            return;
+        }
+
+        List<AgentPlantMapping> existingMappings = agentPlantMappingRepository.findByPlant_PlantId(plant.getPlantId());
+        if (!existingMappings.isEmpty()) {
+            agentPlantMappingRepository.deleteAll(existingMappings);
+        }
+
+        if (agentIds == null || agentIds.isEmpty()) {
+            return;
+        }
+
+        Set<Long> uniqueAgentIds = agentIds.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<AgentPlantMapping> mappings = new ArrayList<>();
+        for (Long agentId : uniqueAgentIds) {
+            AgentMaster agentMaster = agentMasterRepository.findById(agentId)
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Agent")));
+
+            mappings.add(AgentPlantMapping.builder()
+                    .agent(agentMaster)
+                    .plant(plant)
+                    .isActive(true)
+                    .createdBy(userId)
+                    .createdAt(LocalDateTime.now())
+                    .creatorAdmin(isAdmin != null ? isAdmin : false)
+                    .build());
+        }
+
+        agentPlantMappingRepository.saveAll(mappings);
     }
 }

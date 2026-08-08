@@ -38,6 +38,10 @@ public class PlantMaster {
     @OneToMany(mappedBy = "plant", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<PlantWeekoff> weekoff;
+
+	@OneToMany(mappedBy = "plant", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<AgentPlantMapping> agentPlantMappings;
     
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_PLANT_COMPANY"), nullable = false)

@@ -311,6 +311,17 @@ public class AgentService {
 		}
 	}
 
+	public List<AgentMasterVO> getActiveAgentList(String orgId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		try {
+			return agentMasterRepository.findAllByOrganization_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
+					.map(mapper::toAgentMasterVO).toList();
+		} catch (Exception e) {
+			log.error("Exception in getPlantList method in FlickzzDeskService");
+			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+		}
+	}
+
 	public List<AgentSkillsMappingVO> getAgentSkills(String agentId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
