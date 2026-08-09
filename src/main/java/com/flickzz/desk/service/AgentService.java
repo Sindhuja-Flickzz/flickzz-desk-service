@@ -5,14 +5,17 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.*;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.flickzz.desk.vo.request.AgentRequestVO;
+import com.flickzz.desk.vo.request.AgentSkillRequestVO;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.*;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
+import org.springframework.util.StringUtils;
 
 import com.flickzz.desk.exception.*;
 import com.flickzz.desk.mapper.*;
@@ -56,6 +59,9 @@ public class AgentService {
 	private LanguageMasterRepository languageMasterRepository;
 
 	@Autowired
+	private UserLanguageMappingRepository userLanguageMappingRepository;
+
+	@Autowired
 	private EnquiryRegistrationRepository enquiryRegistrationRepository;
 
 	@Autowired
@@ -71,50 +77,59 @@ public class AgentService {
 	public AgentMasterVO createAgent(AgentRequestVO request) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			if (request == null || request.getAgentName() == null) {
+			if (request == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), "request"));
+			}
+
+			if (!StringUtils.hasText(request.getAgentName())) {
 				throw new FlickzzDeskException(INVALID_FIELD,
 						getDescription(INVALID_FIELD.getDescription(), AGENT_NAME));
 			}
 
-			if (request == null || request.getMailId() == null) {
+			if (!StringUtils.hasText(request.getMailId())) {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), MAIL_ID));
 			}
 
-			if (request == null || request.getAccessId() == null) {
+			if (!StringUtils.hasText(request.getAccessId())) {
 				throw new FlickzzDeskException(INVALID_FIELD,
 						getDescription(INVALID_FIELD.getDescription(), ACCESS_ID));
 			}
 
-			if (request == null || request.getPhoneNumber() == null) {
+			if (!StringUtils.hasText(request.getPhoneNumber())) {
 				throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), PHONE));
 			}
 
-			Optional<User> user = userRepository.findByUserName(request.getMailId());
-			user.ifPresent(agent -> {
+			if (userRepository.existsByUserName(request.getMailId())) {
 				throw new FlickzzDeskException(ALREADY_EXISTS,
 						getDescription(ALREADY_EXISTS.getDescription(), request.getMailId()));
-			});
+			}
 
 			Optional<EnquiryRegistration> enquiryRegistration = enquiryRegistrationRepository
 					.findTopByEmailAndIsActiveTrueOrderByVersionDesc(request.getMailId());
 
 			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActive(request.getOrgId(),
 					ACTIVE);
-			if (company == null) {
+			if (!company.isPresent()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
 
-			request.getSkills().stream().forEach(skillInfo -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
-				if (skill == null) {
+			Set<Long> skillIds = request.getSkills().stream().map(AgentSkillRequestVO::getSkillId)
+					.collect(Collectors.toSet());
+			List<SkillMaster> skillMasters = skillMasterRepository.findAllById(skillIds);
+			Map<Long, SkillMaster> skillMap = skillMasters.stream()
+					.collect(Collectors.toMap(SkillMaster::getSkillId, skill -> skill));
+
+			for (AgentSkillRequestVO skillInfo : request.getSkills()) {
+				if (!skillMap.containsKey(skillInfo.getSkillId())) {
 					throw new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), (SKILL + " " + skillInfo.getSkillName())));
+						getDescription(DOES_NOT_EXIST.getDescription(), (SKILL + " " + skillInfo.getSkillName())));
 				}
-			});
+			}
 
 			Optional<CalendarMaster> calendar = calendarMasterRepository.findById(request.getCalendarId());
-			if (calendar == null) {
+			if (!calendar.isPresent()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
@@ -127,9 +142,9 @@ public class AgentService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
-					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
+//			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageIds())
+//					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+//							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
 
 			String rawPassword = generateTemporaryPassword();
 
@@ -138,12 +153,35 @@ public class AgentService {
 			User newUser = User.builder().firstName(request.getAgentName()).email(request.getMailId())
 					.userName(request.getMailId()).email(request.getMailId()).registerId(request.getAccessId())
 					.phoneCode(request.getPhoneCode()).phoneNumber(request.getPhoneNumber()).country(country).city(city)
-					.language(language).createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin())
+					.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin())
 					.password(passwordEncoder.encode(rawPassword)).role(userRole).mfaEnabled(false).build();
 			userRepository.save(newUser);
 
 			LoginMaster loginMaster = mapper.userToLoginMaster(newUser);
 			loginMasterRepository.save(loginMaster);
+
+			// persist user language mappings if provided
+			List<Long> languageIds = request.getLanguageIds();
+			if ((languageIds == null || languageIds.isEmpty()) && request.getLanguageIds() != null) {
+				languageIds = request.getLanguageIds();
+			}
+			if (languageIds != null && !languageIds.isEmpty()) {
+				List<LanguageMaster> langs = languageMasterRepository.findAllById(languageIds);
+				Map<Long, LanguageMaster> langMap = langs.stream()
+					.filter(l -> Boolean.TRUE.equals(l.getIsActive()))
+					.collect(Collectors.toMap(LanguageMaster::getLanguageId, l -> l));
+				for (Long lid : languageIds) {
+					if (!langMap.containsKey(lid)) {
+						throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE));
+					}
+				}
+				List<UserLanguageMapping> userLangs = languageIds.stream().map(lid ->
+					UserLanguageMapping.builder().user(newUser).language(langMap.get(lid))
+						.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).build()
+				).collect(Collectors.toList());
+				userLanguageMappingRepository.saveAll(userLangs);
+			}
 
 			AgentMaster agent = AgentMaster.builder().agentName(request.getAgentName()).mailId(request.getMailId())
 					.accessId(request.getAccessId()).organization(company.get()).calendarMaster(calendar.get())
@@ -156,14 +194,15 @@ public class AgentService {
 				enquiryRegistrationRepository.save(enquiry);
 			});
 
-			request.getSkills().stream().forEach(skillInfo -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agentMaster).skill(skill.get())
+			List<AgentSkillsMapping> agentSkills = request.getSkills().stream().map(skillInfo -> {
+				SkillMaster skill = skillMap.get(skillInfo.getSkillId());
+				return AgentSkillsMapping.builder().agent(agentMaster).skill(skill)
 						.experienceYears(skillInfo.getExperienceYears())
 						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy())
 						.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
-				agentSkillsMappingRepository.save(agentSkill);
-			});
+			}).collect(Collectors.toList());
+
+			agentSkillsMappingRepository.saveAll(agentSkills);
 
 			mailService.sendTemporaryPasswordEmail(newUser.getEmail(), newUser.getFirstName(), rawPassword);
 
@@ -211,23 +250,35 @@ public class AgentService {
 	public AgentMasterVO updateAgent(AgentRequestVO request) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			Optional<AgentMaster> existing = agentMasterRepository.findById(request.getAgentId());
-			if (existing == null) {
-				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+			if (request == null || request.getAgentId() == null) {
+				throw new FlickzzDeskException(INVALID_FIELD,
+						getDescription(INVALID_FIELD.getDescription(), AGENT));
 			}
 
-			request.getSkills().stream().forEach(skillInfo -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
-				if (skill == null) {
-					throw new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
-				}
-			});
+			Optional<AgentMaster> existing = agentMasterRepository.findById(request.getAgentId());
+			if (existing.isEmpty()) {
+				throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), AGENT));
+			}
 
-			existing.get().getAgentSkillsMappings().clear();
+			Set<Long> skillIds = request.getSkills().stream().map(AgentSkillRequestVO::getSkillId)
+					.collect(Collectors.toSet());
+			List<SkillMaster> skillMasters = skillMasterRepository.findAllById(skillIds);
+			Map<Long, SkillMaster> skillMap = skillMasters.stream()
+					.collect(Collectors.toMap(SkillMaster::getSkillId, skill -> skill));
+
+			for (AgentSkillRequestVO skillInfo : request.getSkills()) {
+				if (!skillMap.containsKey(skillInfo.getSkillId())) {
+					throw new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), SKILL));
+				}
+			}
+
+			AgentMaster agent = existing.get();
+			agent.getAgentSkillsMappings().clear();
 
 			Optional<CalendarMaster> calendar = calendarMasterRepository.findById(request.getCalendarId());
-			if (calendar == null) {
+			if (calendar.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), CALENDAR));
 			}
@@ -240,36 +291,55 @@ public class AgentService {
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), CITY)));
 
-			LanguageMaster language = languageMasterRepository.findByLanguageIdAndIsActiveTrue(request.getLanguageId())
-					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE)));
-
-			AgentMaster agent = existing.get();
 			agent.setAgentName(request.getAgentName());
 			agent.setCalendarMaster(calendar.get());
 			agent.setUpdatedBy(request.getUpdatedBy());
 			agent.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
 			agentMasterRepository.save(agent);
 
-			User user = existing.get().getUser();
+			User user = agent.getUser();
 			user.setCountry(country);
 			user.setCity(city);
 			user.setPhoneCode(request.getPhoneCode());
 			user.setPhoneNumber(request.getPhoneNumber());
-			user.setLanguage(language);
 			user.setUpdatedBy(request.getUpdatedBy());
 			user.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+			user.getLanguages().clear();
 			userRepository.save(user);
 
-			request.getSkills().stream().forEach(skillInfo -> {
-				Optional<SkillMaster> skill = skillMasterRepository.findById(skillInfo.getSkillId());
-				AgentSkillsMapping agentSkill = AgentSkillsMapping.builder().agent(agent).skill(skill.get())
+			// update user language mappings
+			List<Long> languageIdsForUpdate = request.getLanguageIds();
+			if ((languageIdsForUpdate == null || languageIdsForUpdate.isEmpty()) && request.getLanguageIds() != null) {
+				languageIdsForUpdate = request.getLanguageIds();
+			}
+			// remove existing mappings
+			userLanguageMappingRepository.deleteByUser(user);
+			if (languageIdsForUpdate != null && !languageIdsForUpdate.isEmpty()) {
+				List<LanguageMaster> langs = languageMasterRepository.findAllById(languageIdsForUpdate);
+				Map<Long, LanguageMaster> langMap = langs.stream()
+					.filter(l -> Boolean.TRUE.equals(l.getIsActive()))
+					.collect(Collectors.toMap(LanguageMaster::getLanguageId, l -> l));
+				for (Long lid : languageIdsForUpdate) {
+					if (!langMap.containsKey(lid)) {
+						throw new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(), LANGUAGE));
+					}
+				}
+				List<UserLanguageMapping> userLangs = languageIdsForUpdate.stream().map(lid ->
+					UserLanguageMapping.builder().user(user).language(langMap.get(lid))
+						.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).build()
+				).collect(Collectors.toList());
+				userLanguageMappingRepository.saveAll(userLangs);
+			}
+
+			List<AgentSkillsMapping> agentSkills = request.getSkills().stream().map(skillInfo -> {
+				SkillMaster skill = skillMap.get(skillInfo.getSkillId());
+				return AgentSkillsMapping.builder().agent(agent).skill(skill)
 						.experienceYears(skillInfo.getExperienceYears())
 						.experienceMonths(skillInfo.getExperienceMonths()).createdBy(request.getCreatedBy())
 						.isCreatorAdmin(request.getIsCreatedByAdmin()).build();
-				agentSkillsMappingRepository.save(agentSkill);
-			});
-
+			}).collect(Collectors.toList());
+			agentSkillsMappingRepository.saveAll(agentSkills);
 			return mapper.toAgentMasterVO(agentMasterRepository.save(existing.get()));
 		} catch (FlickzzDeskException e) {
 			throw e;

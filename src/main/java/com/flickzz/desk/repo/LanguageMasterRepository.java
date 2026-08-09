@@ -12,4 +12,6 @@ public interface LanguageMasterRepository extends JpaRepository<LanguageMaster, 
     List<LanguageMaster> findAllByIsActiveTrue();
 
     Optional<LanguageMaster> findByLanguageIdAndIsActiveTrue(Long languageId);
+
+    List<LanguageMaster> findAllByLanguageIdAndIsActiveTrue(Long languageId);
 }

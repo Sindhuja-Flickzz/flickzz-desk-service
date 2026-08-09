@@ -27,5 +27,5 @@ public class AgentRequestVO implements Serializable {
 	private Long calendarId;
 	private Long countryId;
 	private Long cityId;
-	private Long languageId;
+	private List<Long> languageIds;
 }

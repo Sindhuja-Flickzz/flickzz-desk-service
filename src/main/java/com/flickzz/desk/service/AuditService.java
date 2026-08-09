@@ -57,7 +57,6 @@ public class AuditService {
             audit.setCompanyId(req.getCompanyId());
             audit.setStatus(req.getStatus());
             audit.setErrorMessage(req.getErrorMessage());
-            audit.setCreatedAt(LocalDateTime.now());
             systemAuditRepository.save(audit);
         } catch (Exception e) {
             log.error("Failed to persist system audit", e);

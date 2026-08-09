@@ -1,6 +1,7 @@
 package com.flickzz.desk.model;
 
 import java.time.*;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.*;
 
@@ -60,13 +61,13 @@ public class User {
 	@JoinColumn(name = "CITY_ID", foreignKey = @ForeignKey(name = "FK_AGENT_CITY"))
 	private CityMaster city;
 
-	@ManyToOne
-	@JoinColumn(name = "LANGUAGE_ID", foreignKey = @ForeignKey(name = "FK_AGENT_LANGUAGE"))
-	private LanguageMaster language;
-
 	@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private AgentMaster agent;
+
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+	@JsonManagedReference
+	private List<UserLanguageMapping> languages;
 
 	@Column(name = "MFA_ENABLED", nullable = false)
 	private boolean mfaEnabled;

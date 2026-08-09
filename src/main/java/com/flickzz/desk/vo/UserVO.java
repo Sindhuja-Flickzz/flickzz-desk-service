@@ -1,7 +1,9 @@
 package com.flickzz.desk.vo;
 
 import java.io.*;
+import java.util.List;
 
+import com.flickzz.desk.model.UserLanguageMapping;
 import lombok.*;
 
 @Data
@@ -24,7 +26,7 @@ public class UserVO implements Serializable {
 	private CountryMasterVO country;
 	private CityMasterVO city;
 	private AgentMasterVO agent;
-	private LanguageMasterVO language;
+	private List<UserLanguageMappingVO> languages;
 	private boolean mfaEnabled;
 	private Boolean isActive;
 	private Long createdBy;

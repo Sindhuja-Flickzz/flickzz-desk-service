@@ -23,7 +23,7 @@ public class AgentMasterVO implements Serializable {
 	private String phoneNumber;
 	private CountryMasterVO country;
 	private CityMasterVO city;
-	private LanguageMasterVO language;
+	private List<UserLanguageMappingVO> languages;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;
