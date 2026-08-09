@@ -1,5 +1,6 @@
 package com.flickzz.desk.repo;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,4 +19,6 @@ public interface PlantMasterRepository extends JpaRepository<PlantMaster, Long> 
 	Optional<PlantMaster> findByPlantNameAndCompany_CompanyId(String plantName, Long companyId);
 
 	boolean existsByCalendar_CalendarIdAndIsActiveTrue(Long calendarId);
+
+	List<PlantMaster> findAllByCompany_CompanyIdAndIsActiveTrue(Long companyId);
 }

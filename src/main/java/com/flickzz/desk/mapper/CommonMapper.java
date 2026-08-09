@@ -1189,4 +1189,46 @@ public class CommonMapper {
 				.createdOn(remark.getCreatedOn())
 				.build();
 	}
+
+	public AgentPlantMappingVO toAgentPlantMappingVO(AgentPlantMapping agentPlantMapping) {
+		if (agentPlantMapping == null) {
+			return null;
+		}
+
+		return AgentPlantMappingVO.builder()
+				.mappingId(agentPlantMapping.getMappingId())
+				.agent(toSkillMappedAgentMasterVO(agentPlantMapping.getAgent()))
+				.plant(toPlantMasterVO(agentPlantMapping.getPlant()))
+				.active(agentPlantMapping.getIsActive())
+				.createdBy(agentPlantMapping.getCreatedBy())
+				.createdAt(agentPlantMapping.getCreatedAt())
+				.creatorAdmin(agentPlantMapping.getCreatorAdmin())
+				.build();
+	}
+
+	private AgentMasterVO toSkillMappedAgentMasterVO(AgentMaster agent) {
+		if (agent == null) {
+			return null;
+		}
+
+		return AgentMasterVO.builder()
+				.agentId(agent.getAgentId())
+				.agentName(agent.getAgentName())
+				.agentSkillsMappings(agent.getAgentSkillsMappings() != null
+						? agent.getAgentSkillsMappings().stream()
+								.map(this::toNoBackRefAgentSkillMappingVo)
+								.toList()
+						: null)
+				.build();
+	}
+
+	public AgentSkillsMappingVO toNoBackRefAgentSkillMappingVo(AgentSkillsMapping agentSkillsMappings) {
+		if (agentSkillsMappings == null) {
+			return null;
+		}
+		return AgentSkillsMappingVO.builder().agentSkillId(agentSkillsMappings.getAgentSkillId())
+				.skill(toSkillMasterVo(agentSkillsMappings.getSkill()))
+				.experienceYears(agentSkillsMappings.getExperienceYears())
+				.experienceMonths(agentSkillsMappings.getExperienceMonths()).build();
+	}
 }

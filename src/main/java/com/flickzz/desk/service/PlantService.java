@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.flickzz.desk.vo.AgentPlantMappingVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,7 +88,6 @@ public class PlantService {
 
             plant.setWeekoff(mapper.toWeekOffEntity(request.getWeekOff(), plant));
             PlantMaster savedPlant = plantMasterRepository.save(plant);
-            persistAgentPlantMappings(savedPlant, request.getAgents(), request.getCreatedBy(), request.getIsCreatedByAdmin());
 
             return mapper.toPlantMasterVO(savedPlant);
         } catch (FlickzzDeskException e) {
@@ -155,7 +155,6 @@ public class PlantService {
             }
 
             PlantMaster saved = plantMasterRepository.save(entity);
-            persistAgentPlantMappings(saved, request.getAgents(), request.getUpdatedBy(), request.getIsUpdatedByAdmin());
             return mapper.toPlantMasterVO(saved);
         } catch (FlickzzDeskException e) {
             throw e;
@@ -183,11 +182,15 @@ public class PlantService {
         }
     }
 
-    public List<PlantMasterVO> getPlantList(String orgId) {
+    public List<PlantMasterVO> getPlantList(String orgId, Boolean active) {
         log.info(generateLog("getPlantList", this.getClass().getName()));
         try {
-            return plantMasterRepository.findAllByCompany_CompanyId(Long.valueOf(orgId)).stream()
-                    .map(plant -> mapper.toPlantMasterVO(plant)).toList();
+            if(active)
+                return plantMasterRepository.findAllByCompany_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream()
+                        .map(plant -> mapper.toPlantMasterVO(plant)).toList();
+            else
+                return plantMasterRepository.findAllByCompany_CompanyId(Long.valueOf(orgId)).stream()
+                        .map(plant -> mapper.toPlantMasterVO(plant)).toList();
         } catch (FlickzzDeskException e) {
             throw e;
         } catch (Exception e) {
@@ -196,40 +199,72 @@ public class PlantService {
         }
     }
 
-    private void persistAgentPlantMappings(PlantMaster plant, List<Long> agentIds, Long userId, Boolean isAdmin) {
-        if (plant == null || plant.getPlantId() == null) {
-            return;
-        }
+    public AgentPlantMappingVO createAgentPlantMapping(PlantMasterRequestVO request) {
+        log.info(generateLog("createAgentPlantMapping", this.getClass().getName()));
+        try {
 
-        List<AgentPlantMapping> existingMappings = agentPlantMappingRepository.findByPlant_PlantId(plant.getPlantId());
-        if (!existingMappings.isEmpty()) {
-            agentPlantMappingRepository.deleteAll(existingMappings);
-        }
-
-        if (agentIds == null || agentIds.isEmpty()) {
-            return;
-        }
-
-        Set<Long> uniqueAgentIds = agentIds.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        List<AgentPlantMapping> mappings = new ArrayList<>();
-        for (Long agentId : uniqueAgentIds) {
-            AgentMaster agentMaster = agentMasterRepository.findById(agentId)
-                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                            getDescription(DOES_NOT_EXIST.getDescription(), "Agent")));
-
-            mappings.add(AgentPlantMapping.builder()
-                    .agent(agentMaster)
-                    .plant(plant)
+            Optional<AgentPlantMapping> existingMapping = agentPlantMappingRepository.findByPlant_PlantIdAndAgent_AgentId(request.getPlantId(), request.getAgentId());
+            if (existingMapping.isPresent()) {
+                if(existingMapping.get().getIsActive()) {
+                    throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), "Plant and Agent mapping"));
+                } else {
+                    existingMapping.get().setIsActive(true);
+                    agentPlantMappingRepository.save(existingMapping.get());
+                    return mapper.toAgentPlantMappingVO(existingMapping.get());
+                }
+            }
+            AgentPlantMapping agentPlantMapping = AgentPlantMapping.builder()
+                    .plant(plantMasterRepository.findById(request.getPlantId())
+                            .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), "Plant"))))
+                    .agent(agentMasterRepository.findById(request.getAgentId())
+                            .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), "Agent"))))
                     .isActive(true)
-                    .createdBy(userId)
+                    .createdBy(request.getCreatedBy())
                     .createdAt(LocalDateTime.now())
-                    .creatorAdmin(isAdmin != null ? isAdmin : false)
-                    .build());
+                    .creatorAdmin(request.getIsCreatedByAdmin() != null ? request.getIsCreatedByAdmin() : false)
+                    .build();
+            agentPlantMappingRepository.save(agentPlantMapping);
+            return mapper.toAgentPlantMappingVO(agentPlantMapping);
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in createAgentPlantMapping method in PlantService");
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
+    }
 
-        agentPlantMappingRepository.saveAll(mappings);
+    public List<AgentPlantMappingVO> getAgentPlantMappings(String orgId) {
+        log.info(generateLog("getAgentPlantMappings", this.getClass().getName()));
+        try {
+            if (orgId == null || orgId.isEmpty()) {
+                throw new FlickzzDeskException(INVALID_FIELD, getDescription(INVALID_FIELD.getDescription(), "Organization ID"));
+            }
+            return agentPlantMappingRepository.findByPlant_Company_CompanyIdAndIsActiveTrue(orgId).stream()
+                    .map(mapper::toAgentPlantMappingVO)
+                    .collect(Collectors.toList());
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getAgentPlantMappings method in PlantService");
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public void deleteAgentPlantMapping(String mappingId) {
+        log.info(generateLog("deleteAgentPlantMapping", this.getClass().getName()));
+        try {
+            Optional<AgentPlantMapping> existing = agentPlantMappingRepository.findById(Long.valueOf(mappingId));
+            if (!existing.isPresent()) {
+                throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), "Agent and Plant mapping"));
+            }
+            AgentPlantMapping mapping = existing.get();
+            mapping.setIsActive(false);
+            agentPlantMappingRepository.save(mapping);
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in deleteAgentPlantMapping method in PlantService");
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
     }
 }

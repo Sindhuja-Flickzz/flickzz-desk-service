@@ -1,8 +1,6 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.PLANT;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
@@ -13,6 +11,7 @@ import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
 import java.util.List;
 
+import com.flickzz.desk.vo.AgentPlantMappingVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,9 +84,47 @@ public class PlantController {
 	public ResponseEntity<FlickzzDeskResponse> getPlantList(@PathVariable String orgId) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<PlantMasterVO> response = plantService.getPlantList(orgId);
+		List<PlantMasterVO> response = plantService.getPlantList(orgId, Boolean.FALSE);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PLANT), response);
+	}
+
+	@GetMapping("/list/active/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getActivePlantList(@PathVariable String orgId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<PlantMasterVO> response = plantService.getPlantList(orgId, ACTIVE);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), PLANT), response);
+	}
+
+	@PostMapping("/agent/mapping/create")
+	public ResponseEntity<FlickzzDeskResponse> createAgentPlantMapping(@RequestBody PlantMasterRequestVO request) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		AgentPlantMappingVO response = plantService.createAgentPlantMapping(request);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), "Plant and Agent mapping"), response);
+	}
+
+	@GetMapping("/agent/mappings/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getAgentPlantMappings(@PathVariable String orgId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+
+		List<AgentPlantMappingVO> response = plantService.getAgentPlantMappings(orgId);
+
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Agent and Plant mappings"), response);
+	}
+
+	@DeleteMapping("/agent/mapping/delete/{mappingId}")
+	public ResponseEntity<FlickzzDeskResponse> deleteAgentPlantMapping(@PathVariable String mappingId) {
+		log.info(generateLog(ENTRY, this.getClass().getName()));
+		plantService.deleteAgentPlantMapping(mappingId);
+		log.info(generateLog(EXIT, this.getClass().getName()));
+		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "Agent and Plant mapping"));
 	}
 }

@@ -8,7 +8,7 @@ import com.flickzz.desk.model.AgentSkillsMapping;
 
 public interface AgentSkillsMappingRepository extends JpaRepository<AgentSkillsMapping, Long> {
 
-	List<AgentSkillsMapping> findByAgentAgentId(Long agentId);
+	List<AgentSkillsMapping> findByAgentAgentIdAndIsActiveTrue(Long agentId);
 
     boolean existsBySkill_SkillIdAndIsActive(Long aLong, Boolean active);
 }
