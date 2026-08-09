@@ -95,12 +95,12 @@ public class EnquiryController {
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), ENTRY), respVO);
 	}
 
-	@GetMapping("/{userEmail}")
-	public ResponseEntity<FlickzzDeskResponse> getEnquiriesByUserEmail(@PathVariable String userEmail)
+	@GetMapping("/{userEmail}/{orgId}")
+	public ResponseEntity<FlickzzDeskResponse> getEnquiriesByUserEmail(@PathVariable String userEmail, @PathVariable String orgId)
 			throws Exception {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		EnquiryRegistrationVO respVO = enquiryService.getEnquiriesByUserEmail(userEmail);
+		EnquiryRegistrationVO respVO = enquiryService.getEnquiriesByUserEmail(userEmail, orgId);
 
 		log.info(generateLog(EXIT, this.getClass().getName()));
 		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), ENTRY), respVO);

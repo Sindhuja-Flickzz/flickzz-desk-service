@@ -422,11 +422,11 @@ public class EnquiryService {
 		}
 	}
 
-	public EnquiryRegistrationVO getEnquiriesByUserEmail(String userEmail) {
+	public EnquiryRegistrationVO getEnquiriesByUserEmail(String userEmail, String orgId) {
 		log.info(generateLog("getEnquiriesByUserEmail", this.getClass().getName()));
 		try {
 			EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-					.findTopByEmailAndIsActiveTrueOrderByVersionDesc(userEmail)
+					.findTopByEmailAndCompany_CompanyIdAndIsActiveTrueOrderByVersionDesc(userEmail, orgId)
 					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
 							getDescription(DOES_NOT_EXIST.getDescription(), USERNAME_OR_EMAIL)));
 
