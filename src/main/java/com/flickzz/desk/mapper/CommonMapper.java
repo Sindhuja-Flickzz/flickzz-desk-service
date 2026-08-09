@@ -31,9 +31,10 @@ public class CommonMapper {
 		return User.builder().firstName(request.getFirstname()).lastName(request.getLastname())
 				.middleName(request.getMiddlename()).email(request.getEmail()).userName(request.getEmail())
 				.password(passwordEncoder().encode(rawPassword))
+//				.languageIds()
 				.role(request.getRole() != null ? request.getRole() : FlickzzDeskConstants.ROLE_ADMIN)
 				.phoneCode(request.getPhoneCode()).phoneNumber(request.getPhoneNumber()).country(country).city(city)
-				.language(language).registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
+				.registerId(request.getRegisterId()).mfaEnabled(request.getMfaEnabled())
 				.createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).build();
 	}
 
@@ -254,8 +255,20 @@ public class CommonMapper {
 		vo.setPhoneNumber(agent.getUser().getPhoneNumber());
 		vo.setCountry(toCountryMasterVO(agent.getUser().getCountry()));
 		vo.setCity(toCityMasterVO(agent.getUser().getCity()));
-		vo.setLanguage(toLanguageMasterVO(agent.getUser().getLanguage()));
+		vo.setLanguages(agent.getUser().getLanguages() == null ? null
+				: agent.getUser().getLanguages().stream()
+						.map(this::toNoBackRefUserLanguageMappingVO)
+						.collect(Collectors.toList()));
 		return vo;
+	}
+
+	private UserLanguageMappingVO toNoBackRefUserLanguageMappingVO(UserLanguageMapping userLanguageMapping) {
+		if(userLanguageMapping == null) {
+			return null;
+		}
+		return UserLanguageMappingVO.builder()
+				.language(toLanguageMasterVO(userLanguageMapping.getLanguage()))
+				.build();
 	}
 
 	public AgentSkillsMappingVO toAgentSkillMappingVo(AgentSkillsMapping agentSkillsMappings) {
@@ -279,7 +292,10 @@ public class CommonMapper {
 						.userName(user.getUserName()).role(user.getRole()).registerId(user.getRegisterId())
 						.phoneCode(user.getPhoneCode()).phoneNumber(user.getPhoneNumber())
 						.country(toCountryMasterVO(user.getCountry())).city(toCityMasterVO(user.getCity()))
-						.language(toLanguageMasterVO(user.getLanguage())).mfaEnabled(user.isMfaEnabled())
+						.languages(user.getLanguages() == null ? null : user.getLanguages().stream()
+								.map(this::toNoBackRefUserLanguageMappingVO)
+								.collect(Collectors.toList()))
+						.mfaEnabled(user.isMfaEnabled())
 						.isActive(user.getIsActive()).createdBy(user.getCreatedBy())
 						.isCreatedByAdmin(user.getIsCreatorAdmin()).updatedBy(user.getUpdatedBy())
 						.isUpdatedByAdmin(user.getIsUpdaterAdmin()).build())
@@ -423,7 +439,10 @@ public class CommonMapper {
 				.email(user.getEmail()).userName(user.getUserName()).role(user.getRole())
 				.middleName(user.getMiddleName()).registerId(user.getRegisterId()).phoneCode(user.getPhoneCode())
 				.phoneNumber(user.getPhoneNumber()).country(toCountryMasterVO(user.getCountry()))
-				.city(toCityMasterVO(user.getCity())).language(toLanguageMasterVO(user.getLanguage()))
+				.city(toCityMasterVO(user.getCity()))
+				.languages(user.getLanguages() == null ? null : user.getLanguages().stream()
+						.map(this::toNoBackRefUserLanguageMappingVO)
+						.collect(Collectors.toList()))
 				.mfaEnabled(user.isMfaEnabled()).agent(toAgentMasterVO(user.getAgent())).isActive(user.getIsActive())
 				.createdBy(user.getCreatedBy())
 				.isCreatedByAdmin(user.getIsCreatorAdmin() != null ? user.getIsCreatorAdmin() : false)
