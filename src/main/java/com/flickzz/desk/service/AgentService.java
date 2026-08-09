@@ -326,7 +326,7 @@ public class AgentService {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			List<AgentSkillsMapping> agentMaster = agentSkillsMappingRepository
-					.findByAgentAgentId(Long.valueOf(agentId));
+					.findByAgentAgentIdAndIsActiveTrue(Long.valueOf(agentId));
 			if (agentMaster == null) {
 				return List.of();
 			}
