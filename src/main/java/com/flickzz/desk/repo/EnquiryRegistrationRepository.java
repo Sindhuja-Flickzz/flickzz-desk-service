@@ -8,6 +8,7 @@ import com.flickzz.desk.model.EnquiryRegistration;
 
 public interface EnquiryRegistrationRepository extends JpaRepository<EnquiryRegistration, Long> {
 
+
 	Optional<EnquiryRegistration> findTopByEmailAndIsActiveTrueOrderByVersionDesc(String email);
 
 	Optional<EnquiryRegistration> findByUserNameAndIsActiveTrue(String username);
@@ -15,5 +16,7 @@ public interface EnquiryRegistrationRepository extends JpaRepository<EnquiryRegi
 	Optional<EnquiryRegistration> findByEmailAndIsActiveTrue(String email);
 
 	Optional<EnquiryRegistration> findByEnquiryIdAndIsActiveTrue(String enquiryId);
+
+	Optional<EnquiryRegistration> findTopByEmailAndCompany_CompanyIdAndIsActiveTrueOrderByVersionDesc(String email, String companyId);
 
 }
