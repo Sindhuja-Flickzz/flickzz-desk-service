@@ -19,7 +19,9 @@ public class RequestConfigRequestVO implements Serializable {
 	private Integer rangeFrom;
 	private Integer rangeTo;
 	private Boolean calculateBackward;
-	private Long plantId;
+	private Integer callHorizonPercentage;
+	private Integer callHorizonDays;
+	private Long orgId;
 	private Boolean isActive;
 	private Long createdBy;
 	private Long updatedBy;

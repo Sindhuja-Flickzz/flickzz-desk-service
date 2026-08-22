@@ -38,6 +38,14 @@ public class RequestConfig {
 	@Column(name = "CALCULATE_BACKWARD")
 	private Boolean calculateBackward = false;
 
+	@Builder.Default
+	@Column(name = "CALL_HORIZON_PERCENTAGE")
+	private Integer callHorizonPercentage = 0;
+
+	@Builder.Default
+	@Column(name = "CALL_HORIZON_DAYS")
+	private Integer callHorizonDays = 0;
+
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_REQUEST_CONFIG_COMPANY"), nullable = false)
 	private CompanyMaster company;
@@ -45,6 +53,10 @@ public class RequestConfig {
 	@Builder.Default
 	@Column(name = "IS_ACTIVE")
 	private Boolean isActive = true;
+
+	@Builder.Default
+	@Column(name = "IS_ENABLED")
+	private Boolean isEnabled = false;
 
 	@Column(name = "CREATED_BY", nullable = false)
 	private Long createdBy;
