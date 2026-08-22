@@ -8,10 +8,7 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.IMPACT_CODE;
 import static com.flickzz.desk.config.FlickzzDeskConstants.IMPACT_LEVEL;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.ALREADY_EXISTS;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DEFAULT_ERROR_CODE;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
-import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +16,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.flickzz.desk.exception.FlickzzDeskException;
@@ -55,16 +53,23 @@ public class ImpactService {
 						getDescription(INVALID_FIELD.getDescription(), IMPACT_LEVEL));
 			}
 
-			Optional<CompanyMaster> company = companyMasterRepository.findById(request.getOrgId());
-			if (company == null) {
+			Optional<CompanyMaster> company = companyMasterRepository.findByCompanyIdAndIsActiveTrue(request.getOrgId());
+			if (company.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), COMPANY));
 			}
 
-			impactMasterRepository.findByOrganizationCompanyIdAndImpactCode(request.getOrgId(), request.getImpactCode())
-					.ifPresent(p -> {
-						throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(),
-								(IMPACT_CODE + " for selected organization")));
+			impactMasterRepository.findByOrganizationCompanyIdAndImpactCodeAndImpactLevel(
+					request.getOrgId(), request.getImpactCode(), request.getImpactLevel())
+					.ifPresent(impact -> {
+						if (Boolean.TRUE.equals(impact.getIsActive())) {
+							if (request.getImpactCode().equals(impact.getImpactCode())) {
+								throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), IMPACT_CODE));
+							} else {
+								throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), IMPACT_LEVEL));
+							}
+						}
+						throw new FlickzzDeskException(DELETED_ERROR, getDescription(DELETED_ERROR.getDescription(), IMPACT_CODE));
 					});
 
 			ImpactMaster impactMaster = mapper.toImpactMaster(request, company.get());
@@ -72,6 +77,9 @@ public class ImpactService {
 			return mapper.toImpactMasterVo(impactMasterRepository.save(impactMaster));
 		} catch (FlickzzDeskException e) {
 			throw e;
+		} catch (DataIntegrityViolationException e) {
+			throw new FlickzzDeskException(ALREADY_EXISTS,
+					getDescription(ALREADY_EXISTS.getDescription(), IMPACT_CODE));
 		} catch (Exception e) {
 			log.error("Exception in createImpact method in ImpactService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -82,7 +90,7 @@ public class ImpactService {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> impactMaster = impactMasterRepository.findById(Long.valueOf(impactId));
-			if (impactMaster == null) {
+			if (impactMaster.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST,
 						getDescription(DOES_NOT_EXIST.getDescription(), "Impact"));
 			}
@@ -100,7 +108,7 @@ public class ImpactService {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> existing = impactMasterRepository.findById(request.getImpactId());
-			if (existing == null) {
+			if (existing.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), IMPACT));
 			}
 
@@ -110,11 +118,27 @@ public class ImpactService {
 			}
 
 			ImpactMaster impactMaster = existing.get();
-			impactMaster.setSlaMultiplier(request.getSlaMultiplier());
-			impactMaster.setImpactLevel(request.getImpactLevel());
+			String impactCode = request.getImpactCode() == null ? impactMaster.getImpactCode() : request.getImpactCode();
+			Integer impactLevel = request.getImpactLevel() == null ? impactMaster.getImpactLevel() : request.getImpactLevel();
+
+			impactMasterRepository.findByOrganizationCompanyIdAndImpactCodeAndImpactLevel(
+					impactMaster.getOrganization().getCompanyId(), impactCode, impactLevel)
+					.filter(other -> !other.getImpactId().equals(impactMaster.getImpactId()))
+					.ifPresent(other -> {
+						if (Boolean.TRUE.equals(other.getIsActive())) {
+							throw new FlickzzDeskException(ALREADY_EXISTS, getDescription(ALREADY_EXISTS.getDescription(), IMPACT_LEVEL));
+						}
+						throw new FlickzzDeskException(DELETED_ERROR, getDescription(DELETED_ERROR.getDescription(), IMPACT_CODE));
+					});
+
+			impactMaster.setImpactCode(impactCode);
+			impactMaster.setImpactLevel(impactLevel);
 			return mapper.toImpactMasterVo(impactMasterRepository.save(impactMaster));
 		} catch (FlickzzDeskException e) {
 			throw e;
+		} catch (DataIntegrityViolationException e) {
+			throw new FlickzzDeskException(ALREADY_EXISTS,
+					getDescription(ALREADY_EXISTS.getDescription(), IMPACT_LEVEL));
 		} catch (Exception e) {
 			log.error("Exception in updateImpact method in ImpactService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -125,7 +149,7 @@ public class ImpactService {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
 			Optional<ImpactMaster> existing = impactMasterRepository.findById(Long.valueOf(impactId));
-			if (existing == null) {
+			if (existing.isEmpty()) {
 				throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), IMPACT));
 			}
 			impactMasterRepository.delete(existing.get());

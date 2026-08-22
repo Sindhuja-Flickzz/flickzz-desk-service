@@ -413,8 +413,7 @@ public class CommonMapper {
 			return null;
 		}
 		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
-				.organization(companyMaster).impactLevel(request.getImpactLevel())
-				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
+				.organization(companyMaster).impactLevel(request.getImpactLevel()).createdBy(request.getCreatedBy())
 				.isCreatorAdmin(request.getIsCreatedByAdmin()).updatedBy(request.getUpdatedBy())
 				.isUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false).build();
 	}
@@ -425,7 +424,7 @@ public class CommonMapper {
 		}
 		return ImpactMasterVO.builder().impactId(save.getImpactId()).impactCode(save.getImpactCode())
 				.organization(toCompanyMasterVO(save.getOrganization())).impactLevel(save.getImpactLevel())
-				.slaMultiplier(save.getSlaMultiplier()).isActive(save.getIsActive()).createdBy(save.getCreatedBy())
+				.isActive(save.getIsActive()).createdBy(save.getCreatedBy())
 				.isCreatedByAdmin(save.getIsCreatorAdmin()).updatedBy(save.getUpdatedBy())
 				.isUpdatedByAdmin(save.getIsUpdaterAdmin() != null ? save.getIsUpdaterAdmin() : false).build();
 	}

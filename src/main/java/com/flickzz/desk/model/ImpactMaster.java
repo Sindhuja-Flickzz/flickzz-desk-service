@@ -11,7 +11,16 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_IMPACT_MASTER")
+@Table(name = "FD_IMPACT_MASTER", uniqueConstraints = {
+		@UniqueConstraint(
+				name = "UQ_IMPACT_COMPANY_CODE",
+				columnNames = {"COMPANY_ID", "IMPACT_CODE"}
+		),
+		@UniqueConstraint(
+				name = "UQ_IMPACT_COMPANY_LEVEL",
+				columnNames = {"COMPANY_ID", "IMPACT_LEVEL"}
+		)
+})
 public class ImpactMaster {
 
 	@Id
@@ -20,15 +29,11 @@ public class ImpactMaster {
 	@Column(name = "IMPACT_ID")
 	private Long impactId;
 
-	@Column(name = "IMPACT_CODE", nullable = false, unique = true, length = 50)
+	@Column(name = "IMPACT_CODE", nullable = false, length = 50)
 	private String impactCode; // e.g., LOW, MEDIUM, HIGH, CRITICAL
 
 	@Column(name = "IMPACT_LEVEL", nullable = false)
 	private Integer impactLevel; // numeric (1 = highest impact)
-
-	@Builder.Default
-	@Column(name = "SLA_MULTIPLIER", precision = 5, scale = 2)
-	private BigDecimal slaMultiplier = BigDecimal.ONE.setScale(2);
 
 	@ManyToOne
 	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_IMPACT_COMPANY"), nullable = false)

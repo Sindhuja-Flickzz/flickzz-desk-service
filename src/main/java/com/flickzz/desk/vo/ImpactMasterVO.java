@@ -15,7 +15,6 @@ public class ImpactMasterVO implements Serializable {
 	private Long impactId;
 	private String impactCode; // LOW, MEDIUM, HIGH, CRITICAL
 	private Integer impactLevel; // 1 = highest
-	private BigDecimal slaMultiplier;
 	private CompanyMasterVO organization;
 	private Boolean isActive;
 	private Long createdBy;

@@ -23,4 +23,6 @@ public interface CompanyMasterRepository extends JpaRepository<CompanyMaster, Lo
 	List<CompanyMaster> findByIsActive(Boolean active);
 
 	Optional<CompanyMaster> findByUidAndIsActive(String uid, Boolean active);
+
+	Optional<CompanyMaster> findByCompanyIdAndIsActiveTrue(Long companyId);
 }
