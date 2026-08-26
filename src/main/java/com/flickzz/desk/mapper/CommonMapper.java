@@ -1,6 +1,5 @@
 package com.flickzz.desk.mapper;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -385,7 +384,7 @@ public class CommonMapper {
 		}
 		return RequestConfig.builder().requestType(request.getRequestType()).requestPrefix(request.getRequestPrefix())
 				.revision(request.getRevision()).rangeFrom(request.getRangeFrom()).rangeTo(request.getRangeTo())
-				.calculateBackward(request.getCalculateBackward()).createdBy(request.getCreatedBy())
+				.callHorizonPercentage(request.getCallHorizonPercentage()).callHorizonDays(request.getCallHorizonDays()).calculateBackward(request.getCalculateBackward()).createdBy(request.getCreatedBy())
 				.isCreatorAdmin(request.getIsCreatedByAdmin()).updatedBy(request.getCreatedBy())
 				.isUpdaterAdmin(request.getIsUpdatedByAdmin()).build();
 	}
@@ -396,10 +395,10 @@ public class CommonMapper {
 		}
 		return RequestConfigVO.builder().configId(requestConfig.getConfigId())
 				.requestType(requestConfig.getRequestType()).requestPrefix(requestConfig.getRequestPrefix())
-				.revision(requestConfig.getRevision()).rangeFrom(requestConfig.getRangeFrom())
-				.rangeTo(requestConfig.getRangeTo()).calculateBackward(requestConfig.getCalculateBackward())
-				.createdBy(requestConfig.getCreatedBy()).isCreatedByAdmin(requestConfig.getIsCreatorAdmin())
-				.updatedBy(requestConfig.getUpdatedBy()).isUpdatedByAdmin(requestConfig.getIsUpdaterAdmin()).build();
+				.revision(requestConfig.getRevision()).rangeFrom(requestConfig.getRangeFrom()).callHorizonPercentage(requestConfig.getCallHorizonPercentage())
+				.callHorizonDays(requestConfig.getCallHorizonDays()).rangeTo(requestConfig.getRangeTo()).calculateBackward(requestConfig.getCalculateBackward())
+				.createdBy(requestConfig.getCreatedBy()).isCreatedByAdmin(requestConfig.getIsCreatorAdmin()).isActive(requestConfig.getIsActive() != null ? requestConfig.getIsActive() : false)
+				.isEnabled(requestConfig.getIsEnabled() != null ? requestConfig.getIsEnabled() : false).updatedBy(requestConfig.getUpdatedBy()).isUpdatedByAdmin(requestConfig.getIsUpdaterAdmin()).build();
 	}
 
 	public List<RequestConfigVO> toRequestConfigVOList(List<RequestConfig> requestConfigs) {
@@ -414,8 +413,7 @@ public class CommonMapper {
 			return null;
 		}
 		return ImpactMaster.builder().impactId(request.getImpactId()).impactCode(request.getImpactCode())
-				.organization(companyMaster).impactLevel(request.getImpactLevel())
-				.slaMultiplier(request.getSlaMultiplier()).createdBy(request.getCreatedBy())
+				.organization(companyMaster).impactLevel(request.getImpactLevel()).createdBy(request.getCreatedBy())
 				.isCreatorAdmin(request.getIsCreatedByAdmin()).updatedBy(request.getUpdatedBy())
 				.isUpdaterAdmin(request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false).build();
 	}
@@ -426,7 +424,7 @@ public class CommonMapper {
 		}
 		return ImpactMasterVO.builder().impactId(save.getImpactId()).impactCode(save.getImpactCode())
 				.organization(toCompanyMasterVO(save.getOrganization())).impactLevel(save.getImpactLevel())
-				.slaMultiplier(save.getSlaMultiplier()).isActive(save.getIsActive()).createdBy(save.getCreatedBy())
+				.isActive(save.getIsActive()).createdBy(save.getCreatedBy())
 				.isCreatedByAdmin(save.getIsCreatorAdmin()).updatedBy(save.getUpdatedBy())
 				.isUpdatedByAdmin(save.getIsUpdaterAdmin() != null ? save.getIsUpdaterAdmin() : false).build();
 	}

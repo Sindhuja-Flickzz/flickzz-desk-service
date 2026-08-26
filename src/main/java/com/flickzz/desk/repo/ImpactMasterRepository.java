@@ -11,6 +11,8 @@ public interface ImpactMasterRepository extends JpaRepository<ImpactMaster, Long
 
 	Optional<ImpactMaster> findByOrganizationCompanyIdAndImpactCode(Long orgId, String impactCode);
 
+	Optional<ImpactMaster> findByOrganizationCompanyIdAndImpactCodeAndImpactLevel(Long orgId, String impactCode, Integer impactLevel);
+
 	List<ImpactMaster> findAllByOrganizationCompanyIdAndIsActive(Long orgId, Boolean active);
 
 	List<ImpactMaster> findAllByIsActive(Boolean active);
