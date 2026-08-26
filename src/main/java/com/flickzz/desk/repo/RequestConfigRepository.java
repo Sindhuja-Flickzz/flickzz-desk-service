@@ -23,4 +23,6 @@ public interface RequestConfigRepository extends JpaRepository<RequestConfig, Lo
     List<RequestConfig> findByCompany_CompanyId(Long orgId);
 
     List<RequestConfig> findAllByIsActiveTrue();
+
+    Optional<RequestConfig> findByRequestTypeAndIsActiveTrueAndIsEnabledTrue(String requestType);
 }

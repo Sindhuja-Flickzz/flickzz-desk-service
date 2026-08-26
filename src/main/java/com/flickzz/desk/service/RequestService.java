@@ -38,14 +38,53 @@ public class RequestService {
 	public String getRequestNumber(String requestType) {
 		log.info(generateLog(ENTRY, this.getClass().getName()));
 		try {
-			// Logic to generate request number based on request type
-			// This is a placeholder implementation and should be replaced with actual logic
-			String requestNumber = requestType.toUpperCase() + "-" + System.currentTimeMillis();
+			// Fetch active and enabled record of given REQUEST_TYPE
+			RequestConfig requestConfig = requestConfigRepository
+					.findByRequestTypeAndIsActiveTrueAndIsEnabledTrue(requestType)
+					.orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+							getDescription(DOES_NOT_EXIST.getDescription(),
+									"Request Config with type " + requestType + " not found")));
+
+			String requestNumber;
+			Integer nextRange;
+
+			// Logic to determine next range based on CURRENT_RANGE
+			if (requestConfig.getCurrentRange() == null) {
+				// When CURRENT_RANGE is null
+				if (requestConfig.getCalculateBackward()) {
+					// CALCULATE_BACKWARD is true -> use RANGE_TO
+					nextRange = requestConfig.getRangeTo();
+				} else {
+					// CALCULATE_BACKWARD is false -> use RANGE_FROM
+					nextRange = requestConfig.getRangeFrom();
+				}
+			} else {
+				// When CURRENT_RANGE is not null
+				if (requestConfig.getCalculateBackward()) {
+					// CALCULATE_BACKWARD is true
+					if (requestConfig.getRangeTo() > requestConfig.getRangeFrom()) {
+						nextRange = requestConfig.getCurrentRange() - 1;
+					} else {
+						nextRange = requestConfig.getCurrentRange() + 1;
+					}
+				} else {
+					// CALCULATE_BACKWARD is false
+					if (requestConfig.getRangeFrom() > requestConfig.getRangeTo()) {
+						nextRange = requestConfig.getCurrentRange() + 1;
+					} else {
+						nextRange = requestConfig.getCurrentRange() - 1;
+					}
+				}
+			}
+
+			// Concatenate REQUEST_PREFIX with the calculated next range
+			requestNumber = requestConfig.getRequestPrefix() + nextRange;
+
 			return requestNumber;
 		} catch (FlickzzDeskException e) {
 			throw e;
 		} catch (Exception e) {
-			log.error("Exception in createAgent method in FlickzzDeskService");
+			log.error("Exception in getRequestNumber method in RequestService");
 			throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
 		}
 	}

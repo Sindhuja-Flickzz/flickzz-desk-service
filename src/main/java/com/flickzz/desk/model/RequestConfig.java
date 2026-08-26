@@ -34,6 +34,9 @@ public class RequestConfig {
 	@Column(name = "RANGE_TO", nullable = false)
 	private Integer rangeTo;
 
+	@Column(name = "CURRENT_RANGE")
+	private Integer currentRange;
+
 	@Builder.Default
 	@Column(name = "CALCULATE_BACKWARD")
 	private Boolean calculateBackward = false;

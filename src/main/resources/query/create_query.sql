@@ -655,7 +655,7 @@ CREATE TABLE FD_REQUEST_CONFIG
     REVISION           INT         NOT NULL,
     RANGE_FROM         INT         NOT NULL,
     RANGE_TO           INT         NOT NULL,
-    CURRENT_RANGE      INT         NOT NULL DEFAULT 0,
+    CURRENT_RANGE      INT,
     CALCULATE_BACKWARD            BOOLEAN     DEFAULT FALSE,
     CALL_HORIZON_PERCENTAGE       INT         NOT NULL,
     CALL_HORIZON_DAYS             INT         NOT NULL,

@@ -18,6 +18,7 @@ public class RequestConfigVO implements Serializable {
 	private Integer revision;
 	private Integer rangeFrom;
 	private Integer rangeTo;
+	private Integer currentRange;
 	private Boolean calculateBackward;
 	private CompanyMasterVO company;
 	private Integer callHorizonPercentage;
