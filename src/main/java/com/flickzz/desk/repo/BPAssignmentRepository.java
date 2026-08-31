@@ -22,4 +22,6 @@ public interface BPAssignmentRepository extends JpaRepository<BPAssignment, Long
 
 	Optional<BPAssignment> findByConfigurationConfigurationIdAndSupportGroupSupportGroupIdAndSubCategorySubCategoryId(
 			Long configurationId, Long supportGroupId, Long subCategoryId);
+
+    BPAssignment findBySubCategorySubCategoryIdAndIsActiveTrue(Long subCategoryId);
 }

@@ -1,20 +1,19 @@
 package com.flickzz.desk.repo;
 
+import com.flickzz.desk.model.BPCategory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.flickzz.desk.model.BPCategory;
-
 public interface BPCategoryRepository extends JpaRepository<BPCategory, Long> {
 
-	List<BPCategory> findByConfigurationConfigurationId(Long configurationId);
+    List<BPCategory> findByConfigurationConfigurationId(Long configurationId);
 
-	List<BPCategory> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
+    List<BPCategory> findByConfigurationConfigurationIdAndIsActiveTrue(Long configurationId);
 
-	Optional<BPCategory> findByCategoryIdAndIsActive(Long categoryId, Boolean active);
+    Optional<BPCategory> findByCategoryIdAndIsActive(Long categoryId, Boolean active);
 
-	boolean existsByConfigurationConfigurationIdAndCategoryNameAndIsActive(Long configurationId, String categoryName,
-			Boolean active);
+    boolean existsByConfigurationConfigurationIdAndCategoryNameAndIsActive(Long configurationId, String categoryName,
+                                                                           Boolean active);
 }
