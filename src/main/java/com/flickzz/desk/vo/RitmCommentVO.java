@@ -16,7 +16,7 @@ public class RitmCommentVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private Long commentId;
-    private RitmMasterVO ritm;
+    private Long ritmId;
     private String commentType;
     private String commentText;
     private Boolean isInternal;

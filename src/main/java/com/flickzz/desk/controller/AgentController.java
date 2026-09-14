@@ -1,134 +1,152 @@
 package com.flickzz.desk.controller;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.AGENT;
-import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
-import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
-import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.DELETE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.UPDATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
-import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
-
-import java.util.List;
-
+import com.flickzz.desk.config.FlickzzDeskResponse;
+import com.flickzz.desk.service.AgentService;
+import com.flickzz.desk.vo.AgentMasterVO;
+import com.flickzz.desk.vo.AgentSkillsMappingVO;
+import com.flickzz.desk.vo.request.AgentRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.flickzz.desk.config.FlickzzDeskResponse;
-import com.flickzz.desk.service.AgentService;
-import com.flickzz.desk.vo.AgentMasterVO;
-import com.flickzz.desk.vo.request.AgentRequestVO;
-import com.flickzz.desk.vo.AgentSkillsMappingVO;
+import java.util.List;
+
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.*;
+import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
 @CrossOrigin
 @RestController
 @RequestMapping("/agent")
 public class AgentController {
 
-	private static final Logger log = LoggerFactory.getLogger(AgentController.class);
+    private static final Logger log = LoggerFactory.getLogger(AgentController.class);
 
-	@Autowired
-	private AgentService agentService;
+    @Autowired
+    private AgentService agentService;
 
-	@PostMapping("create")
-	public ResponseEntity<FlickzzDeskResponse> createAgent(@RequestBody AgentRequestVO request) throws Exception {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @PostMapping("create")
+    public ResponseEntity<FlickzzDeskResponse> createAgent(@RequestBody AgentRequestVO request) throws Exception {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO respVO = agentService.createAgent(request);
+        AgentMasterVO respVO = agentService.createAgent(request);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), AGENT), respVO);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), AGENT), respVO);
+    }
 
-	@GetMapping("/{agentId}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentInfo(@PathVariable String agentId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/{agentId}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentInfo(@PathVariable String agentId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO response = agentService.getAgentInfo(agentId);
+        AgentMasterVO response = agentService.getAgentInfo(agentId);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@GetMapping("/get/{agentName}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByName(@PathVariable String agentName) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/get/{agentName}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentInfoByName(@PathVariable String agentName) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO response = agentService.getAgentInfoByName(agentName);
+        AgentMasterVO response = agentService.getAgentInfoByName(agentName);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@GetMapping("/email/{email}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String email) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/email/{email}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentInfoByEmail(@PathVariable String email) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO response = agentService.getAgentInfoByEmail(email);
+        AgentMasterVO response = agentService.getAgentInfoByEmail(email);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@PostMapping("/update")
-	public ResponseEntity<FlickzzDeskResponse> updateAgent(@RequestBody AgentRequestVO request) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @PostMapping("/update")
+    public ResponseEntity<FlickzzDeskResponse> updateAgent(@RequestBody AgentRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		AgentMasterVO response = agentService.updateAgent(request);
+        AgentMasterVO response = agentService.updateAgent(request);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@DeleteMapping("/delete/{agentId}")
-	public ResponseEntity<FlickzzDeskResponse> deleteSkill(@PathVariable String agentId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @DeleteMapping("/delete/{agentId}")
+    public ResponseEntity<FlickzzDeskResponse> deleteSkill(@PathVariable String agentId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		agentService.deleteAgent(agentId);
+        agentService.deleteAgent(agentId);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), AGENT));
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), AGENT));
+    }
 
-	@GetMapping("/list/{orgId}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentList(@PathVariable String orgId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/list/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentList(@PathVariable String orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<AgentMasterVO> response = agentService.getAgentList(orgId);
+        List<AgentMasterVO> response = agentService.getAgentList(orgId);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@GetMapping("/list/active/{orgId}")
-	public ResponseEntity<FlickzzDeskResponse> getActiveAgentList(@PathVariable String orgId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/list/active/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getActiveAgentList(@PathVariable String orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<AgentMasterVO> response = agentService.getActiveAgentList(orgId);
+        List<AgentMasterVO> response = agentService.getActiveAgentList(orgId);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 
-	@GetMapping("/skills/{agentId}")
-	public ResponseEntity<FlickzzDeskResponse> getAgentSkills(@PathVariable String agentId) {
-		log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping({"/support-group/list/{agentId}/{orgId}"})
+    public ResponseEntity<FlickzzDeskResponse> getActiveSupportGroupIds(@PathVariable String agentId,
+                                                                        @PathVariable String orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-		List<AgentSkillsMappingVO> response = agentService.getAgentSkills(agentId);
+        List<Long> response = agentService.getActiveSupportGroupIds(agentId, orgId);
 
-		log.info(generateLog(EXIT, this.getClass().getName()));
-		return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
-	}
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
+
+    @GetMapping({"/user/{userId}"})
+    public ResponseEntity<FlickzzDeskResponse> getAgentIdByUserId(@PathVariable String userId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        Long response = agentService.getAgentIdByUserId(userId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
+
+    @PostMapping({"/support-group/users"})
+    public ResponseEntity<FlickzzDeskResponse> getDistinctUsersBySupportGroupIds(@RequestBody List<Long> supportGroupIds) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<AgentMasterVO> response = agentService.getDistinctUsersBySupportGroupIds(supportGroupIds);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
+
+    @GetMapping("/skills/{agentId}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentSkills(@PathVariable String agentId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<AgentSkillsMappingVO> response = agentService.getAgentSkills(agentId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), AGENT), response);
+    }
 }

@@ -8,4 +8,10 @@ import java.util.List;
 public interface RitmMasterRepository extends JpaRepository<RitmMaster, Long> {
 
     List<RitmMaster> findByCompanyCompanyId(Long orgId);
+
+    List<RitmMaster> findByRequestedByAgentId(Long agentId);
+
+    List<RitmMaster> findByAssignedToAgentId(Long agentId);
+
+    List<RitmMaster> findByAssignedToIsNullAndSupportGroupSupportGroupIdIn(List<Long> supportGroupIds);
 }

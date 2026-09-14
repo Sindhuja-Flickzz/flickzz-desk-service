@@ -1,6 +1,5 @@
-package com.flickzz.desk.vo.request;
+package com.flickzz.desk.vo;
 
-import com.flickzz.desk.vo.TemplateFieldDetailVO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,18 +12,16 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TemplateDetailsRequestVO implements Serializable {
+public class TemplateVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private Long templateId;
     private String templateName;
     private Long workItemId;
-    private Long companyId;
-    private Long fieldId;
-    private String defaultValue;
-    private Boolean isEditable;
-    private List<TemplateFieldDetailVO> templateDetails;
+    private CompanyMasterVO company;
+    private List<TemplateFieldVO> templateDetails;
+    private Boolean isActive;
     private Long createdBy;
     private Long updatedBy;
     private Boolean isCreatedByAdmin;

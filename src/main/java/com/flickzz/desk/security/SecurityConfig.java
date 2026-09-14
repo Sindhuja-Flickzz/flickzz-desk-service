@@ -1,6 +1,6 @@
 package com.flickzz.desk.security;
 
-import com.flickz.desk.handler.FlickzzDeskLogoutSuccessHandler;
+import com.flickzz.desk.handler.FlickzzDeskLogoutSuccessHandler;
 import com.flickzz.desk.repo.AuthRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;

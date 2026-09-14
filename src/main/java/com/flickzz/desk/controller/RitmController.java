@@ -2,7 +2,10 @@ package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.RitmService;
+import com.flickzz.desk.vo.RitmCommentVO;
 import com.flickzz.desk.vo.RitmMasterVO;
+import com.flickzz.desk.vo.RitmAuditVO;
+import com.flickzz.desk.vo.request.RitmAssignmentRequestVO;
 import com.flickzz.desk.vo.request.RitmRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +18,7 @@ import java.util.List;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.CREATE_SUCCESS;
-import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.FETCH_SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 
@@ -50,6 +52,97 @@ public class RitmController {
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
+    }
 
+    @GetMapping({"/agent/{agentId}/{requestType}"})
+    public ResponseEntity<FlickzzDeskResponse> getRitmByAgentAndRequestType(@PathVariable("agentId") Long agentId,
+                                                                            @PathVariable("requestType") String requestType) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmMasterVO> ritmList = ritmService.getRitmListByAgentAndRequestType(agentId, requestType);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
+    }
+
+    @PutMapping("/update")
+    public ResponseEntity<FlickzzDeskResponse> updateRitm(@RequestBody RitmRequestVO ritmVO) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmMasterVO response = ritmService.updateRitm(ritmVO);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
+    }
+
+    @PutMapping("/assign")
+    public ResponseEntity<FlickzzDeskResponse> assignRitm(@RequestBody RitmRequestVO ritmVO) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmMasterVO response = ritmService.assignRitm(ritmVO);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
+    }
+
+    @PostMapping("/comment")
+    public ResponseEntity<FlickzzDeskResponse> createRitmComment(@RequestBody RitmCommentVO commentVO) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmCommentVO response = ritmService.saveRitmComment(commentVO);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), "RITM comment"), response);
+    }
+
+    @PutMapping("/comment")
+    public ResponseEntity<FlickzzDeskResponse> updateRitmComment(@RequestBody RitmCommentVO commentVO) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmCommentVO response = ritmService.saveRitmComment(commentVO);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), "RITM comment"), response);
+    }
+
+    @GetMapping("/{ritmId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmDetails(@PathVariable("ritmId") Long ritmId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmMasterVO ritmDetails = ritmService.getRitmDetailsById(ritmId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmDetails);
+    }
+
+    @GetMapping("/{ritmId}/comments")
+    public ResponseEntity<FlickzzDeskResponse> getRitmComments(@PathVariable("ritmId") Long ritmId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmCommentVO> comments = ritmService.getRitmCommentsById(ritmId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM comments"), comments);
+    }
+
+    @GetMapping("/{ritmId}/audits")
+    public ResponseEntity<FlickzzDeskResponse> getRitmAuditHistory(@PathVariable("ritmId") Long ritmId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmAuditVO> audits = ritmService.getRitmAuditHistoryById(ritmId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM audit history"), audits);
+    }
+
+    @PostMapping("/assigned")
+    public ResponseEntity<FlickzzDeskResponse> getRitmByAssignment(@RequestBody RitmAssignmentRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmMasterVO> ritms = ritmService.getRitmsByAssignment(request);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritms);
     }
 }
+

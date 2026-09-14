@@ -1,15 +1,17 @@
 package com.flickzz.desk.repo;
 
-import java.util.*;
+import com.flickzz.desk.model.TemplateField;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import org.springframework.data.jpa.repository.*;
+import java.util.List;
+import java.util.Optional;
 
-import com.flickzz.desk.model.*;
+public interface TemplateDetailFieldRepository extends JpaRepository<TemplateField, Long> {
 
-public interface TemplateDetailFieldRepository extends JpaRepository<TemplateDetailField, Long> {
-	List<TemplateDetailField> findByTemplateTemplateIdOrderByFieldSequence(Long templateId);
+    List<TemplateField> findByTemplateCompanyCompanyIdAndDefaultValueIsNotNullAndIsActiveOrderByTemplateTemplateIdAscFieldSequenceAsc(
+            Long companyId, Boolean isActive);
 
-	Optional<TemplateDetailField> findByTemplateTemplateIdAndFieldName(Long templateId, String fieldName);
+    void deleteByTemplateTemplateId(Long templateId);
 
-	void deleteByTemplateTemplateId(Long templateId);
+    Optional<TemplateField> findByFieldIdAndDefaultValueIsNull(Long fieldId);
 }

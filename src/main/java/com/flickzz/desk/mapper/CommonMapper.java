@@ -686,12 +686,12 @@ public class CommonMapper {
                 .updatedBy(fieldType.getUpdatedBy()).build();
     }
 
-    public TemplateDetailsVO toTemplateDetailsVO(TemplateDetails entity) {
+    public TemplateVO toTemplateDetailsVO(Template entity) {
         if (entity == null) {
             return null;
         }
-        return TemplateDetailsVO.builder().templateId(entity.getTemplateId()).templateName(entity.getTemplateName())
-                .workItemId(entity.getWorkItem().getItemId()).company(toCompanyMasterVO(entity.getCompany()))
+        return TemplateVO.builder().templateId(entity.getTemplateId()).templateName(entity.getTemplateName())
+                .workItemId(entity.getWorkItem().getItemId())
                 .templateDetails(entity.getFields() != null
                         ? entity.getFields().stream().map(this::toTemplateDetailFieldVO).toList()
                         : null)
@@ -700,13 +700,14 @@ public class CommonMapper {
                 .updatedBy(entity.getUpdatedBy()).build();
     }
 
-    public com.flickzz.desk.vo.TemplateDetailFieldVO toTemplateDetailFieldVO(TemplateDetailField field) {
+    public TemplateFieldVO toTemplateDetailFieldVO(TemplateField field) {
         if (field == null) {
             return null;
         }
-        return TemplateDetailFieldVO.builder().fieldId(field.getFieldId()).fieldName(field.getFieldName())
+        return TemplateFieldVO.builder().fieldId(field.getFieldId()).fieldName(field.getFieldName())
                 .fieldTypeId(field.getFieldType().getTypeId()).mandatory(field.getMandatory())
                 .fieldSequence(field.getFieldSequence()).isActive(field.getIsActive())
+                .defaultValue(field.getDefaultValue()).isEditable(field.isEditable())
                 .options(field.getOptions() != null
                         ? field.getOptions().stream().map(this::toTemplateFieldOptionVO).toList()
                         : null)
@@ -1160,12 +1161,8 @@ public class CommonMapper {
                 .ritmAttachments(savedRitm.getAttachment() != null
                         ? savedRitm.getAttachment().stream().map(this::toRitmAttachmentVO).toList()
                         : null)
-                .comments(savedRitm.getComments() != null
-                        ? savedRitm.getComments().stream().map(this::toRitmCommentVO).toList()
-                        : null)
-                .audits(savedRitm.getAudits() != null
-                        ? savedRitm.getAudits().stream().map(this::toRitmAuditVO).toList()
-                        : null)
+                .comments(null)
+                .audits(null)
                 .status(savedRitm.getStatus())
                 .requestedAt(savedRitm.getRequestedAt())
                 .dueDate(savedRitm.getDueDate())
@@ -1183,7 +1180,7 @@ public class CommonMapper {
                 .build();
     }
 
-    private AgentMasterVO toRitmAgentMasterVO(AgentMaster requestedBy) {
+    public AgentMasterVO toRitmAgentMasterVO(AgentMaster requestedBy) {
         if (requestedBy == null) {
             return null;
         }

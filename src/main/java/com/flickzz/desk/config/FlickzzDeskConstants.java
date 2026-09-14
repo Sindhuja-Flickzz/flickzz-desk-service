@@ -82,6 +82,7 @@ public class FlickzzDeskConstants {
     public static final String CREATED_STATUS = "Created";
 
     public static final String PENDING = "Pending";
+    public static final String GENERAL = "General";
 
     public static final Boolean READ = Boolean.TRUE;
     public static final Boolean UNREAD = Boolean.FALSE;
