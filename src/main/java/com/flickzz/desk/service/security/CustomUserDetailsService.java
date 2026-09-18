@@ -30,20 +30,19 @@ public class CustomUserDetailsService implements UserDetailsService {
 
 	@Override
 	public CustomUserDetails loadUserByUsername(String username) {
-		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
-				.findByUserNameAndIsActiveTrue(username).orElse(null);
-
-		if (enquiryRegistration != null) {
-			return new CustomUserDetails(enquiryRegistration.getUserName(), enquiryRegistration.getPassword(),
-					enquiryRegistration.getFirstName(), enquiryRegistration.getLastName(),
-					enquiryRegistration.getEmail(), enquiryRegistration.getUserRole(),
-					Collections.singletonList(new SimpleGrantedAuthority(enquiryRegistration.getUserRole())));
+		User user = userRepository.findByUserNameAndIsActiveTrue(username).orElse(null);
+		if (user != null) {
+			return new CustomUserDetails(user.getUserName(), user.getPassword(), user.getFirstName(), user.getLastName(),
+					user.getEmail(), user.getRole(), Collections.singletonList(new SimpleGrantedAuthority(user.getRole())));
 		}
 
-		User user = userRepository.findByUserNameAndIsActiveTrue(username).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-				getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
+		EnquiryRegistration enquiryRegistration = enquiryRegistrationRepository
+				.findByUserNameAndIsActiveTrue(username).orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+						getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
-		return new CustomUserDetails(user.getUserName(), user.getPassword(), user.getFirstName(), user.getLastName(),
-				user.getEmail(), user.getRole(), Collections.singletonList(new SimpleGrantedAuthority(user.getRole())));
+		return new CustomUserDetails(enquiryRegistration.getUserName(), enquiryRegistration.getPassword(),
+				enquiryRegistration.getFirstName(), enquiryRegistration.getLastName(),
+				enquiryRegistration.getEmail(), enquiryRegistration.getUserRole(),
+				Collections.singletonList(new SimpleGrantedAuthority(enquiryRegistration.getUserRole())));
 	}
 }
