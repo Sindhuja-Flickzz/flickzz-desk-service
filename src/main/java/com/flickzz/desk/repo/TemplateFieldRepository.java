@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface TemplateDetailFieldRepository extends JpaRepository<TemplateField, Long> {
+public interface TemplateFieldRepository extends JpaRepository<TemplateField, Long> {
 
     List<TemplateField> findByTemplateCompanyCompanyIdAndDefaultValueIsNotNullAndIsActiveOrderByTemplateTemplateIdAscFieldSequenceAsc(
             Long companyId, Boolean isActive);

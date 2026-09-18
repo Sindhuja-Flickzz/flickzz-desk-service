@@ -25,13 +25,10 @@ public class RitmMasterVO implements Serializable {
     private BPSubCategoryVO subCategory;
     private BPSupportGroupVO supportGroup;
     private BPPriorityVO priority;
-    private String shortDescription;
-    private String description;
-    private String stepsToReproduce;
-    private String otherNotes;
     private AgentMasterVO assignedTo;
     private List<RitmAttachmentVO> ritmAttachments;
     private List<RitmWatchlistVO> watchlist;
+    private List<RitmTemplateDetailVO> templateDetails;
     private List<RitmCommentVO> comments;
     private List<RitmAuditVO> audits;
     private String status;

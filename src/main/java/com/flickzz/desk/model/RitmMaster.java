@@ -70,18 +70,6 @@ public class RitmMaster {
     @JoinColumn(name = "PRIORITY_ID", nullable = false)
     private BPPriority priority;
 
-    @Column(name = "SHORT_DESCRIPTION", nullable = false, length = 255)
-    private String shortDescription;
-
-    @Column(name = "DESCRIPTION", columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "STEPS_TO_REPRODUCE", columnDefinition = "TEXT")
-    private String stepsToReproduce;
-
-    @Column(name = "OTHER_NOTES", columnDefinition = "TEXT")
-    private String otherNotes;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ASSIGNED_TO")
     private AgentMaster assignedTo;
@@ -89,6 +77,10 @@ public class RitmMaster {
     @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<RitmWatchlist> watchlist;
+
+    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<RitmFieldValue> fieldValues;
 
     @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference

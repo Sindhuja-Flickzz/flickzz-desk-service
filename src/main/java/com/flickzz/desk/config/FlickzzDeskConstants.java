@@ -80,6 +80,7 @@ public class FlickzzDeskConstants {
     public static final String FAILED = "FAILED";
     public static final String DRAFTED = "DRAFTED";
     public static final String CREATED_STATUS = "Created";
+    public static final String OPEN_STATUS = "Open";
 
     public static final String PENDING = "Pending";
     public static final String GENERAL = "General";

@@ -19,4 +19,6 @@ public interface TemplateDetailsRepository extends JpaRepository<Template, Long>
     List<Template> findByWorkItem_ItemId(Long workItemId);
 
     Optional<Template> findByTemplateId(Long templateId);
+
+    List<Template> findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrue(Long orgId, Long itemId);
 }

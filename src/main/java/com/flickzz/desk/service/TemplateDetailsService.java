@@ -38,7 +38,7 @@ public class TemplateDetailsService {
     private TemplateDetailsRepository templateDetailsRepository;
 
     @Autowired
-    private TemplateDetailFieldRepository templateDetailFieldRepository;
+    private TemplateFieldRepository templateFieldRepository;
 
     @Autowired
     private TemplateFieldOptionRepository templateFieldOptionRepository;
@@ -73,11 +73,11 @@ public class TemplateDetailsService {
             validateTemplateFieldDetailsRequest(request);
 
             if (StringUtils.equalsIgnoreCase(action, CREATE)) {
-                field = templateDetailFieldRepository.findByFieldIdAndDefaultValueIsNull(request.getFieldId())
+                field = templateFieldRepository.findByFieldIdAndDefaultValueIsNull(request.getFieldId())
                         .orElseThrow(() -> new FlickzzDeskException(VERIFY_LIST_PAGE,
                                 getDescription(VERIFY_LIST_PAGE.getDescription(), "Default Value for this template")));
             } else {
-                field = templateDetailFieldRepository.findById(request.getFieldId())
+                field = templateFieldRepository.findById(request.getFieldId())
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Template Field")));
             }
@@ -90,7 +90,7 @@ public class TemplateDetailsService {
             field.setUpdatedBy(request.getUpdatedBy() != null ? request.getUpdatedBy() : request.getCreatedBy());
             field.setIsUpdaterAdmin(Boolean.TRUE.equals(request.getIsUpdatedByAdmin()));
 
-            TemplateField savedField = templateDetailFieldRepository.save(field);
+            TemplateField savedField = templateFieldRepository.save(field);
             auditService.recordAudit(mapper.toSystemAuditRequest("Template", "Template Field", "TemplateField",
                     savedField.getFieldId(), action, fieldSnapshot(savedField), oldValue, null,
                     request.getUpdatedBy() != null ? request.getUpdatedBy() : request.getCreatedBy(), "SYSTEM",
@@ -225,7 +225,7 @@ public class TemplateDetailsService {
                                     request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
                             .build();
 
-                    TemplateField savedField = templateDetailFieldRepository.save(field);
+                    TemplateField savedField = templateFieldRepository.save(field);
 
                     // Save field options
                     if (fieldDetail.getOptions() != null) {
@@ -297,8 +297,8 @@ public class TemplateDetailsService {
             // Update template fields and options if provided
             if (request.getTemplateDetails() != null && !request.getTemplateDetails().isEmpty()) {
                 // Remove existing fields from DB first to avoid unique constraint violations
-                templateDetailFieldRepository.deleteByTemplateTemplateId(updatedEntity.getTemplateId());
-                templateDetailFieldRepository.flush();
+                templateFieldRepository.deleteByTemplateTemplateId(updatedEntity.getTemplateId());
+                templateFieldRepository.flush();
 
                 if (updatedEntity.getFields() == null) {
                     updatedEntity.setFields(new ArrayList<>());
@@ -326,7 +326,7 @@ public class TemplateDetailsService {
                                     request.getIsUpdatedByAdmin() != null ? request.getIsUpdatedByAdmin() : false)
                             .build();
 
-                    TemplateField savedField = templateDetailFieldRepository.save(field);
+                    TemplateField savedField = templateFieldRepository.save(field);
                     updatedEntity.getFields().add(savedField);
                     // Save field options
                     if (fieldDetail.getOptions() != null) {
@@ -425,7 +425,7 @@ public class TemplateDetailsService {
                         getDescription(DOES_NOT_EXIST.getDescription(), "Company"));
             }
 
-            return templateDetailFieldRepository
+            return templateFieldRepository
                     .findByTemplateCompanyCompanyIdAndDefaultValueIsNotNullAndIsActiveOrderByTemplateTemplateIdAscFieldSequenceAsc(
                             companyId, true)
                     .stream().map(mapper::toTemplateDetailFieldVO).collect(Collectors.toList());
@@ -451,7 +451,7 @@ public class TemplateDetailsService {
                         getDescription(INVALID_FIELD.getDescription(), "Company ID"));
             }
 
-            TemplateField field = templateDetailFieldRepository.findById(fieldId)
+            TemplateField field = templateFieldRepository.findById(fieldId)
                     .filter(templateField -> templateField.getTemplate().getCompany().getCompanyId().equals(companyId))
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Template Field")));
@@ -460,7 +460,7 @@ public class TemplateDetailsService {
             field.setDefaultValue(null);
             field.setEditable(true);
             field.setUpdatedBy(updatedBy);
-            TemplateField savedField = templateDetailFieldRepository.save(field);
+            TemplateField savedField = templateFieldRepository.save(field);
 
             auditService.recordAudit(mapper.toSystemAuditRequest("Template", "Template Field", "TemplateField",
                     savedField.getFieldId(), "DELETE_DEFAULT_VALUE", fieldSnapshot(savedField), oldValue, null,
@@ -503,6 +503,34 @@ public class TemplateDetailsService {
             throw e;
         } catch (Exception e) {
             log.error("Exception in deleteTemplateDetails method in TemplateDetailsService: {}", e.getMessage());
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public List<TemplateVO> listRITMDefaultTemplates(String item, Long orgId) {
+        log.info(generateLog("listRITMDefaultTemplates", this.getClass().getName()));
+        try {
+            if (orgId == null) {
+                throw new FlickzzDeskException(INVALID_FIELD,
+                        getDescription(INVALID_FIELD.getDescription(), "Organization ID"));
+            }
+
+            if (companyMasterRepository.findById(orgId).isEmpty()) {
+                throw new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Organization"));
+            }
+
+            WorkItem workItem = workItemRepository.findByCodeAndIsActiveTrue(item.toUpperCase())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Work Item")));
+
+            return templateDetailsRepository.findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrue(orgId, workItem.getItemId()).stream()
+                    .map(mapper::toTemplateDetailsVO).collect(Collectors.toList());
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in listRITMDefaultTemplates method in TemplateDetailsService: {}",
+                    e.getMessage());
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

@@ -32,6 +32,7 @@ public class RitmRequestVO implements Serializable {
     private String stepsToReproduce;
     private String otherNotes;
     private Long assignedTo;
+    private Long assignedBy;
     private String status;
     private LocalDateTime dueDate;
     private LocalDateTime resolvedAt;
@@ -50,4 +51,5 @@ public class RitmRequestVO implements Serializable {
     private Long assignmentGroup;
     private List<Long> watchList;
     private List<String> attachments;
+    private List<RitmTemplateDetailVO> templateDetails;
 }

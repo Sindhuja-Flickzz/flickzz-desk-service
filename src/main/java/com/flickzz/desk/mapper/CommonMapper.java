@@ -1150,13 +1150,16 @@ public class CommonMapper {
                 .subCategory(toRitmBPSubCategoryVo(savedRitm.getSubCategory()))
                 .supportGroup(toRitmSupportGroupVo(savedRitm.getSupportGroup()))
                 .priority(toRitmBPPriorityVo(savedRitm.getPriority()))
-                .shortDescription(savedRitm.getShortDescription())
-                .description(savedRitm.getDescription())
-                .stepsToReproduce(savedRitm.getStepsToReproduce())
-                .otherNotes(savedRitm.getOtherNotes())
                 .assignedTo(toRitmAgentMasterVO(savedRitm.getAssignedTo()))
                 .watchlist(savedRitm.getWatchlist() != null
                         ? savedRitm.getWatchlist().stream().map(this::toRitmWatchlistVOForRitm).toList()
+                        : null)
+                .templateDetails(savedRitm.getFieldValues() != null
+                        ? savedRitm.getFieldValues().stream().filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                        .map(value -> com.flickzz.desk.vo.RitmTemplateDetailVO.builder()
+                                .fieldId(value.getTemplateField().getFieldId()).fieldName(value.getTemplateField().getFieldName())
+                                .value(value.getFieldValue())
+                                .build()).toList()
                         : null)
                 .ritmAttachments(savedRitm.getAttachment() != null
                         ? savedRitm.getAttachment().stream().map(this::toRitmAttachmentVO).toList()
