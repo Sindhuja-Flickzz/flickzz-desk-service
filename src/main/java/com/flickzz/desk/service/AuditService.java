@@ -47,9 +47,9 @@ public class AuditService {
             audit.setEntityName(req.getEntityName());
             audit.setEntityId(req.getEntityId());
             audit.setAction(req.getAction());
-            audit.setOldValue((req.getOldValue() == null || req.getOldValue().isBlank()) ? null : req.getOldValue());
-            audit.setNewValue((req.getNewValue() == null || req.getNewValue().isBlank()) ? null : req.getNewValue());
-            audit.setChangedFields((req.getChangedFields() == null || req.getChangedFields().isBlank()) ? null : req.getChangedFields());
+            audit.setOldValue(toJsonValue(req.getOldValue()));
+            audit.setNewValue(toJsonValue(req.getNewValue()));
+            audit.setChangedFields(toJsonValue(req.getChangedFields()));
             if (req.getUserId() != null) {
                 audit.setUserId(req.getUserId());
             }
@@ -60,6 +60,23 @@ public class AuditService {
             systemAuditRepository.save(audit);
         } catch (Exception e) {
             log.error("Failed to persist system audit", e);
+        }
+    }
+
+    private String toJsonValue(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            objectMapper.readTree(value);
+            return value;
+        } catch (Exception ignored) {
+            try {
+                return objectMapper.writeValueAsString(value);
+            } catch (Exception e) {
+                log.warn("Unable to serialize audit value as JSON", e);
+                return null;
+            }
         }
     }
 

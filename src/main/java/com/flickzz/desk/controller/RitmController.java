@@ -2,9 +2,10 @@ package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.RitmService;
+import com.flickzz.desk.vo.RitmAuditVO;
 import com.flickzz.desk.vo.RitmCommentVO;
 import com.flickzz.desk.vo.RitmMasterVO;
-import com.flickzz.desk.vo.RitmAuditVO;
+import com.flickzz.desk.vo.RitmStatusVO;
 import com.flickzz.desk.vo.request.RitmAssignmentRequestVO;
 import com.flickzz.desk.vo.request.RitmRequestVO;
 import org.slf4j.Logger;
@@ -64,17 +65,7 @@ public class RitmController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
     }
-
-    @PutMapping("/update")
-    public ResponseEntity<FlickzzDeskResponse> updateRitm(@RequestBody RitmRequestVO ritmVO) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-
-        RitmMasterVO response = ritmService.updateRitm(ritmVO);
-
-        log.info(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
-    }
-
+    
     @PutMapping("/assign")
     public ResponseEntity<FlickzzDeskResponse> assignRitm(@RequestBody RitmRequestVO ritmVO) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
@@ -144,5 +135,34 @@ public class RitmController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritms);
     }
-}
 
+    @PostMapping("/status/create")
+    public ResponseEntity<FlickzzDeskResponse> createRitmStatus(@RequestBody List<RitmStatusVO> statusVOS) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        ritmService.createRitmStatus(statusVOS);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), "RITM status"));
+    }
+
+    @GetMapping("/get/status/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmStatus(@PathVariable("orgId") Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmStatusVO> statuses = ritmService.getRitmStatusByOrgId(orgId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status"), statuses);
+    }
+
+    @DeleteMapping("/status/{statusId}")
+    public ResponseEntity<FlickzzDeskResponse> deleteRitmStatus(@PathVariable("statusId") Long statusId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        ritmService.deleteRitmStatus(statusId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "RITM status"));
+    }
+}

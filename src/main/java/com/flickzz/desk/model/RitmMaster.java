@@ -94,8 +94,9 @@ public class RitmMaster {
     @JsonManagedReference
     private List<RitmAudit> audits;
 
-    @Column(name = "STATUS", nullable = false, length = 30)
-    private String status = "OPEN";
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "STATUS_ID", nullable = false)
+    private RitmStatus status;
 
     @Column(name = "REQUESTED_AT")
     private LocalDateTime requestedAt;
