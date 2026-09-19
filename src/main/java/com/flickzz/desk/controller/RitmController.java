@@ -65,6 +65,28 @@ public class RitmController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
     }
+
+    @RequestMapping(value = "/update", method = {RequestMethod.POST, RequestMethod.PUT}, consumes = "multipart/form-data")
+    public ResponseEntity<FlickzzDeskResponse> updateRitm(@RequestPart("ritm") RitmRequestVO ritmVO,
+                                                           @RequestPart(value = "files", required = false)
+                                                           List<MultipartFile> files) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmMasterVO response = ritmService.updateRitm(ritmVO, files);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
+    }
+
+    @RequestMapping(value = "/update", method = {RequestMethod.POST, RequestMethod.PUT}, consumes = "application/json")
+    public ResponseEntity<FlickzzDeskResponse> updateRitm(@RequestBody RitmRequestVO ritmVO) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        RitmMasterVO response = ritmService.updateRitm(ritmVO, null);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
+    }
     
     @PutMapping("/assign")
     public ResponseEntity<FlickzzDeskResponse> assignRitm(@RequestBody RitmRequestVO ritmVO) {
