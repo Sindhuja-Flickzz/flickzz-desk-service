@@ -238,6 +238,209 @@ public class RitmService {
         }
     }
 
+    @Transactional
+    public RitmMasterVO updateRitm(RitmRequestVO request, List<MultipartFile> files) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            if (request == null || request.getRitmId() == null || request.getRitmId() <= 0) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "RITM ID is required and must be valid"));
+            }
+
+            RitmMaster ritm = ritmMasterRepository.findById(request.getRitmId())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "RITM with ID " + request.getRitmId())));
+
+            Long companyId = ritm.getCompany() != null ? ritm.getCompany().getCompanyId() : null;
+            if (request.getOrgId() != null && !Objects.equals(companyId, request.getOrgId())) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "RITM does not belong to the provided organization"));
+            }
+
+            Long actorId = request.getUpdatedBy() != null ? request.getUpdatedBy()
+                    : request.getCreatedBy() != null ? request.getCreatedBy()
+                    : request.getOpenedBy();
+            if (actorId == null) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "Updated by is required"));
+            }
+
+            RitmAudit audit = ritmAuditRepository.saveAndFlush(RitmAudit.builder()
+                    .ritm(ritm)
+                    .actionType("UPDATE")
+                    .description("RITM details updated")
+                    .changedBy(actorId)
+                    .build());
+            List<RitmAuditDetail> details = new ArrayList<>();
+
+            if (request.getOpenedBy() != null) {
+                AgentMaster requestedBy = findAgent(request.getOpenedBy(), "Opened by");
+                if (!Objects.equals(idOf(ritm.getRequestedBy()), requestedBy.getAgentId())) {
+                    details.add(buildAuditDetail(audit, "REQUESTED_BY", stringValue(idOf(ritm.getRequestedBy())),
+                            stringValue(requestedBy.getAgentId())));
+                    ritm.setRequestedBy(requestedBy);
+                }
+            }
+            if (request.getRequestedFor() != null) {
+                AgentMaster requestedFor = findAgent(request.getRequestedFor(), "Requested for");
+                if (!Objects.equals(idOf(ritm.getRequestedFor()), requestedFor.getAgentId())) {
+                    details.add(buildAuditDetail(audit, "REQUESTED_FOR", stringValue(idOf(ritm.getRequestedFor())),
+                            stringValue(requestedFor.getAgentId())));
+                    ritm.setRequestedFor(requestedFor);
+                }
+            }
+            if (request.getCategory() != null) {
+                BPCategory category = categoryRepository.findByCategoryIdAndIsActive(request.getCategory(), true)
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Category with ID " + request.getCategory())));
+                if (!Objects.equals(idOf(ritm.getCategory()), category.getCategoryId())) {
+                    details.add(buildAuditDetail(audit, "CATEGORY_ID", stringValue(idOf(ritm.getCategory())),
+                            stringValue(category.getCategoryId())));
+                    ritm.setCategory(category);
+                }
+            }
+            if (request.getSubCategory() != null) {
+                BPSubCategory subCategory = subCategoryRepository.findBySubCategoryIdAndIsActive(request.getSubCategory(), true)
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Sub category with ID " + request.getSubCategory())));
+                if (!Objects.equals(idOf(ritm.getSubCategory()), subCategory.getSubCategoryId())) {
+                    details.add(buildAuditDetail(audit, "SUB_CATEGORY_ID", stringValue(idOf(ritm.getSubCategory())),
+                            stringValue(subCategory.getSubCategoryId())));
+                    ritm.setSubCategory(subCategory);
+                }
+            }
+            if (request.getPriority() != null) {
+                BPPriority priority = priorityRepository.findByPriorityIdAndIsActive(request.getPriority(), true)
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Priority with ID " + request.getPriority())));
+                if (!Objects.equals(idOf(ritm.getPriority()), priority.getPriorityId())) {
+                    details.add(buildAuditDetail(audit, "PRIORITY_ID", stringValue(idOf(ritm.getPriority())),
+                            stringValue(priority.getPriorityId())));
+                    ritm.setPriority(priority);
+                }
+            }
+            Long supportGroupId = request.getAssignmentGroup() != null ? request.getAssignmentGroup() : request.getSupportGroup();
+            if (supportGroupId != null) {
+                BPSupportGroup supportGroup = supportGroupRepository.findById(supportGroupId)
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Support group with ID " + supportGroupId)));
+                if (!Objects.equals(idOf(ritm.getSupportGroup()), supportGroup.getSupportGroupId())) {
+                    details.add(buildAuditDetail(audit, "SUPPORT_GROUP_ID", stringValue(idOf(ritm.getSupportGroup())),
+                            stringValue(supportGroup.getSupportGroupId())));
+                    ritm.setSupportGroup(supportGroup);
+                }
+            }
+            if (request.getStatus() != null) {
+                RitmStatus status = ritmStatusRepository.findById(request.getStatus())
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "RITM status with ID " + request.getStatus())));
+                if (status.getCompany() == null || !Objects.equals(status.getCompany().getCompanyId(), companyId)) {
+                    throw new FlickzzDeskException(INVALID_REQUEST,
+                            getDescription(INVALID_REQUEST.getDescription(), "RITM status does not belong to the RITM organization"));
+                }
+                if (!Objects.equals(idOf(ritm.getStatus()), status.getStatusId())) {
+                    details.add(buildAuditDetail(audit, "STATUS", ritm.getStatus() != null ? ritm.getStatus().getStatusCode() : null,
+                            status.getStatusCode()));
+                    ritm.setStatus(status);
+                }
+            }
+            if (request.getAssignedTo() != null) {
+                AgentMaster assignedTo = findAgent(request.getAssignedTo(), "Assigned to");
+                if (!Objects.equals(idOf(ritm.getAssignedTo()), assignedTo.getAgentId())) {
+                    details.add(buildAuditDetail(audit, "ASSIGNED_TO", stringValue(idOf(ritm.getAssignedTo())),
+                            stringValue(assignedTo.getAgentId())));
+                    ritm.setAssignedTo(assignedTo);
+                }
+            }
+            if (request.getDueDate() != null && !Objects.equals(ritm.getDueDate(), request.getDueDate())) {
+                details.add(buildAuditDetail(audit, "DUE_DATE", String.valueOf(ritm.getDueDate()), String.valueOf(request.getDueDate())));
+                ritm.setDueDate(request.getDueDate());
+            }
+            if (request.getResolvedAt() != null && !Objects.equals(ritm.getResolvedAt(), request.getResolvedAt())) {
+                details.add(buildAuditDetail(audit, "RESOLVED_AT", String.valueOf(ritm.getResolvedAt()), String.valueOf(request.getResolvedAt())));
+                ritm.setResolvedAt(request.getResolvedAt());
+            }
+            if (request.getClosedAt() != null && !Objects.equals(ritm.getClosedAt(), request.getClosedAt())) {
+                details.add(buildAuditDetail(audit, "CLOSED_AT", String.valueOf(ritm.getClosedAt()), String.valueOf(request.getClosedAt())));
+                ritm.setClosedAt(request.getClosedAt());
+            }
+            if (request.getCancelledAt() != null && !Objects.equals(ritm.getCancelledAt(), request.getCancelledAt())) {
+                details.add(buildAuditDetail(audit, "CANCELLED_AT", String.valueOf(ritm.getCancelledAt()), String.valueOf(request.getCancelledAt())));
+                ritm.setCancelledAt(request.getCancelledAt());
+            }
+            if (request.getActionReason() != null && !Objects.equals(ritm.getActionReason(), request.getActionReason())) {
+                details.add(buildAuditDetail(audit, "ACTION_REASON", ritm.getActionReason(), request.getActionReason()));
+                ritm.setActionReason(request.getActionReason());
+            }
+
+            if (request.getWatchList() != null) {
+                ritmWatchlistRepository.deleteByRitmRitmId(ritm.getRitmId());
+                ritmWatchlistRepository.flush();
+                if (ritm.getWatchlist() != null) {
+                    ritm.getWatchlist().clear();
+                } else {
+                    ritm.setWatchlist(new ArrayList<>());
+                }
+                for (Long watcherId : new LinkedHashSet<>(request.getWatchList())) {
+                    if (watcherId != null) {
+                        ritm.getWatchlist().add(RitmWatchlist.builder().ritm(ritm)
+                                .watchedBy(findAgent(watcherId, "Watchlist agent"))
+                                .isActive(true).build());
+                    }
+                }
+            }
+
+            ritm.setUpdatedBy(actorId);
+            ritm.setIsUpdaterAdmin(Boolean.TRUE.equals(request.getIsUpdaterAdmin()));
+            RitmMaster saved = ritmMasterRepository.saveAndFlush(ritm);
+            if (!details.isEmpty()) {
+                ritmAuditDetailRepository.saveAllAndFlush(details);
+            }
+            if (request.getTemplateDetails() != null) {
+                saveTemplateDetails(saved, request, actorId);
+            }
+            List<RitmAttachment> attachments = saveRitmFiles(saved, files, actorId);
+            if (!attachments.isEmpty()) {
+                ritmAttachmentRepository.saveAllAndFlush(attachments);
+            }
+            recordSystemAudit("RitmMaster", saved.getRitmId(), UPDATE, null, saved.getRitmNumber(), actorId,
+                    companyId, SUCCESS, null);
+            log.info(generateLog(EXIT, this.getClass().getName()));
+            return mapper.toRitmMasterVo(saved);
+        } catch (FlickzzDeskException e) {
+            recordSystemAudit("RitmMaster", request != null ? request.getRitmId() : null, UPDATE, null, null,
+                    request != null ? request.getUpdatedBy() : null, request != null ? request.getOrgId() : null,
+                    FAILED, e.getDescription());
+            throw e;
+        } catch (Exception e) {
+            recordSystemAudit("RitmMaster", request != null ? request.getRitmId() : null, UPDATE, null, null,
+                    request != null ? request.getUpdatedBy() : null, request != null ? request.getOrgId() : null,
+                    FAILED, e.getMessage());
+            log.error("Exception in updateRitm method in RitmService", e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    private AgentMaster findAgent(Long agentId, String label) {
+        return agentMasterRepository.findById(agentId)
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), label + " agent with ID " + agentId)));
+    }
+
+    private Long idOf(Object entity) {
+        if (entity instanceof AgentMaster agent) return agent.getAgentId();
+        if (entity instanceof BPCategory category) return category.getCategoryId();
+        if (entity instanceof BPSubCategory subCategory) return subCategory.getSubCategoryId();
+        if (entity instanceof BPPriority priority) return priority.getPriorityId();
+        if (entity instanceof BPSupportGroup supportGroup) return supportGroup.getSupportGroupId();
+        if (entity instanceof RitmStatus status) return status.getStatusId();
+        return null;
+    }
+
+    private String stringValue(Long value) {
+        return value == null ? null : String.valueOf(value);
+    }
+
     private String generateFreshRitmNumber(Long orgId, String providedRitmNumber) {
         if (providedRitmNumber != null && !providedRitmNumber.isBlank()) {
             log.info("Ignoring provided RITM number {} and generating a fresh sequence number for org {}", providedRitmNumber, orgId);
