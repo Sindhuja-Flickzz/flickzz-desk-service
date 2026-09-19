@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface RitmWatchlistRepository extends JpaRepository<RitmWatchlist, Long> {
 
+	void deleteByRitmRitmId(Long ritmId);
 }

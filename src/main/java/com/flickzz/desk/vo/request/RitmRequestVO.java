@@ -33,7 +33,7 @@ public class RitmRequestVO implements Serializable {
     private String otherNotes;
     private Long assignedTo;
     private Long assignedBy;
-    private String status;
+    private Long status;
     private LocalDateTime dueDate;
     private LocalDateTime resolvedAt;
     private LocalDateTime closedAt;

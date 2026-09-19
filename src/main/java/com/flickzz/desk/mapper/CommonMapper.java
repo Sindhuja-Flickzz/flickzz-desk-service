@@ -1166,7 +1166,7 @@ public class CommonMapper {
                         : null)
                 .comments(null)
                 .audits(null)
-                .status(savedRitm.getStatus())
+                .status(toRitmStatusVO(savedRitm.getStatus()))
                 .requestedAt(savedRitm.getRequestedAt())
                 .dueDate(savedRitm.getDueDate())
                 .resolvedAt(savedRitm.getResolvedAt())
@@ -1258,6 +1258,17 @@ public class CommonMapper {
                 .uploadedAt(ritmAttachment.getUploadedAt())
                 .deletedBy(ritmAttachment.getDeletedBy())
                 .deletedAt(ritmAttachment.getDeletedAt())
+                .build();
+    }
+
+    private RitmStatusVO toRitmStatusVO(RitmStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return RitmStatusVO.builder()
+                .statusId(status.getStatusId())
+                .statusCode(status.getStatusCode())
+                .sequenceNo(status.getSequenceNo())
                 .build();
     }
 
