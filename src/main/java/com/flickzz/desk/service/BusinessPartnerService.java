@@ -1350,7 +1350,7 @@ public class BusinessPartnerService {
         if (existingSubCategory.isPresent()) {
             BPSubCategory subCategory = existingSubCategory.get();
             if (!Boolean.TRUE.equals(subCategory.getIsActive())) {
-                subCategory.setIsActive(Boolean.TRUE);
+                subCategory.setIsActive(Boolean.FALSE);
                 subCategory.setUpdatedBy(updatedBy);
                 if (subCategory.getCreatedBy() == null && createdBy != null) {
                     subCategory.setCreatedBy(createdBy);
@@ -1360,7 +1360,7 @@ public class BusinessPartnerService {
             return subCategory;
         }
 
-        BPSubCategory subCategory = BPSubCategory.builder().category(bpCategory).subCategoryName(normalizedName)
+        BPSubCategory subCategory = BPSubCategory.builder().category(bpCategory).subCategoryName(normalizedName).isActive(Boolean.FALSE)
                 .createdBy(createdBy).updatedBy(updatedBy).build();
         return bpSubCategoryRepository.save(subCategory);
     }
@@ -2483,7 +2483,7 @@ public class BusinessPartnerService {
         }
     }
 
-    public List<BPSupportGroupVO> getBusinessPartnerSupportGroupConfiguration(Long businessPartnerId) {
+    public List<BPSupportGroupVO> getBusinessPartnerSupportGroupConfiguration(Long businessPartnerId, Boolean fetchActive) {
         log.info(generateLog("getBusinessPartnerSupportGroupConfiguration", this.getClass().getName()));
         try {
             Optional<BusinessPartner> businessPartner = businessPartnerRepository
@@ -2499,8 +2499,13 @@ public class BusinessPartnerService {
                 return Collections.emptyList();
             }
 
-            List<BPSupportGroup> groups = bpSupportGroupRepository
-                    .findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
+            List<BPSupportGroup> groups = new ArrayList<>();
+            if (fetchActive) {
+                groups = bpSupportGroupRepository.findByConfigurationConfigurationIdAndIsActiveTrue(existingConfig.get().getConfigurationId());
+            } else {
+                groups = bpSupportGroupRepository
+                        .findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
+            }
             return groups.stream().map(mapper::toNoBakcRefSupportGroupVo).toList();
         } catch (FlickzzDeskException e) {
             throw e;
@@ -2510,7 +2515,7 @@ public class BusinessPartnerService {
         }
     }
 
-    public List<BPSubCategoryVO> getBusinessPartnerSubCategoryConfiguration(Long valueOf) {
+    public List<BPSubCategoryVO> getBusinessPartnerSubCategoryConfiguration(Long valueOf, Boolean fetchActive) {
 
         log.info(generateLog("getBusinessPartnerSubCategoryConfiguration", this.getClass().getName()));
         try {
@@ -2528,7 +2533,7 @@ public class BusinessPartnerService {
             }
 
             List<BPCategory> categories = bpCategoryRepository
-                    .findByConfigurationConfigurationId(existingConfig.get().getConfigurationId());
+                    .findByConfigurationConfigurationIdAndIsActiveTrue(existingConfig.get().getConfigurationId());
 
             List<BPSubCategoryVO> subCategoryVOs = new ArrayList<>();
             for (BPCategory category : categories) {
@@ -3322,6 +3327,10 @@ public class BusinessPartnerService {
             bpCategoryRepository.findById(changedId).ifPresent(entity -> {
                 entity.setIsActive(ACTIVE);
                 entity.setIsUnderApproval(Boolean.FALSE);
+                entity.setSubCategories(entity.getSubCategories().stream().map(subCategory -> {
+                    subCategory.setIsActive(ACTIVE);
+                    return subCategory;
+                }).toList());
                 bpCategoryRepository.save(entity);
             });
             if (changeRequest.getOperation().equalsIgnoreCase(UPDATE) || changeRequest.getOperation().equalsIgnoreCase(DELETE)) {
