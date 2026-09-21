@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -95,6 +96,13 @@ public class BusinessPartnerService {
     private UserRepository userRepository; // your DB repo
     @Autowired
     private EnquiryRegistrationRepository enquiryRegistrationRepository;
+    @Autowired
+    private RitmMasterRepository ritmMasterRepository;
+    @Autowired
+    private RitmStatusRepository ritmStatusRepository;
+
+    @Value("${ritm.other.status.color}")
+    private String ritmOtherStatusColor;
 
     public BusinessPartnerVO createBusinessPartner(CompanyMasterRequestVO request) {
         log.info(generateLog("createBusinessPartner", this.getClass().getName()));
@@ -2391,6 +2399,86 @@ public class BusinessPartnerService {
             throw e;
         } catch (Exception e) {
             log.error("Exception in getBusinessPartnerSupportGroupConfigurationById method in BusinessPartnerService");
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public BPSupportGroupInfoVO getBusinessPartnerSupportGroupInfo(Long supportGroupId) {
+        log.info(generateLog("getBusinessPartnerSupportGroupInfo", this.getClass().getName()));
+        try {
+            BPSupportGroup supportGroup = bpSupportGroupRepository
+                    .findBySupportGroupIdAndIsActive(supportGroupId, ACTIVE)
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Support group")));
+
+            Long companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
+            long totalCountRitm = ritmMasterRepository
+                    .countBySupportGroupSupportGroupIdAndIsActiveTrue(supportGroupId);
+            long unassignedRitmCount = ritmMasterRepository
+                    .countBySupportGroupSupportGroupIdAndAssignedToIsNullAndIsActiveTrue(supportGroupId);
+            List<RitmStatus> statuses = ritmStatusRepository.findByCompanyCompanyId(companyId);
+
+            List<BPSupportGroupStatusCountInfoVO> statusCountInfoList = new ArrayList<>();
+            long inactiveRitmCount = 0L;
+
+            for (RitmStatus status : statuses) {
+                if (status.getIsActive()) {
+                    long count = ritmMasterRepository
+                            .countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(
+                                    supportGroupId,
+                                    status.getStatusId());
+                    statusCountInfoList.add(
+                            BPSupportGroupStatusCountInfoVO.builder()
+                                    .statusId(status.getStatusId())
+                                    .statusCode(status.getStatusCode())
+                                    .statusColor(status.getStatusColor())
+                                    .ritmCount(count)
+                                    .build()
+                    );
+                } else {
+                    long count = ritmMasterRepository
+                            .countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(
+                                    supportGroupId,
+                                    status.getStatusId());
+                    inactiveRitmCount += count;
+                }
+            }
+
+            if (inactiveRitmCount > 0) {
+                statusCountInfoList.add(
+                        BPSupportGroupStatusCountInfoVO.builder()
+                                .statusId(-1L)
+                                .statusCode(OTHERS)
+                                .statusColor(ritmOtherStatusColor)
+                                .ritmCount(inactiveRitmCount)
+                                .build()
+                );
+            }
+
+            List<BPSupportGroupAgentInfoVO> agents = bpSupportGroupMemberRepository
+                    .findBySupportGroupSupportGroupIdAndIsActive(supportGroupId, ACTIVE).stream()
+                    .filter(member -> Boolean.TRUE.equals(member.getAgent().getIsActive()))
+                    .map(member -> BPSupportGroupAgentInfoVO.builder()
+                            .agentId(member.getAgent().getAgentId())
+                            .agentName(member.getAgent().getAgentName())
+                            .ritmCount(ritmMasterRepository
+                                    .countBySupportGroupSupportGroupIdAndAssignedToAgentIdAndIsActiveTrue(
+                                            supportGroupId, member.getAgent().getAgentId()))
+                            .build())
+                    .toList();
+
+            return BPSupportGroupInfoVO.builder()
+                    .supportGroupId(supportGroupId)
+                    .supportGroupName(supportGroup.getGroupName())
+                    .totalCountRitm(totalCountRitm)
+                    .unassignedRitmCount(unassignedRitmCount)
+                    .statusCounts(statusCountInfoList)
+                    .agents(agents)
+                    .build();
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getBusinessPartnerSupportGroupInfo method in BusinessPartnerService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

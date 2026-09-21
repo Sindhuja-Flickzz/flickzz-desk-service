@@ -11,18 +11,12 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmStatusVO implements Serializable {
+public class BPSupportGroupStatusCountInfoVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
     private Long statusId;
-    private Long companyId;
-    private CompanyMasterVO company;
     private String statusCode;
-    private Integer sequenceNo;
     private String statusColor;
-    private Boolean isActive;
-    private Long createdBy;
-    private Boolean isCreatorAdmin;
-    private Boolean isUpdaterAdmin;
-    private Long updatedBy;
+    private Long ritmCount;
 }

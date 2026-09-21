@@ -43,6 +43,7 @@ public class FlickzzDeskConstants {
     public static final Boolean UNDER_APPROVAL = Boolean.TRUE;
     public static final Boolean DEACTIVATE = Boolean.FALSE;
     public static final Integer INITIAL_VERSION = 1;
+    public static final String OTHERS = "Others";
 
     public static final String CALENDAR_CODE = "Calender Code";
     public static final String CALENDAR_TYPE = "Calender Type";

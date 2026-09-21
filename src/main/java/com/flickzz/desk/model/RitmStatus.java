@@ -51,6 +51,9 @@ public class RitmStatus {
     @Column(name = "SEQUENCE_NO", nullable = false)
     private Integer sequenceNo;
 
+    @Column(name = "STATUS_COLOR", length = 7)
+    private String statusColor;
+
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
 
