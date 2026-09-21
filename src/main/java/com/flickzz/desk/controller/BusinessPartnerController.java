@@ -306,17 +306,17 @@ public class BusinessPartnerController {
                 response);
     }
 
-        @GetMapping("/support-group/info/{supportGroupId}")
-        public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSupportGroupInfo(
-                        @PathVariable Long supportGroupId) {
-                log.info(generateLog(ENTRY, this.getClass().getName()));
+    @GetMapping("/support-group/info/{supportGroupId}")
+    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSupportGroupInfo(
+            @PathVariable Long supportGroupId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
 
-                BPSupportGroupInfoVO response = businessPartnerService.getBusinessPartnerSupportGroupInfo(supportGroupId);
+        BPSupportGroupInfoVO response = businessPartnerService.getBusinessPartnerSupportGroupInfo(supportGroupId);
 
-                log.info(generateLog(EXIT, this.getClass().getName()));
-                return handleSuccessResponse(FETCH_SUCCESS,
-                                getDescription(FETCH_SUCCESS.getDescription(), "Support Group Info"), response);
-        }
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "Support Group Info"), response);
+    }
 
     @GetMapping("/get/support-group/{subCategoryId}")
     public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSupportGroupConfigurationBySubCategoryId(@PathVariable Long subCategoryId) {
@@ -332,7 +332,20 @@ public class BusinessPartnerController {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
         List<BPSupportGroupVO> response = businessPartnerService
-                .getBusinessPartnerSupportGroupConfiguration(Long.valueOf(businessPartnerId));
+                .getBusinessPartnerSupportGroupConfiguration(Long.valueOf(businessPartnerId), INACTIVE);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Support Group"),
+                response);
+    }
+
+    @GetMapping("/config/support-group/active/{businessPartnerId}")
+    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerActiveSupportGroupConfiguration(
+            @PathVariable String businessPartnerId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<BPSupportGroupVO> response = businessPartnerService
+                .getBusinessPartnerSupportGroupConfiguration(Long.valueOf(businessPartnerId), ACTIVE);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Support Group"),
@@ -345,7 +358,20 @@ public class BusinessPartnerController {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
         List<BPSubCategoryVO> response = businessPartnerService
-                .getBusinessPartnerSubCategoryConfiguration(Long.valueOf(businessPartnerId));
+                .getBusinessPartnerSubCategoryConfiguration(Long.valueOf(businessPartnerId), INACTIVE);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Sub Category"),
+                response);
+    }
+
+    @GetMapping("/config/sub-category/active/{businessPartnerId}")
+    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerActiveSubCategoryConfiguration(
+            @PathVariable String businessPartnerId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<BPSubCategoryVO> response = businessPartnerService
+                .getBusinessPartnerSubCategoryConfiguration(Long.valueOf(businessPartnerId), ACTIVE);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Sub Category"),

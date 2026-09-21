@@ -1,22 +1,21 @@
 package com.flickzz.desk.repo;
 
-import java.util.Optional;
-
+import com.flickzz.desk.model.EnquiryRegistration;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.flickzz.desk.model.EnquiryRegistration;
+import java.util.Optional;
 
 public interface EnquiryRegistrationRepository extends JpaRepository<EnquiryRegistration, Long> {
 
 
-	Optional<EnquiryRegistration> findTopByEmailAndIsActiveTrueOrderByVersionDesc(String email);
+    Optional<EnquiryRegistration> findTopByEmailAndIsActiveTrueOrderByVersionDesc(String email);
 
-	Optional<EnquiryRegistration> findByUserNameAndIsActiveTrue(String username);
+    Optional<EnquiryRegistration> findByUserNameAndIsActiveTrue(String username);
 
-	Optional<EnquiryRegistration> findByEmailAndIsActiveTrue(String email);
+    Optional<EnquiryRegistration> findByEmail(String email);
 
-	Optional<EnquiryRegistration> findByEnquiryIdAndIsActiveTrue(String enquiryId);
+    Optional<EnquiryRegistration> findByEnquiryIdAndIsActiveTrue(String enquiryId);
 
-	Optional<EnquiryRegistration> findTopByEmailAndCompany_CompanyIdAndIsActiveTrueOrderByVersionDesc(String email, String companyId);
+    Optional<EnquiryRegistration> findTopByEmailAndCompany_CompanyIdAndIsActiveTrueOrderByVersionDesc(String email, String companyId);
 
 }

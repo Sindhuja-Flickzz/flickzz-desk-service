@@ -1,20 +1,19 @@
 package com.flickzz.desk.repo;
 
+import com.flickzz.desk.model.BPSupportGroup;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.flickzz.desk.model.BPSupportGroup;
-
 public interface BPSupportGroupRepository extends JpaRepository<BPSupportGroup, Long> {
 
-	List<BPSupportGroup> findByConfigurationConfigurationId(Long configurationId);
+    List<BPSupportGroup> findByConfigurationConfigurationId(Long configurationId);
 
-	List<BPSupportGroup> findByConfigurationConfigurationIdAndIsActive(Long configurationId, Boolean active);
+    List<BPSupportGroup> findByConfigurationConfigurationIdAndIsActiveTrue(Long configurationId);
 
-	Optional<BPSupportGroup> findBySupportGroupIdAndIsActive(Long supportGroupId, Boolean active);
+    Optional<BPSupportGroup> findBySupportGroupIdAndIsActive(Long supportGroupId, Boolean active);
 
-	boolean existsByConfigurationConfigurationIdAndGroupNameAndIsActive(Long configurationId, String groupName,
-			Boolean active);
+    boolean existsByConfigurationConfigurationIdAndGroupNameAndIsActive(Long configurationId, String groupName,
+                                                                        Boolean active);
 }
