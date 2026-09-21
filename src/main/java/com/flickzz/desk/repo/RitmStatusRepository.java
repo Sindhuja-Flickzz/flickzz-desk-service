@@ -19,4 +19,6 @@ public interface RitmStatusRepository extends JpaRepository<RitmStatus, Long> {
     Optional<RitmStatus> findFirstByCompanyCompanyIdAndIsActiveTrueOrderBySequenceNoAsc(Long companyId);
 
     Optional<RitmStatus> findFirstByCompany_CompanyIdAndSequenceNoGreaterThanAndIsActiveTrueOrderBySequenceNoAsc(Long companyId, Integer currentSequenceNo);
+
+    List<RitmStatus> findByCompanyCompanyId(Long orgId);
 }

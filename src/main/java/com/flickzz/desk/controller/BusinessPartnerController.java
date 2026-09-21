@@ -306,6 +306,18 @@ public class BusinessPartnerController {
                 response);
     }
 
+        @GetMapping("/support-group/info/{supportGroupId}")
+        public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSupportGroupInfo(
+                        @PathVariable Long supportGroupId) {
+                log.info(generateLog(ENTRY, this.getClass().getName()));
+
+                BPSupportGroupInfoVO response = businessPartnerService.getBusinessPartnerSupportGroupInfo(supportGroupId);
+
+                log.info(generateLog(EXIT, this.getClass().getName()));
+                return handleSuccessResponse(FETCH_SUCCESS,
+                                getDescription(FETCH_SUCCESS.getDescription(), "Support Group Info"), response);
+        }
+
     @GetMapping("/get/support-group/{subCategoryId}")
     public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSupportGroupConfigurationBySubCategoryId(@PathVariable Long subCategoryId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));

@@ -68,8 +68,8 @@ public class RitmController {
 
     @RequestMapping(value = "/update", method = {RequestMethod.POST, RequestMethod.PUT}, consumes = "multipart/form-data")
     public ResponseEntity<FlickzzDeskResponse> updateRitm(@RequestPart("ritm") RitmRequestVO ritmVO,
-                                                           @RequestPart(value = "files", required = false)
-                                                           List<MultipartFile> files) {
+                                                          @RequestPart(value = "files", required = false)
+                                                          List<MultipartFile> files) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
         RitmMasterVO response = ritmService.updateRitm(ritmVO, files);
@@ -87,7 +87,7 @@ public class RitmController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), RITM), response);
     }
-    
+
     @PutMapping("/assign")
     public ResponseEntity<FlickzzDeskResponse> assignRitm(@RequestBody RitmRequestVO ritmVO) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
@@ -148,6 +148,14 @@ public class RitmController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM audit history"), audits);
     }
 
+    @GetMapping("/unassigned/{supportGroupId}")
+    public ResponseEntity<FlickzzDeskResponse> getUnassignedRitms(@PathVariable Long supportGroupId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RitmMasterVO> ritms = ritmService.getUnassignedRitms(supportGroupId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritms);
+    }
+
     @PostMapping("/assigned")
     public ResponseEntity<FlickzzDeskResponse> getRitmByAssignment(@RequestBody RitmAssignmentRequestVO request) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
@@ -172,7 +180,17 @@ public class RitmController {
     public ResponseEntity<FlickzzDeskResponse> getRitmStatus(@PathVariable("orgId") Long orgId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
-        List<RitmStatusVO> statuses = ritmService.getRitmStatusByOrgId(orgId);
+        List<RitmStatusVO> statuses = ritmService.getRitmStatusByOrgId(orgId, INACTIVE);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status"), statuses);
+    }
+
+    @GetMapping("/get/status/active/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmActiveStatus(@PathVariable("orgId") Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmStatusVO> statuses = ritmService.getRitmStatusByOrgId(orgId, ACTIVE);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status"), statuses);
@@ -186,5 +204,25 @@ public class RitmController {
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "RITM status"));
+    }
+
+    @GetMapping("/status/list/{statusId}/{supportGroupId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmListByStatus(@PathVariable("statusId") Long statusId, @PathVariable("supportGroupId") Long supportGroupId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<RitmMasterVO> statuses = ritmService.getRitmListByStatus(statusId, supportGroupId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status List"), statuses);
+    }
+
+    @PostMapping("/status/update")
+    public ResponseEntity<FlickzzDeskResponse> updateRitmStatus(@RequestBody RitmStatusVO status) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        ritmService.updateRitmStatus(status);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, "RITM status " + (status.getIsActive() ? "Activated" : "Deactivated") + " Successfully");
     }
 }

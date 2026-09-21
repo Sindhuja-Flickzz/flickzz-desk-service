@@ -1269,6 +1269,7 @@ public class CommonMapper {
                 .statusId(status.getStatusId())
                 .statusCode(status.getStatusCode())
                 .sequenceNo(status.getSequenceNo())
+                .statusColor(status.getStatusColor())
                 .build();
     }
 
