@@ -2,11 +2,10 @@ package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.RitmService;
-import com.flickzz.desk.vo.RitmAuditVO;
-import com.flickzz.desk.vo.RitmCommentVO;
-import com.flickzz.desk.vo.RitmMasterVO;
-import com.flickzz.desk.vo.RitmStatusVO;
+import com.flickzz.desk.vo.*;
+import com.flickzz.desk.vo.request.RitmApproverRequestVO;
 import com.flickzz.desk.vo.request.RitmAssignmentRequestVO;
+import com.flickzz.desk.vo.request.RitmRequestTypeRequestVO;
 import com.flickzz.desk.vo.request.RitmRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +31,69 @@ public class RitmController {
 
     @Autowired
     private RitmService ritmService;
+
+    @PostMapping("/approver/assign")
+    public ResponseEntity<FlickzzDeskResponse> createRitmApprovers(@RequestBody RitmApproverRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RitmApproverVO> response = ritmService.createRitmApprovers(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), "RITM approver"), response);
+    }
+
+    @PutMapping("/approver/update")
+    public ResponseEntity<FlickzzDeskResponse> updateRitmApprovers(@RequestBody RitmApproverRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RitmApproverVO> response = ritmService.updateRitmApprovers(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), "RITM approver"), response);
+    }
+
+    @GetMapping("/approver/list/{ritmId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmApprovers(@PathVariable Long ritmId,
+                                                                @RequestParam Long companyId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RitmApproverVO> response = ritmService.getRitmApprovers(ritmId, companyId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM approver"), response);
+    }
+
+    @DeleteMapping("/approver/delete/{ritmId}")
+    public ResponseEntity<FlickzzDeskResponse> deleteRitmApprovers(@PathVariable Long ritmId,
+                                                                   @RequestParam Long companyId,
+                                                                   @RequestParam Long assignedBy,
+                                                                   @RequestParam Boolean isCreatorAdmin) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        ritmService.deleteRitmApprovers(ritmId, companyId, assignedBy, isCreatorAdmin);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "RITM approver"));
+    }
+
+    @PostMapping("/request/type/create")
+    public ResponseEntity<FlickzzDeskResponse> createRitmRequestTypes(@RequestBody List<RitmRequestTypeRequestVO> requests) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RequestTypeMasterVO> response = ritmService.createRitmRequestTypes(requests);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS, getDescription(CREATE_SUCCESS.getDescription(), "RITM request type"), response);
+    }
+
+    @DeleteMapping("/request/type/{requestTypeId}")
+    public ResponseEntity<FlickzzDeskResponse> deleteRitmRequestType(
+            @PathVariable Long requestTypeId, @RequestParam Long deletedBy,
+            @RequestParam Boolean isDeletedByAdmin) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        ritmService.deleteRitmRequestType(requestTypeId, deletedBy, isDeletedByAdmin);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "RITM request type"));
+    }
+
+    @GetMapping("/request/type/list/{companyId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmRequestTypes(@PathVariable Long companyId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RequestTypeMasterVO> response = ritmService.getRitmRequestTypes(companyId);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "RITM request type"), response);
+    }
 
     @PostMapping("/create")
     public ResponseEntity<FlickzzDeskResponse> createRitm(@RequestPart("ritm") RitmRequestVO ritmVO,

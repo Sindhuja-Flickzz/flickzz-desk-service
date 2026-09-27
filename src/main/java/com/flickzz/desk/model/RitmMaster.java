@@ -98,6 +98,10 @@ public class RitmMaster {
     @JoinColumn(name = "STATUS_ID", nullable = false)
     private RitmStatus status;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "REQUEST_TYPE_ID", nullable = false)
+    private RequestTypeMaster requestType;
+
     @Column(name = "REQUESTED_AT")
     private LocalDateTime requestedAt;
 
@@ -112,6 +116,9 @@ public class RitmMaster {
 
     @Column(name = "CANCELLED_AT")
     private LocalDateTime cancelledAt;
+
+    @Column(name = "CUSTOMER_RESOLUTION_DATE")
+    private LocalDateTime customerResolutionDate;
 
     @Column(name = "ACTION_REASON", columnDefinition = "TEXT")
     private String actionReason;

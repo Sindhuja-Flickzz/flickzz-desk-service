@@ -316,6 +316,66 @@ public class CommonMapper {
                 .isEnabled(requestConfig.getIsEnabled() != null ? requestConfig.getIsEnabled() : false).updatedBy(requestConfig.getUpdatedBy()).isUpdatedByAdmin(requestConfig.getIsUpdaterAdmin()).build();
     }
 
+    public List<RequestTypeMasterVO> toRequestTypeMasterVOList(List<RequestTypeMaster> requestTypes) {
+        if (requestTypes == null) {
+            return Collections.emptyList();
+        }
+        return requestTypes.stream().map(this::toRequestTypeMasterVO).toList();
+    }
+
+    public RequestTypeMasterVO toRequestTypeMasterVO(RequestTypeMaster requestType) {
+        if (requestType == null) {
+            return null;
+        }
+        return RequestTypeMasterVO.builder().requestTypeId(requestType.getRequestTypeId())
+                .requestTypeName(requestType.getRequestTypeName()).company(toCompanyMasterVO(requestType.getCompany()))
+                .isActive(requestType.getIsActive()).createdBy(requestType.getCreatedBy())
+                .updatedBy(requestType.getUpdatedBy()).isCreatorAdmin(requestType.getIsCreatorAdmin())
+                .isUpdaterAdmin(requestType.getIsUpdaterAdmin()).createdAt(requestType.getCreatedAt())
+                .updatedAt(requestType.getUpdatedAt()).build();
+    }
+
+    public CompanyMasterVO toCompanyMasterVO(CompanyMaster entity) {
+        if (entity == null) {
+            return null;
+        }
+        return CompanyMasterVO.builder().companyId(entity.getCompanyId()).companyName(entity.getCompanyName())
+                .phoneCode(entity.getPhoneCode()).registeredNumber(entity.getRegisteredNumber())
+                .country(toCountryMasterVO(entity.getCountry())).state(toStateMasterVO(entity.getState()))
+                .city(toCityMasterVO(entity.getCity())).addressLine1(entity.getAddressLine1())
+                .addressLine2(entity.getAddressLine2()).pinCode(entity.getPinCode()).isActive(entity.getIsActive())
+                .approvers(entity.getApprovers() == null ? null
+                        : entity.getApprovers().stream().filter(CompanyApprover::getIsActive)
+                        .map(approver -> CompanyApproverVO.builder()
+                                .approverId(approver.getApproverId())
+                                .company(null)
+                                .agent(toApproverAgentVO(approver.getAgent()))
+                                .level(approver.getLevel()).isActive(approver.getIsActive())
+                                .createdBy(approver.getCreatedBy())
+                                .isCreatedByAdmin(
+                                        approver.getIsCreatorAdmin() != null ? approver.getIsCreatorAdmin() : false)
+                                .updatedBy(approver.getUpdatedBy())
+                                .isUpdatedByAdmin(
+                                        approver.getIsUpdaterAdmin() != null ? approver.getIsUpdaterAdmin() : false)
+                                .build())
+                        .toList())
+                .createdBy(entity.getCreatedBy())
+                .isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
+                .uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
+                .updatedBy(entity.getUpdatedBy())
+                .isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
+    }
+
+    private AgentMasterVO toApproverAgentVO(AgentMaster agent) {
+        if (agent == null) {
+            return null;
+        }
+        return AgentMasterVO.builder()
+                .agentId(agent.getAgentId())
+                .agentName(agent.getAgentName())
+                .build();
+    }
+
     public ImpactMaster toImpactMaster(ImpactRequestVO request, CompanyMaster companyMaster) {
         if (request == null) {
             return null;
@@ -335,47 +395,6 @@ public class CommonMapper {
                 .isActive(save.getIsActive()).createdBy(save.getCreatedBy())
                 .isCreatedByAdmin(save.getIsCreatorAdmin()).updatedBy(save.getUpdatedBy())
                 .isUpdatedByAdmin(save.getIsUpdaterAdmin() != null ? save.getIsUpdaterAdmin() : false).build();
-    }
-
-    public CompanyMasterVO toCompanyMasterVO(CompanyMaster entity) {
-        if (entity == null) {
-            return null;
-        }
-        return CompanyMasterVO.builder().companyId(entity.getCompanyId()).companyName(entity.getCompanyName())
-                .phoneCode(entity.getPhoneCode()).registeredNumber(entity.getRegisteredNumber())
-                .country(toCountryMasterVO(entity.getCountry())).state(toStateMasterVO(entity.getState()))
-                .city(toCityMasterVO(entity.getCity())).addressLine1(entity.getAddressLine1())
-                .addressLine2(entity.getAddressLine2()).pinCode(entity.getPinCode()).isActive(entity.getIsActive())
-                .approvers(entity.getApprovers() == null ? null
-                        : entity.getApprovers().stream().filter(CompanyApprover::getIsActive)
-                        .map(approver -> CompanyApproverVO.builder()
-                                .approverId(approver.getApproverId())
-                                .company(null)
-                                .agent(toCompanyApproverAgentVO(approver.getAgent()))
-                                .level(approver.getLevel()).isActive(approver.getIsActive())
-                                .createdBy(approver.getCreatedBy())
-                                .isCreatedByAdmin(
-                                        approver.getIsCreatorAdmin() != null ? approver.getIsCreatorAdmin() : false)
-                                .updatedBy(approver.getUpdatedBy())
-                                .isUpdatedByAdmin(
-                                        approver.getIsUpdaterAdmin() != null ? approver.getIsUpdaterAdmin() : false)
-                                .build())
-                        .toList())
-                .createdBy(entity.getCreatedBy())
-                .isCreatedByAdmin(entity.getIsCreatorAdmin() != null ? entity.getIsCreatorAdmin() : false)
-                .uid(entity.getUid()).employeeSize(entity.getEmployeeSize()).mail(entity.getMail())
-                .updatedBy(entity.getUpdatedBy())
-                .isUpdatedByAdmin(entity.getIsUpdaterAdmin() != null ? entity.getIsUpdaterAdmin() : false).build();
-    }
-
-    private AgentMasterVO toCompanyApproverAgentVO(AgentMaster agent) {
-        if (agent == null) {
-            return null;
-        }
-        return AgentMasterVO.builder()
-                .agentId(agent.getAgentId())
-                .agentName(agent.getAgentName())
-                .build();
     }
 
     public UserVO userToUserVO(User user) {
@@ -859,7 +878,7 @@ public class CommonMapper {
         }
         CompanyApproverVO vo = new CompanyApproverVO();
         vo.setApproverId(entity.getApproverId());
-        vo.setAgent(toCompanyApproverAgentVO(entity.getAgent()));
+        vo.setAgent(toApproverAgentVO(entity.getAgent()));
         vo.setLevel(entity.getLevel());
         vo.setIsActive(entity.getIsActive());
         vo.setCreatedBy(entity.getCreatedBy());
@@ -1135,6 +1154,70 @@ public class CommonMapper {
             return null;
         }
         return AgentMasterVO.builder().agentId(agent.getAgentId()).agentName(agent.getAgentName()).build();
+    }
+
+    public List<RitmApproverVO> toRitmApproverVOList(List<RitmApprover> approvers) {
+        if (approvers == null) {
+            return Collections.emptyList();
+        }
+        return approvers.stream().map(this::toRitmApproverVO).toList();
+    }
+
+    public RitmApproverVO toRitmApproverVO(RitmApprover approver) {
+        if (approver == null) {
+            return null;
+        }
+        return RitmApproverVO.builder()
+                .ritmApproverId(approver.getRitmApproverId())
+                .isGroupApprover(approver.getIsGroupApprover())
+                .approverConfig(toRequestApproverConfigVo(approver.getApproverConfig()))
+                .approverAgent(toApproverAgentVO(approver.getApproverAgent()))
+                .approverSequence(approver.getApproverSequence())
+                .isMainApprover(approver.getIsMainApprover())
+                .approvalStatus(approver.getApprovalStatus())
+                .approvalRemark(approver.getApprovalRemark())
+                .approvedOn(approver.getApprovedOn())
+                .createdBy(approver.getCreatedBy())
+                .createdOn(approver.getCreatedOn())
+                .updatedBy(approver.getUpdatedBy())
+                .updatedOn(approver.getUpdatedOn())
+                .isActive(approver.getIsActive())
+                .build();
+    }
+
+    public RequestApproverConfigVO toRequestApproverConfigVo(RequestApproverConfig config) {
+        if (config == null) {
+            return null;
+        }
+        return RequestApproverConfigVO.builder()
+                .approverConfigId(config.getApproverConfigId())
+                .approverCode(config.getApproverCode())
+                .followSequence(config.getFollowSequence())
+                .isAnyApprovalSufficient(config.getIsAnyApprovalSufficient())
+                .isActive(config.getIsActive())
+                .createdBy(config.getCreatedBy())
+                .updatedBy(config.getUpdatedBy())
+                .isCreatorAdmin(config.getIsCreatorAdmin())
+                .isUpdaterAdmin(config.getIsUpdaterAdmin())
+                .createdAt(config.getCreatedAt())
+                .updatedAt(config.getUpdatedAt())
+                .build();
+    }
+
+    private RequestApproverVO toRequestApproverVO(RequestApprover approver) {
+        if (approver == null) {
+            return null;
+        }
+        return RequestApproverVO.builder()
+                .approverId(approver.getApproverId())
+                .agent(toAgentMasterVO(approver.getAgent()))
+                .approverSequence(approver.getApproverSequence())
+                .isActive(approver.getIsActive())
+                .createdBy(approver.getCreatedBy())
+                .updatedBy(approver.getUpdatedBy())
+                .createdAt(approver.getCreatedAt())
+                .updatedAt(approver.getUpdatedAt())
+                .build();
     }
 
     public RitmMasterVO toRitmMasterVo(RitmMaster savedRitm) {
