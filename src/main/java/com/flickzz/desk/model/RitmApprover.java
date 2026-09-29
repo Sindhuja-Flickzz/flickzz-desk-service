@@ -49,7 +49,7 @@ public class RitmApprover {
     private Boolean isMainApprover = false;
 
     @Column(name = "APPROVAL_STATUS", nullable = false, length = 30)
-    private String approvalStatus = "PENDING";
+    private String approvalStatus = "Pending";
 
     @Column(name = "APPROVAL_REMARK", length = 2000)
     private String approvalRemark;

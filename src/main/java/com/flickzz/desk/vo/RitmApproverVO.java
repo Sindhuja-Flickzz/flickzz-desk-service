@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -17,6 +18,10 @@ public class RitmApproverVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long ritmApproverId;
+
+    private Long requestId;
+
+    private String requestType;
 
     private RitmMasterVO ritm;
 
@@ -45,4 +50,6 @@ public class RitmApproverVO implements Serializable {
     private LocalDateTime updatedOn;
 
     private Boolean isActive;
+
+    private List<RitmTemplateDetailVO> templateDetails;
 }

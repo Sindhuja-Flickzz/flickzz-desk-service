@@ -34,9 +34,12 @@ public class BPConfigurationChangeRequestVO implements Serializable {
     private Integer currentInternalApprovalLevel;
     private Integer totalBpApprovalLevels;
     private Integer currentBpApprovalLevel;
+    private Date requestedOn;
+    private Date completedOn;
     private Date createdOn;
     private Date updatedOn;
     private Long createdBy;
     private Long updatedBy;
     private Boolean isCreatorAdmin;
+    private java.util.List<BPConfigurationChangeRequestRemarkVO> remarks;
 }

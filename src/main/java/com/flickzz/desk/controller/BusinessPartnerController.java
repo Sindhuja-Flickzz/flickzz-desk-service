@@ -2,6 +2,7 @@ package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.BusinessPartnerService;
+import com.flickzz.desk.service.ConfigurationChangeService;
 import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
@@ -28,6 +29,21 @@ public class BusinessPartnerController {
 
     @Autowired
     private BusinessPartnerService businessPartnerService;
+
+    @Autowired
+    private ConfigurationChangeService configurationChangeService;
+
+    @GetMapping("/config/change-request/{ccrId}")
+    public ResponseEntity<FlickzzDeskResponse> getConfigurationChangeRequestById(@PathVariable Long ccrId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        BPConfigurationChangeRequestVO response = configurationChangeService
+                .getConfigurationChangeRequestById(ccrId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "Configuration Change Request"), response);
+    }
 
     @PostMapping("/create")
     public ResponseEntity<FlickzzDeskResponse> createBusinessPartner(@RequestBody CompanyMasterRequestVO request)
@@ -433,37 +449,5 @@ public class BusinessPartnerController {
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Assignment"), response);
-    }
-
-    @GetMapping("/config/approval/list/{userId}")
-    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerApprovalList(
-            @PathVariable String userId) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-
-        List<ConfigChangeApprovalVO> response = businessPartnerService
-                .getBusinessPartnerApprovalList(Long.valueOf(userId));
-
-        log.info(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval"), response);
-    }
-
-    @PostMapping("/config/approval/action")
-    public ResponseEntity<FlickzzDeskResponse> actionOnConfigApproval(@RequestBody BpConfigRequestVO request) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        ConfigChangeApprovalVO response = businessPartnerService.actionOnConfigApproval(request);
-        log.info(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(UPDATE_SUCCESS, getDescription(UPDATE_SUCCESS.getDescription(), request.getAction()), response);
-    }
-
-    @GetMapping("/approval/remark/{approvalId}")
-    public ResponseEntity<FlickzzDeskResponse> getApprovalRemarks(
-            @PathVariable String approvalId) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-
-        List<BPConfigurationChangeRequestRemarkVO> response = businessPartnerService
-                .getApprovalRemarks(Long.valueOf(approvalId));
-
-        log.info(generateLog(EXIT, this.getClass().getName()));
-        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval Progress Remark"), response);
     }
 }

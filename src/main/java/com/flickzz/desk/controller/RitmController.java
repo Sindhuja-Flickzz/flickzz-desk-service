@@ -57,13 +57,22 @@ public class RitmController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM approver"), response);
     }
 
+    @GetMapping("/approver/{ritmApproverId}")
+    public ResponseEntity<FlickzzDeskResponse> getRitmApproverById(@PathVariable Long ritmApproverId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        RitmApproverVO response = ritmService.getRitmApproverById(ritmApproverId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "RITM approver"), response);
+    }
+
     @DeleteMapping("/approver/delete/{ritmId}")
     public ResponseEntity<FlickzzDeskResponse> deleteRitmApprovers(@PathVariable Long ritmId,
                                                                    @RequestParam Long companyId,
-                                                                   @RequestParam Long assignedBy,
-                                                                   @RequestParam Boolean isCreatorAdmin) {
+                                                                   @RequestParam Long deletedBy,
+                                                                   @RequestParam Boolean isDeletedByAdmin) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        ritmService.deleteRitmApprovers(ritmId, companyId, assignedBy, isCreatorAdmin);
+        ritmService.deleteRitmApprovers(ritmId, companyId, deletedBy, isDeletedByAdmin);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(DELETE_SUCCESS, getDescription(DELETE_SUCCESS.getDescription(), "RITM approver"));
     }

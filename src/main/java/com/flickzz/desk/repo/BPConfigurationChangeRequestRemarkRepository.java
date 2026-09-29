@@ -1,8 +1,6 @@
 package com.flickzz.desk.repo;
 
-import com.flickzz.desk.model.BPConfigurationChangeRequest;
 import com.flickzz.desk.model.BPConfigurationChangeRequestRemark;
-import com.flickzz.desk.model.ConfigChangeApproval;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

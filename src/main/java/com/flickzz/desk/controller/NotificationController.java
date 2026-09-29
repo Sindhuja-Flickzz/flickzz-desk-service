@@ -1,8 +1,8 @@
 package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
-import com.flickzz.desk.service.NotificationService;
-import com.flickzz.desk.vo.ConfigChangeNotificationVO;
+import com.flickzz.desk.service.NotificationManageService;
+import com.flickzz.desk.vo.NotificationVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +25,12 @@ public class NotificationController {
     private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
 
     @Autowired
-    NotificationService notificationService;
+    NotificationManageService notificationManageService;
 
     @GetMapping("/list/{recipientId}")
     public ResponseEntity<FlickzzDeskResponse> getNotificationsByRecipientId(@PathVariable Long recipientId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        List<ConfigChangeNotificationVO> response = notificationService.getNotificationsByRecipientId(recipientId);
+        List<NotificationVO> response = notificationManageService.getNotificationsByRecipientId(recipientId);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), response);
@@ -39,7 +39,7 @@ public class NotificationController {
     @PutMapping("/read/{notificationId}")
     public ResponseEntity<FlickzzDeskResponse> markNotificationAsRead(@PathVariable Long notificationId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        notificationService.markNotificationAsRead(notificationId);
+        notificationManageService.markNotificationAsRead(notificationId);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
@@ -48,7 +48,7 @@ public class NotificationController {
     @PutMapping("/read/all/{recipientId}")
     public ResponseEntity<FlickzzDeskResponse> markAllNotificationsAsRead(@PathVariable Long recipientId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        notificationService.markAllNotificationsAsRead(recipientId);
+        notificationManageService.markAllNotificationsAsRead(recipientId);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
     }
@@ -56,7 +56,7 @@ public class NotificationController {
     @DeleteMapping("/clear/{notificationId}")
     public ResponseEntity<FlickzzDeskResponse> clearNotification(@PathVariable Long notificationId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        notificationService.clearNotification(notificationId);
+        notificationManageService.clearNotification(notificationId);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
     }
@@ -64,7 +64,7 @@ public class NotificationController {
     @DeleteMapping("/clear/all/{recipientId}")
     public ResponseEntity<FlickzzDeskResponse> clearAllNotifications(@PathVariable Long recipientId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        notificationService.clearAllNotifications(recipientId);
+        notificationManageService.clearAllNotifications(recipientId);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), NOTIFICATION), null);
     }

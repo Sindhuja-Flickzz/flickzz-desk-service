@@ -4,8 +4,9 @@ import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
-import com.flickzz.desk.service.notification.ConfigNotificationService;
+import com.flickzz.desk.service.notification.NotificationService;
 import com.flickzz.desk.vo.*;
+import com.flickzz.desk.vo.RitmTemplateDetailVO;
 import com.flickzz.desk.vo.request.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class RitmService {
     private RitmMasterRepository ritmMasterRepository;
     @Autowired
     private RitmApproverRepository ritmApproverRepository;
+    @Autowired
+    private ApprovalRepository approvalRepository;
     @Autowired
     private RequestApproverConfigRepository requestApproverConfigRepository;
     @Autowired
@@ -85,7 +88,7 @@ public class RitmService {
     @Autowired
     private AuditService auditService;
     @Autowired
-    private ConfigNotificationService configNotificationService;
+    private NotificationService notificationService;
 
     @Transactional
     public List<RitmApproverVO> createRitmApprovers(RitmApproverRequestVO request) {
@@ -96,8 +99,8 @@ public class RitmService {
                     getDescription(ALREADY_EXISTS.getDescription(), "RITM approvers"));
         }
         List<AgentMaster> targets = resolveRitmApproverTargets(request);
-        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets, null);
-        configNotificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
+        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets);
+        notificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
                 request.getIsCreatorAdmin(), targets, "CREATE");
         recordRitmApproverAudit(ritm, request, CREATE, null, saved);
         return mapper.toRitmApproverVOList(saved);
@@ -175,7 +178,7 @@ public class RitmService {
     }
 
     private List<RitmApprover> saveRitmApprovers(RitmMaster ritm, RitmApproverRequestVO request,
-                                                 List<AgentMaster> targets, List<RitmApprover> prior) {
+                                                 List<AgentMaster> targets) {
         RequestApproverConfig config = Boolean.TRUE.equals(request.getIsGroupApprover())
                 ? requestApproverConfigRepository.findById(request.getApproverConfigId()).orElseThrow() : null;
         Map<Long, Integer> groupSequences = new HashMap<>();
@@ -194,16 +197,34 @@ public class RitmService {
             approver.setApproverAgent(agent);
             approver.setApproverSequence(sequence);
             approver.setIsMainApprover(sequence == 1);
-            approver.setApprovalStatus("PENDING");
+            approver.setApprovalStatus(PENDING);
             approver.setApprovalRemark(request.getReason());
             approver.setCreatedBy(request.getAssignedBy());
-            if (prior != null && !prior.isEmpty()) {
-                approver.setUpdatedBy(request.getAssignedBy());
-            }
             approver.setIsActive(true);
             approvers.add(approver);
         }
-        return ritmApproverRepository.saveAllAndFlush(approvers);
+        List<RitmApprover> savedApprovers = ritmApproverRepository.saveAllAndFlush(approvers);
+        List<ApprovalMaster> approvals = savedApprovers.stream()
+                .map(approver -> ApprovalMaster.builder()
+                        .requestId(approver.getRitmApproverId())
+                        .requestType(RITM_REQUEST_TYPE)
+                        .approvalType(RITM_REQUEST_TYPE)
+                        .description(limitApprovalDescription(approver.getApprovalRemark(), ritm))
+                        .approverType(Boolean.TRUE.equals(approver.getIsGroupApprover()) ? "GROUP" : "INDIVIDUAL")
+                        .approverLevel(approver.getApproverSequence())
+                        .approverUserId(approver.getApproverAgent().getUser().getUserId())
+                        .approverOrgId(approver.getApproverAgent().getOrganization().getCompanyId())
+                        .status(approver.getApprovalStatus())
+                        .mandatory(approver.getIsMainApprover())
+                        .approvedOn(approver.getApprovedOn())
+                        .createdBy(approver.getCreatedBy())
+                        .createdOn(approver.getCreatedOn())
+                        .updatedBy(approver.getUpdatedBy())
+                        .updatedOn(approver.getUpdatedOn())
+                        .build())
+                .toList();
+        approvalRepository.saveAllAndFlush(approvals);
+        return savedApprovers;
     }
 
     private void recordRitmApproverAudit(RitmMaster ritm, RitmApproverRequestVO request, String action,
@@ -214,12 +235,19 @@ public class RitmService {
                 .userId(request.getAssignedBy()).companyId(request.getCompanyId()).status(SUCCESS).build());
     }
 
+    private String limitApprovalDescription(String description, RitmMaster ritm) {
+        String value = description == null || description.isBlank()
+                ? "Approval for RITM " + ritm.getRitmNumber()
+                : description;
+        return value.length() > 200 ? value.substring(0, 200) : value;
+    }
+
     private String ritmApproverSnapshot(List<RitmApprover> approvers) {
         StringBuilder snapshot = new StringBuilder("{\"approvers\":[");
         for (int index = 0; index < approvers.size(); index++) {
             RitmApprover approver = approvers.get(index);
             if (index > 0) snapshot.append(',');
-                snapshot.append("{\"agentId\":").append(approver.getApproverAgent().getAgentId())
+            snapshot.append("{\"agentId\":").append(approver.getApproverAgent().getAgentId())
                     .append(",\"approverConfigId\":")
                     .append(approver.getApproverConfig() == null ? "null" : approver.getApproverConfig().getApproverConfigId())
                     .append('}');
@@ -244,8 +272,20 @@ public class RitmService {
         String oldValue = ritmApproverSnapshot(current);
         current.forEach(approver -> approver.setIsActive(false));
         ritmApproverRepository.saveAll(current);
-        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets, current);
-        configNotificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
+        List<Long> currentApproverIds = current.stream()
+                .map(RitmApprover::getRitmApproverId)
+                .toList();
+        List<ApprovalMaster> currentApprovals = approvalRepository
+                .findByRequestTypeAndRequestIdIn(RITM_REQUEST_TYPE, currentApproverIds);
+        LocalDateTime updatedOn = LocalDateTime.now();
+        currentApprovals.forEach(approval -> {
+            approval.setActive(false);
+            approval.setUpdatedBy(request.getAssignedBy());
+            approval.setUpdatedOn(updatedOn);
+        });
+        approvalRepository.saveAll(currentApprovals);
+        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets);
+        notificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
                 request.getIsCreatorAdmin(), findAgents(affectedAgentIds), "UPDATE");
         recordRitmApproverAudit(ritm, request, UPDATE, oldValue, saved);
         return mapper.toRitmApproverVOList(saved);
@@ -267,9 +307,38 @@ public class RitmService {
                 .findByRitmId_RitmIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getRitmId()));
     }
 
+    @Transactional(readOnly = true)
+    public RitmApproverVO getRitmApproverById(Long ritmApproverId) {
+        if (ritmApproverId == null) {
+            throw new FlickzzDeskException(INVALID_FIELD,
+                    getDescription(INVALID_FIELD.getDescription(), "RITM approver ID"));
+        }
+
+        RitmApprover approver = ritmApproverRepository.findById(ritmApproverId)
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "RITM approver")));
+        RitmMaster ritm = ritmMasterRepository.findById(approver.getRitmId().getRitmId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "RITM")));
+
+        List<RitmTemplateDetailVO> templateDetails = ritm.getFieldValues() == null ? null : ritm.getFieldValues().stream()
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive())
+                        && Boolean.TRUE.equals(value.getTemplateField().getMandatory()))
+                .map(value -> RitmTemplateDetailVO.builder()
+                        .fieldId(value.getTemplateField().getFieldId())
+                        .fieldName(value.getTemplateField().getFieldName())
+                        .value(value.getFieldValue())
+                        .build())
+                .toList();
+
+        RitmApproverVO response = mapper.toRitmApproverVO(approver);
+        response.setTemplateDetails(templateDetails);
+        return response;
+    }
+
     @Transactional
-    public void deleteRitmApprovers(Long ritmId, Long companyId, Long assignedBy, Boolean isCreatorAdmin) {
-        if (ritmId == null || companyId == null || assignedBy == null || isCreatorAdmin == null) {
+    public void deleteRitmApprovers(Long ritmId, Long companyId, Long deletedBy, Boolean isDeleterAdmin) {
+        if (ritmId == null || companyId == null || deletedBy == null || isDeleterAdmin == null) {
             throw new FlickzzDeskException(INVALID_REQUEST,
                     getDescription(INVALID_REQUEST.getDescription(), "RITM ID, company, assigned by and admin flag are required"));
         }
@@ -280,16 +349,28 @@ public class RitmService {
             throw new FlickzzDeskException(DOES_NOT_EXIST,
                     getDescription(DOES_NOT_EXIST.getDescription(), "RITM approvers for RITM " + ritmId));
         }
-        RitmApproverRequestVO request = new RitmApproverRequestVO(ritmId, companyId, null, assignedBy,
-                false, null, List.of(), isCreatorAdmin);
+        RitmApproverRequestVO request = new RitmApproverRequestVO(ritmId, companyId, null, deletedBy,
+                false, null, List.of(), isDeleterAdmin);
         String oldValue = ritmApproverSnapshot(current);
         current.forEach(approver -> approver.setIsActive(false));
         ritmApproverRepository.saveAll(current);
+        List<Long> currentApproverIds = current.stream()
+                .map(RitmApprover::getRitmApproverId)
+                .toList();
+        List<ApprovalMaster> currentApprovals = approvalRepository
+                .findByRequestTypeAndRequestIdIn(RITM_REQUEST_TYPE, currentApproverIds);
+        LocalDateTime updatedOn = LocalDateTime.now();
+        currentApprovals.forEach(approval -> {
+            approval.setActive(false);
+            approval.setUpdatedBy(deletedBy);
+            approval.setUpdatedOn(updatedOn);
+        });
+        approvalRepository.saveAll(currentApprovals);
         List<AgentMaster> affected = new ArrayList<>();
         for (RitmApprover approver : current) {
             affected.add(approver.getApproverAgent());
         }
-        configNotificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
+        notificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
                 request.getIsCreatorAdmin(), affected, "DELETE");
         recordRitmApproverAudit(ritm, request, DELETE, oldValue, List.of());
     }
@@ -700,7 +781,7 @@ public class RitmService {
             AgentMaster recipient = agentMasterRepository.findById(recipientId).orElse(null);
             if (recipient != null) recipients.add(recipient);
         }
-        configNotificationService.notifyRitmCreated(savedRitm, createdBy, openedBy, recipients);
+        notificationService.notifyRitmCreated(savedRitm, createdBy, openedBy, recipients);
     }
 
     @Transactional
@@ -868,7 +949,7 @@ public class RitmService {
             if (!attachments.isEmpty()) {
                 ritmAttachmentRepository.saveAllAndFlush(attachments);
             }
-            configNotificationService.notifyRitmUpdated(saved, actorId);
+            notificationService.notifyRitmUpdated(saved, actorId);
             recordSystemAudit("RitmMaster", saved.getRitmId(), UPDATE, null, saved.getRitmNumber(), actorId,
                     companyId, SUCCESS, null);
             log.info(generateLog(EXIT, this.getClass().getName()));
@@ -1139,7 +1220,7 @@ public class RitmService {
                     updatedRitm.getCompany() != null ? updatedRitm.getCompany().getCompanyId() : null,
                     SUCCESS, null);
 
-            configNotificationService.notifyRitmAssigned(updatedRitm, actor);
+            notificationService.notifyRitmAssigned(updatedRitm, actor);
 
             log.info(generateLog(EXIT, this.getClass().getName()));
             return mapper.toRitmMasterVo(updatedRitm);

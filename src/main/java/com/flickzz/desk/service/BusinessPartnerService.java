@@ -4,7 +4,7 @@ import com.flickzz.desk.exception.FlickzzDeskException;
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.*;
-import com.flickzz.desk.service.notification.ConfigNotificationService;
+import com.flickzz.desk.service.notification.NotificationService;
 import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.BpConfigRequestVO;
 import com.flickzz.desk.vo.request.CompanyMasterRequestVO;
@@ -87,9 +87,9 @@ public class BusinessPartnerService {
     @Autowired
     CompanyApproverRepository companyApproverRepository;
     @Autowired
-    ConfigChangeApprovalRepository configChangeApprovalRepository;
+    ApprovalRepository approvalRepository;
     @Autowired
-    ConfigNotificationService configNotificationService;
+    NotificationService notificationService;
     @Autowired
     ConfigurationChangeService configurationChangeService;
     @Autowired
@@ -3070,7 +3070,7 @@ public class BusinessPartnerService {
         }
     }
 
-    public List<ConfigChangeApprovalVO> getBusinessPartnerApprovalList(Long userId) {
+    public List<ApprovalMasterVO> getBusinessPartnerApprovalList(Long userId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
             if (userId == null) {
@@ -3078,7 +3078,7 @@ public class BusinessPartnerService {
                         getDescription(INVALID_FIELD.getDescription(), "User ID"));
             }
 
-            List<ConfigChangeApproval> approvals = configChangeApprovalRepository.findByApproverUserId(userId);
+            List<ApprovalMaster> approvals = approvalRepository.findByApproverUserId(userId);
             log.info(generateLog(EXIT, this.getClass().getName()));
             return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
         } catch (FlickzzDeskException e) {
@@ -3089,7 +3089,7 @@ public class BusinessPartnerService {
         }
     }
 
-    public ConfigChangeApprovalVO actionOnConfigApproval(BpConfigRequestVO request) {
+    public ApprovalMasterVO actionOnConfigApproval(BpConfigRequestVO request) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
             if (request == null || StringUtils.isBlank(request.getAction())) {
@@ -3117,9 +3117,11 @@ public class BusinessPartnerService {
                         getDescription(INVALID_FIELD.getDescription(), "Approval Id"));
             }
 
-            ConfigChangeApproval approval = configChangeApprovalRepository.findById(request.getApprovalId())
+            ApprovalMaster approval = approvalRepository.findById(request.getApprovalId())
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
+
+            BPConfigurationChangeRequest changeRequest = bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
 
             if (!Objects.equals(approval.getApproverUserId(), request.getUpdatedBy())) {
                 throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
@@ -3138,12 +3140,12 @@ public class BusinessPartnerService {
                         applyDeclineApproval(approval, request);
                     } else if ("Internal".equalsIgnoreCase(approval.getApproverType())) {
                         approval.setApprovedOn(LocalDateTime.now());
-                        if (approval.getConfigChangeRequest() != null && approval.getConfigChangeRequest().getChangedRequestId() != null
-                                && approval.getConfigChangeRequest().getSourceChangeId() != null &&
-                                approval.getConfigChangeRequest().getChangedRequestId().equals(approval.getConfigChangeRequest().getSourceChangeId())) {
+                        if (changeRequest != null && changeRequest.getChangedRequestId() != null
+                                && changeRequest.getSourceChangeId() != null &&
+                                changeRequest.getChangedRequestId().equals(changeRequest.getSourceChangeId())) {
                             applyDeclineApproval(approval, request);
                         } else {
-                            configNotificationService.notifyBpApprovalConfigChange(approval.getConfigChangeRequest(), approval.getApprovalType());
+                            notificationService.notifyBpApprovalConfigChange(changeRequest, approval.getApprovalType());
                         }
                     }
                 } else if (REQUEST_CLARIFICATION.equalsIgnoreCase(action)) {
@@ -3153,12 +3155,12 @@ public class BusinessPartnerService {
                     approval.setApprovedOn(LocalDateTime.now());
                 } else if (APPROVE.equalsIgnoreCase(action) && "Internal".equalsIgnoreCase(approval.getApproverType())) {
                     approval.setApprovedOn(LocalDateTime.now());
-                    if (approval.getConfigChangeRequest() != null && approval.getConfigChangeRequest().getChangedRequestId() != null
-                            && approval.getConfigChangeRequest().getSourceChangeId() != null &&
-                            approval.getConfigChangeRequest().getChangedRequestId().equals(approval.getConfigChangeRequest().getSourceChangeId())) {
+                    if (changeRequest != null && changeRequest.getChangedRequestId() != null
+                            && changeRequest.getSourceChangeId() != null &&
+                            changeRequest.getChangedRequestId().equals(changeRequest.getSourceChangeId())) {
                         applyApproval(approval);
                     } else {
-                        configNotificationService.notifyBpApprovalConfigChange(approval.getConfigChangeRequest(), approval.getApprovalType());
+                        notificationService.notifyBpApprovalConfigChange(changeRequest, approval.getApprovalType());
                     }
                 }
             } else {
@@ -3166,7 +3168,7 @@ public class BusinessPartnerService {
             }
 
             updateChangeRequestProgress(approval, action);
-            configChangeApprovalRepository.save(approval);
+            approvalRepository.save(approval);
             return mapper.toConfigChangeApprovalVO(approval);
         } catch (FlickzzDeskException e) {
             throw e;
@@ -3176,8 +3178,8 @@ public class BusinessPartnerService {
         }
     }
 
-    private void saveChangeRequestRemark(ConfigChangeApproval approval, String action, String remarkText) {
-        BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+    private void saveChangeRequestRemark(ApprovalMaster approval, String action, String remarkText) {
+        BPConfigurationChangeRequest changeRequest = approval.getRequestId() == null ? null : bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
         if (changeRequest == null) {
             return;
         }
@@ -3195,8 +3197,8 @@ public class BusinessPartnerService {
         bpConfigurationChangeRequestRemarkRepository.save(remark);
     }
 
-    private void applyDeclineApproval(ConfigChangeApproval approval, BpConfigRequestVO request) {
-        BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+    private void applyDeclineApproval(ApprovalMaster approval, BpConfigRequestVO request) {
+        BPConfigurationChangeRequest changeRequest = approval.getRequestId() == null ? null : bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
         if (changeRequest == null || changeRequest.getChangedRequestId() == null) {
             return;
         }
@@ -3277,9 +3279,9 @@ public class BusinessPartnerService {
         approval.setStatus(DECLINED);
     }
 
-    private void requestClarification(ConfigChangeApproval approval, BpConfigRequestVO request) {
+    private void requestClarification(ApprovalMaster approval, BpConfigRequestVO request) {
         approval.setStatus(REQUEST_CLARIFICATION);
-        BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+        BPConfigurationChangeRequest changeRequest = approval.getRequestId() == null ? null : bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
         if (changeRequest == null) {
             return;
         }
@@ -3290,8 +3292,8 @@ public class BusinessPartnerService {
 
     }
 
-    private void applyApproval(ConfigChangeApproval approval) {
-        BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+    private void applyApproval(ApprovalMaster approval) {
+        BPConfigurationChangeRequest changeRequest = approval.getRequestId() == null ? null : bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
         if (changeRequest == null || changeRequest.getChangedRequestId() == null) {
             return;
         }
@@ -3370,8 +3372,8 @@ public class BusinessPartnerService {
         approval.setStatus(APPROVE);
     }
 
-    private void updateChangeRequestProgress(ConfigChangeApproval approval, String action) {
-        BPConfigurationChangeRequest changeRequest = approval.getConfigChangeRequest();
+    private void updateChangeRequestProgress(ApprovalMaster approval, String action) {
+        BPConfigurationChangeRequest changeRequest = approval.getRequestId() == null ? null : bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
         if (changeRequest == null) {
             return;
         }
@@ -3413,13 +3415,21 @@ public class BusinessPartnerService {
                         getDescription(INVALID_FIELD.getDescription(), "Approval Id"));
             }
 
-            Optional<ConfigChangeApproval> approval = configChangeApprovalRepository.findById(approvalId);
+            Optional<ApprovalMaster> approval = approvalRepository.findById(approvalId);
             if (approval.isEmpty()) {
                 throw new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval"));
             }
 
-            List<BPConfigurationChangeRequestRemark> remarks = bpConfigurationChangeRequestRemarkRepository.findByConfigurationChangeRequest_CcrId(approval.get().getConfigChangeRequest().getCcrId());
+            if (approval.get().getRequestId() == null) {
+                return List.of();
+            }
+            BPConfigurationChangeRequest changeRequest = bpConfigurationChangeRequestRepository.findById(approval.get().getRequestId()).orElse(null);
+            if (changeRequest == null) {
+                return List.of();
+            }
+
+            List<BPConfigurationChangeRequestRemark> remarks = bpConfigurationChangeRequestRemarkRepository.findByConfigurationChangeRequest_CcrId(changeRequest.getCcrId());
             return remarks.stream().map(mapper::toBPConfigurationChangeRequestRemarkVO).toList();
         } catch (FlickzzDeskException e) {
             throw e;

@@ -2,12 +2,12 @@ package com.flickzz.desk.service.notification;
 
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.ApprovalRepository;
 import com.flickzz.desk.repo.CompanyApproverRepository;
-import com.flickzz.desk.repo.ConfigChangeApprovalRepository;
-import com.flickzz.desk.repo.ConfigChangeNotificationRepository;
+import com.flickzz.desk.repo.NotificationRepository;
 import com.flickzz.desk.repo.UserRepository;
 import com.flickzz.desk.service.CommonService;
-import com.flickzz.desk.vo.ConfigChangeNotificationVO;
+import com.flickzz.desk.vo.NotificationVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +26,13 @@ import static com.flickzz.desk.config.FlickzzDeskConstants.PENDING;
 import static com.flickzz.desk.config.FlickzzDeskConstants.UNREAD;
 
 @Service
-public class ConfigNotificationService {
+public class NotificationService {
 
-    private static final Logger log = LoggerFactory.getLogger(ConfigNotificationService.class);
+    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
     @Autowired
-    ConfigChangeNotificationRepository configChangeNotificationRepository;
+    NotificationRepository notificationRepository;
     @Autowired
-    ConfigChangeApprovalRepository configChangeApprovalRepository;
+    ApprovalRepository approvalRepository;
     @Autowired
     CompanyApproverRepository companyApproverRepository;
     @Autowired
@@ -60,7 +60,9 @@ public class ConfigNotificationService {
                                       String title, String message, String action, boolean publish) {
         if (recipient == null || recipient.getAgentId() == null) return;
         CompanyMaster company = ritm.getCompany();
-        ConfigChangeNotification notification = ConfigChangeNotification.builder()
+        Notification notification = Notification.builder()
+                .requestId(ritm.getRitmId())
+                .requestType("RITM")
                 .title(title)
                 .message(message)
                 .notificationType("RITM")
@@ -76,16 +78,16 @@ public class ConfigNotificationService {
                 .createdBy(actorId)
                 .createdOn(LocalDateTime.now())
                 .build();
-        ConfigChangeNotification saved = configChangeNotificationRepository.saveAndFlush(notification);
+        Notification saved = notificationRepository.saveAndFlush(notification);
         if (publish) publishNotification(saved);
     }
 
-    public void publishNotification(ConfigChangeNotification notification) {
+    public void publishNotification(Notification notification) {
         if (notification == null || notification.getRecipientUserId() == null) {
             return;
         }
 
-        ConfigChangeNotificationVO notificationVO = mapper.toNotificationVO(notification);
+        NotificationVO notificationVO = mapper.toNotificationVO(notification);
         User user = userRepository.findById(notification.getRecipientUserId()).orElse(null);
 
         String userDest = user.getEmail();
@@ -160,10 +162,10 @@ public class ConfigNotificationService {
             }
 
             for (CompanyApprover approver : approvers) {
-                ConfigChangeApproval approval = buildChangeApproval(changeRequest, approver, changeType, stage);
-                configChangeApprovalRepository.saveAndFlush(approval);
-                ConfigChangeNotification notification = buildNotification(changeRequest, approver, stage);
-                ConfigChangeNotification savedNotification = configChangeNotificationRepository.saveAndFlush(notification);
+                ApprovalMaster approval = buildChangeApproval(changeRequest, approver, changeType, stage);
+                approvalRepository.saveAndFlush(approval);
+                Notification notification = buildNotification(changeRequest, approver, stage);
+                Notification savedNotification = notificationRepository.saveAndFlush(notification);
                 publishNotification(savedNotification);
             }
         } catch (Exception e) {
@@ -189,10 +191,12 @@ public class ConfigNotificationService {
         return resolveApprovers(changeRequest.getApprovalOrg());
     }
 
-    private ConfigChangeApproval buildChangeApproval(BPConfigurationChangeRequest changeRequest, CompanyApprover approver, String changeType, NotificationStage stage) {
-        return ConfigChangeApproval.builder()
-                .configChangeRequest(changeRequest)
+    private ApprovalMaster buildChangeApproval(BPConfigurationChangeRequest changeRequest, CompanyApprover approver, String changeType, NotificationStage stage) {
+        return ApprovalMaster.builder()
+                .requestId(changeRequest.getCcrId())
+                .requestType("BP")
                 .approvalType(changeType)
+                .description(changeRequest.getOperation() + " - " + changeRequest.getRemarks())
                 .approverLevel(approver.getLevel())
                 .approverUserId(approver.getAgent().getUser().getUserId())
                 .approverOrgId(approver.getCompany().getCompanyId())
@@ -201,15 +205,15 @@ public class ConfigNotificationService {
                 .mandatory(approver.getLevel() == 1)
                 .createdBy(changeRequest.getRequestedByUserId())
                 .createdOn(LocalDateTime.now())
-                .createdOn(LocalDateTime.now())
                 .build();
     }
 
-    private ConfigChangeNotification buildNotification(BPConfigurationChangeRequest changeRequest,
-                                                       CompanyApprover approver,
-                                                       NotificationStage stage) {
-        return ConfigChangeNotification.builder()
-                .changeRequest(changeRequest)
+    private Notification buildNotification(BPConfigurationChangeRequest changeRequest,
+                                           CompanyApprover approver,
+                                           NotificationStage stage) {
+        return Notification.builder()
+                .requestId(changeRequest.getChangedRequestId())
+                .requestType("BP")
                 .title(buildNotificationTitle(changeRequest))
                 .message(buildNotificationMessage(changeRequest, stage))
                 .notificationType(resolveConfigurationType(changeRequest))

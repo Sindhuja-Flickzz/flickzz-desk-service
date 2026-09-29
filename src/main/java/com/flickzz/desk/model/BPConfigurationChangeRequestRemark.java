@@ -2,7 +2,10 @@ package com.flickzz.desk.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -32,7 +35,7 @@ public class BPConfigurationChangeRequestRemark {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "APPROVAL_ID")
     @JsonBackReference
-    private ConfigChangeApproval approval;
+    private ApprovalMaster approval;
 
     @Column(name = "REMARK_TYPE", nullable = false, length = 30)
     private String remarkType;

@@ -1,6 +1,10 @@
 package com.flickzz.desk.model;
+
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -9,22 +13,24 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_CONFIG_CHANGE_NOTIFICATION")
-public class    ConfigChangeNotification {
+@Table(name = "FD_NOTIFICATION")
+public class Notification {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "fd_notification_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "FD_NOTIFICATION_SEQ")
     @SequenceGenerator(
-            name = "fd_notification_seq",
-            sequenceName = "FD_CONFIG_CHANGE_NOTIFICATION_SEQ",
+            name = "FD_NOTIFICATION_SEQ",
+            sequenceName = "FD_NOTIFICATION_SEQ",
             allocationSize = 1
     )
     @Column(name = "NOTIFICATION_ID")
     private Long notificationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CHANGE_REQUEST_ID", referencedColumnName = "CCR_ID")
-    private BPConfigurationChangeRequest changeRequest;
+    @Column(name = "REQUEST_ID")
+    private Long requestId;
+
+    @Column(name = "REQUEST_TYPE", length = 20)
+    private String requestType;
 
     @Column(name = "TITLE", nullable = false, length = 200)
     private String title;
