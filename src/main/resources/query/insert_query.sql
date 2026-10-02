@@ -102,7 +102,8 @@ VALUES ('TASK', 'Task', 1, TRUE),
        ('SUBTASK', 'Subtask', 1, TRUE),
        ('EPIC', 'Epic', 1, TRUE),
        ('STORY', 'Story', 1, TRUE),
-       ('RITM', 'RITM', 1, TRUE);
+       ('RITM', 'RITM', 1, TRUE),
+       ('RITM_SUBTASK', 'RITM_Subtask', 1, TRUE);
 
 -- Bulk insert for FD_FIELD_TYPES
 INSERT INTO FD_FIELD_TYPES (CODE, LABEL, CREATED_BY, IS_CREATOR_ADMIN)

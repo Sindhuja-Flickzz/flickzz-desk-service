@@ -441,20 +441,14 @@ public class AgentService {
 
             Long userId = agent.getUser() != null ? agent.getUser().getUserId() : null;
             String userName = userId != null ? commonService.loadUserNameByUserId(userId, agent.getIsCreatorAdmin() != null && agent.getIsCreatorAdmin()) : null;
-            auditService.recordAudit(mapper.toSystemAuditRequest("Agent", "SupportGroup", "BPSupportGroupMember",
-                    parsedAgentId, "FETCH", null, null, null, userId, userName, parsedOrgId, SUCCESS, null));
             return supportGroupIds;
         } catch (FlickzzDeskException e) {
             Long userId = agent != null && agent.getUser() != null ? agent.getUser().getUserId() : null;
             String userName = userId != null ? safeLoadUserName(userId, agent != null && Boolean.TRUE.equals(agent.getIsCreatorAdmin())) : null;
-            auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Agent", "SupportGroup", "BPSupportGroupMember",
-                    parsedAgentId, "FETCH", null, null, null, userId, userName, parsedOrgId, FAILED, e.getDescription()), e);
             throw e;
         } catch (Exception e) {
             Long userId = agent != null && agent.getUser() != null ? agent.getUser().getUserId() : null;
             String userName = userId != null ? safeLoadUserName(userId, agent != null && Boolean.TRUE.equals(agent.getIsCreatorAdmin())) : null;
-            auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Agent", "SupportGroup", "BPSupportGroupMember",
-                    parsedAgentId, "FETCH", null, null, null, userId, userName, parsedOrgId, FAILED, e.getMessage()), e);
             log.error("Exception in getActiveSupportGroupIds method in FlickzzDeskService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
@@ -489,24 +483,14 @@ public class AgentService {
             }
 
             Long resolvedUserId = agent.getUser() != null ? agent.getUser().getUserId() : parsedUserId;
-            String userName = safeLoadUserName(resolvedUserId, agent.getIsCreatorAdmin() != null && agent.getIsCreatorAdmin());
-            auditService.recordAudit(mapper.toSystemAuditRequest("Agent", "User", "AgentMaster",
-                    agent.getAgentId(), "FETCH", null, null, null, resolvedUserId, userName,
-                    agent.getOrganization() != null ? agent.getOrganization().getCompanyId() : null, SUCCESS, null));
             return agent.getAgentId();
         } catch (FlickzzDeskException e) {
             Long resolvedUserId = parsedUserId;
             String userName = resolvedUserId != null ? safeLoadUserName(resolvedUserId, false) : null;
-            auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Agent", "User", "AgentMaster",
-                    agent != null ? agent.getAgentId() : null, "FETCH", null, null, null, resolvedUserId, userName,
-                    null, FAILED, e.getDescription()), e);
             throw e;
         } catch (Exception e) {
             Long resolvedUserId = parsedUserId;
             String userName = resolvedUserId != null ? safeLoadUserName(resolvedUserId, false) : null;
-            auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Agent", "User", "AgentMaster",
-                    agent != null ? agent.getAgentId() : null, "FETCH", null, null, null, resolvedUserId, userName,
-                    null, FAILED, e.getMessage()), e);
             log.error("Exception in getAgentIdByUserId method in FlickzzDeskService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }

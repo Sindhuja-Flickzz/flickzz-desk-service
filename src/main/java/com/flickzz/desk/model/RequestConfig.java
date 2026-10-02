@@ -1,9 +1,12 @@
 package com.flickzz.desk.model;
 
-import java.time.*;
-
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -13,81 +16,81 @@ import lombok.*;
 @Table(name = "FD_REQUEST_CONFIG")
 public class RequestConfig {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "requestConfigGen")
-	@SequenceGenerator(name = "requestConfigGen", sequenceName = "REQUEST_CONFIG_SEQ", allocationSize = 1)
-	@Column(name = "CONFIG_ID")
-	private Long configId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "requestConfigGen")
+    @SequenceGenerator(name = "requestConfigGen", sequenceName = "REQUEST_CONFIG_SEQ", allocationSize = 1)
+    @Column(name = "CONFIG_ID")
+    private Long configId;
 
-	@Column(name = "REQUEST_TYPE", nullable = false, length = 10)
-	private String requestType; // RITM or INC
+    @Column(name = "REQUEST_TYPE", nullable = false, length = 20)
+    private String requestType; // RITM or INC
 
-	@Column(name = "REQUEST_PREFIX", length = 20, nullable = false)
-	private String requestPrefix; // Prefix for request number, e.g., RITM, INC
+    @Column(name = "REQUEST_PREFIX", length = 20, nullable = false)
+    private String requestPrefix; // Prefix for request number, e.g., RITM, INC
 
-	@Column(name = "REVISION", nullable = false)
-	private Integer revision;
+    @Column(name = "REVISION", nullable = false)
+    private Integer revision;
 
-	@Column(name = "RANGE_FROM", nullable = false)
-	private Integer rangeFrom;
+    @Column(name = "RANGE_FROM", nullable = false)
+    private Integer rangeFrom;
 
-	@Column(name = "RANGE_TO", nullable = false)
-	private Integer rangeTo;
+    @Column(name = "RANGE_TO", nullable = false)
+    private Integer rangeTo;
 
-	@Column(name = "CURRENT_RANGE")
-	private Integer currentRange;
+    @Column(name = "CURRENT_RANGE")
+    private Integer currentRange;
 
-	@Builder.Default
-	@Column(name = "CALCULATE_BACKWARD")
-	private Boolean calculateBackward = false;
+    @Builder.Default
+    @Column(name = "CALCULATE_BACKWARD")
+    private Boolean calculateBackward = false;
 
-	@Builder.Default
-	@Column(name = "CALL_HORIZON_PERCENTAGE")
-	private Integer callHorizonPercentage = 0;
+    @Builder.Default
+    @Column(name = "CALL_HORIZON_PERCENTAGE")
+    private Integer callHorizonPercentage = 0;
 
-	@Builder.Default
-	@Column(name = "CALL_HORIZON_DAYS")
-	private Integer callHorizonDays = 0;
+    @Builder.Default
+    @Column(name = "CALL_HORIZON_DAYS")
+    private Integer callHorizonDays = 0;
 
-	@ManyToOne
-	@JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_REQUEST_CONFIG_COMPANY"), nullable = false)
-	private CompanyMaster company;
+    @ManyToOne
+    @JoinColumn(name = "COMPANY_ID", foreignKey = @ForeignKey(name = "FK_REQUEST_CONFIG_COMPANY"), nullable = false)
+    private CompanyMaster company;
 
-	@Builder.Default
-	@Column(name = "IS_ACTIVE")
-	private Boolean isActive = true;
+    @Builder.Default
+    @Column(name = "IS_ACTIVE")
+    private Boolean isActive = true;
 
-	@Builder.Default
-	@Column(name = "IS_ENABLED")
-	private Boolean isEnabled = false;
+    @Builder.Default
+    @Column(name = "IS_ENABLED")
+    private Boolean isEnabled = false;
 
-	@Column(name = "CREATED_BY", nullable = false)
-	private Long createdBy;
+    @Column(name = "CREATED_BY", nullable = false)
+    private Long createdBy;
 
-	@Column(name = "UPDATED_BY")
-	private Long updatedBy;
+    @Column(name = "UPDATED_BY")
+    private Long updatedBy;
 
-	@Column(name = "IS_CREATOR_ADMIN", nullable = false)
-	private Boolean isCreatorAdmin;
+    @Column(name = "IS_CREATOR_ADMIN", nullable = false)
+    private Boolean isCreatorAdmin;
 
-	@Builder.Default
-	@Column(name = "IS_UPDATER_ADMIN")
-	private Boolean isUpdaterAdmin = false;
+    @Builder.Default
+    @Column(name = "IS_UPDATER_ADMIN")
+    private Boolean isUpdaterAdmin = false;
 
-	@Column(name = "CREATED_AT")
-	private LocalDateTime createdAt;
+    @Column(name = "CREATED_AT")
+    private LocalDateTime createdAt;
 
-	@Column(name = "UPDATED_AT")
-	private LocalDateTime updatedAt;
+    @Column(name = "UPDATED_AT")
+    private LocalDateTime updatedAt;
 
-	@PrePersist
-	protected void onCreate() {
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = LocalDateTime.now();
-	}
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
-	@PreUpdate
-	protected void onUpdate() {
-		this.updatedAt = LocalDateTime.now();
-	}
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

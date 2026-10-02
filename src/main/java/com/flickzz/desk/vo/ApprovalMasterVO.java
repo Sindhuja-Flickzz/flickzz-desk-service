@@ -13,16 +13,18 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConfigChangeApprovalVO implements Serializable {
+public class ApprovalMasterVO implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long approvalId;
-    private BPConfigurationChangeRequestVO changeRequest;
+    private Long requestId;
+    private String requestType;
     private String approvalType;
     private Integer approverLevel;
     private Long approverUserId;
     private Long approverOrgId;
     private String status;
     private String approverType;
+    private String description;
     private Boolean mandatory;
     private LocalDateTime approvedOn;
     private List<BPConfigurationChangeRequestRemarkVO> remarks;

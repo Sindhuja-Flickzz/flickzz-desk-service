@@ -7,31 +7,34 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_CONFIG_CHANGE_APPROVAL", uniqueConstraints = {
-        @UniqueConstraint(name = "UK_CCA_APPROVER", columnNames = {"CCR_ID", "APPROVAL_TYPE", "APPROVER_LEVEL", "APPROVER_USER_ID"})})
-public class ConfigChangeApproval {
+@Table(name = "FD_APPROVAL_MASTER")
+public class ApprovalMaster {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "fd_config_change_approval_seq")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "FD_APPROVAL_SEQ")
     @SequenceGenerator(
-            name = "fd_config_change_approval_seq",
-            sequenceName = "FD_CONFIG_CHANGE_APPROVAL_SEQ",
+            name = "FD_APPROVAL_SEQ",
+            sequenceName = "FD_APPROVAL_SEQ",
             allocationSize = 1)
     @Column(name = "APPROVAL_ID")
     private Long approvalId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CCR_ID", nullable = false)
-    private BPConfigurationChangeRequest configChangeRequest;
+    @Column(name = "REQUEST_ID", nullable = false)
+    private Long requestId;
+
+    @Column(name = "REQUEST_TYPE", nullable = false, length = 20)
+    private String requestType;
 
     @Column(name = "APPROVAL_TYPE", nullable = false, length = 20)
     private String approvalType;
+
+    @Column(name = "DESCRIPTION", length = 200)
+    private String description;
 
     @Column(name = "APPROVER_TYPE", nullable = false, length = 20)
     private String approverType;
@@ -51,12 +54,16 @@ public class ConfigChangeApproval {
     @Column(name = "IS_MANDATORY")
     private Boolean mandatory;
 
+    @Builder.Default
+    @Column(name = "IS_ACTIVE")
+    private Boolean active = true;
+
     @Column(name = "APPROVED_ON")
     private LocalDateTime approvedOn;
 
-    @OneToMany(fetch = FetchType.LAZY)
-    @JoinColumn(name = "REMARK_ID")
-    private List<BPConfigurationChangeRequestRemark> remark;
+//    @OneToMany(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "REMARK_ID")
+//    private List<BPConfigurationChangeRequestRemark> remark;
 
     @Column(name = "CREATED_BY", nullable = false)
     private Long createdBy;

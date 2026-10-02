@@ -2,7 +2,6 @@ package com.flickzz.desk.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,49 +9,52 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "FD_RITM_STATUS",
+        name = "FD_STATUS_VISIBILITY",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "UQ_COMPANY_STATUS_CODE",
-                        columnNames = {"COMPANY_ID", "STATUS_CODE"}
-                ),
-                @UniqueConstraint(
-                        name = "UQ_ORG_RITM_STATUS_SEQUENCE",
-                        columnNames = {"COMPANY_ID", "SEQUENCE_NO"}
+                        name = "UK_STATUS_VISIBILITY",
+                        columnNames = {
+                                "COMPANY_ID",
+                                "WORK_ITEM_ID",
+                                "CURRENT_STATUS_ID",
+                                "VISIBLE_STATUS_ID"
+                        }
                 )
         }
 )
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmStatus {
+public class StatusVisibility {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "fd_status_seq_generator"
+            generator = "statusVisibilitySeq"
     )
     @SequenceGenerator(
-            name = "fd_status_seq_generator",
-            sequenceName = "FD_STATUS_SEQ",
+            name = "statusVisibilitySeq",
+            sequenceName = "FD_STATUS_VISIBILITY_SEQ",
             allocationSize = 1
     )
-    @Column(name = "STATUS_ID")
-    private Long statusId;
+    @Column(name = "VISIBILITY_ID")
+    private Long visibilityId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COMPANY_ID", nullable = false)
     private CompanyMaster company;
 
-    @Column(name = "STATUS_CODE", nullable = false, length = 50)
-    private String statusCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "WORK_ITEM_ID", nullable = false)
+    private WorkItem workItem;
 
-    @Column(name = "SEQUENCE_NO", nullable = false)
-    private Integer sequenceNo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CURRENT_STATUS_ID")
+    private StatusMaster currentStatus;
 
-    @Column(name = "STATUS_COLOR", length = 7)
-    private String statusColor;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "VISIBLE_STATUS_ID")
+    private StatusMaster visibleStatus;
 
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;

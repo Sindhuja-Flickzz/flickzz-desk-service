@@ -6,23 +6,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmStatusVO implements Serializable {
+@Builder
+public class RequestApproverVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private Long statusId;
-    private Long companyId;
-    private CompanyMasterVO company;
-    private String statusCode;
-    private Integer sequenceNo;
-    private String statusColor;
+
+    private Long approverId;
+
+    private RequestApproverConfigVO approverConfig;
+
+    private AgentMasterVO agent;
+
+    private Integer approverSequence;
+
     private Boolean isActive;
+
     private Long createdBy;
-    private Boolean isCreatorAdmin;
-    private Boolean isUpdaterAdmin;
+
     private Long updatedBy;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

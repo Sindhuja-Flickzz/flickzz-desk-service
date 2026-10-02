@@ -12,13 +12,15 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConfigChangeNotificationVO implements Serializable {
+public class NotificationVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private Long notificationId;
 
-    private BPConfigurationChangeRequestVO changeRequest;
+    private Long requestId;
+
+    private String requestType;
 
     private String title;
 

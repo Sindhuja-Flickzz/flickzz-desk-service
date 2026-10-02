@@ -1,27 +1,21 @@
 package com.flickzz.desk.scheduler;
 
-import com.flickzz.desk.model.ConfigChangeNotification;
-import com.flickzz.desk.repo.ConfigChangeNotificationRepository;
-import com.flickzz.desk.service.notification.ConfigNotificationService;
+import com.flickzz.desk.repo.NotificationRepository;
+import com.flickzz.desk.service.notification.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.Date;
 
 @Service
 public class FlickzzDeskExpiryScheduler {
     public static final Logger log = LoggerFactory.getLogger(FlickzzDeskExpiryScheduler.class);
 
     @Autowired
-    ConfigNotificationService configNotificationService;
+    NotificationService notificationService;
 
     @Autowired
-    ConfigChangeNotificationRepository configChangeNotificationRepository;
+    NotificationRepository notificationRepository;
 
 //    @Scheduled(cron = "0/15 * * * * ?")
 //    @Transactional

@@ -1,19 +1,26 @@
 package com.flickzz.desk.service;
 
 import com.flickzz.desk.config.RemarkType;
+import com.flickzz.desk.exception.FlickzzDeskException;
+import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
 import com.flickzz.desk.repo.BPConfigurationChangeRequestRemarkRepository;
 import com.flickzz.desk.repo.BPConfigurationChangeRequestRepository;
 import com.flickzz.desk.repo.CompanyApproverRepository;
-import com.flickzz.desk.service.notification.ConfigNotificationService;
+import com.flickzz.desk.service.notification.NotificationService;
+import com.flickzz.desk.vo.BPConfigurationChangeRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.DRAFTED;
+import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
+import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.INVALID_FIELD;
 
 @Service
 public class ConfigurationChangeService {
@@ -21,7 +28,7 @@ public class ConfigurationChangeService {
     private static final Logger log = LoggerFactory.getLogger(ConfigurationChangeService.class);
 
     @Autowired
-    ConfigNotificationService configNotificationService;
+    NotificationService notificationService;
 
     @Autowired
     BPConfigurationChangeRequestRepository bpConfigurationChangeRequestRepository;
@@ -32,10 +39,27 @@ public class ConfigurationChangeService {
     @Autowired
     CompanyApproverRepository companyApproverRepository;
 
+    @Autowired
+    CommonMapper mapper;
+
+    @Transactional(readOnly = true)
+    public BPConfigurationChangeRequestVO getConfigurationChangeRequestById(Long ccrId) {
+        if (ccrId == null) {
+            throw new FlickzzDeskException(INVALID_FIELD,
+                    getDescription(INVALID_FIELD.getDescription(), "CCR ID"));
+        }
+
+        BPConfigurationChangeRequest changeRequest = bpConfigurationChangeRequestRepository.findById(ccrId)
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Configuration Change Request")));
+
+        return mapper.toBPConfigurationChangeRequestVO(changeRequest);
+    }
+
     public void addConfigurationChangeRequest(BPConfiguration configuration, Long changedRequestId, Long sourceChangeId,
-                                               Boolean isBpPriority, Boolean isBpSla, Boolean isCategory, Boolean isSupportGroup, Boolean isAssignment,
-                                               String operation, CompanyMaster requestedByOrg, Long requestedByUserId, CompanyMaster approvalOrg,
-                                               Boolean isCreatorAdmin, String remarks) {
+                                              Boolean isBpPriority, Boolean isBpSla, Boolean isCategory, Boolean isSupportGroup, Boolean isAssignment,
+                                              String operation, CompanyMaster requestedByOrg, Long requestedByUserId, CompanyMaster approvalOrg,
+                                              Boolean isCreatorAdmin, String remarks) {
         try {
             BPConfigurationChangeRequest changeRequest = BPConfigurationChangeRequest.builder()
                     .configuration(configuration)
@@ -88,7 +112,7 @@ public class ConfigurationChangeService {
                     .build();
             bpConfigurationChangeRequestRemarkRepository.save(remark);
 
-            configNotificationService.notifyConfigChange(changeRequest, DRAFTED);
+            notificationService.notifyConfigChange(changeRequest, DRAFTED);
         } catch (Exception e) {
             log.error("Error adding configuration change request", e);
         }

@@ -1,6 +1,9 @@
 package com.flickzz.desk.vo;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,7 +20,7 @@ public class BPConfigurationChangeRequestRemarkVO implements Serializable {
 
     private BPConfigurationChangeRequestVO ccrId;
 
-    private ConfigChangeApprovalVO approval;
+    private ApprovalMasterVO approval;
 
     private String remarkType;
 

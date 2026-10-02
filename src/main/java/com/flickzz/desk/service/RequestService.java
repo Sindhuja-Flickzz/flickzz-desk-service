@@ -97,7 +97,7 @@ public class RequestService {
             validateNoOverlappingRange(request.getRequestType(), request.getRequestPrefix(),
                     request.getRangeFrom(), request.getRangeTo(), request.getOrgId());
 
-            Integer nextVersion = requestConfigRepository.findMaxRevisionByCompanyId(request.getOrgId()) + 1;
+            Integer nextVersion = requestConfigRepository.findMaxRevisionByCompanyId(request.getOrgId(), request.getRequestType()) + 1;
 
             RequestConfig requestConfig = RequestConfig.builder().requestType(request.getRequestType())
                     .requestPrefix(request.getRequestPrefix()).revision(nextVersion).callHorizonPercentage(request.getCallHorizonPercentage())
