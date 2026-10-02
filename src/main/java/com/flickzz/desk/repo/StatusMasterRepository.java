@@ -30,4 +30,8 @@ public interface StatusMasterRepository extends JpaRepository<StatusMaster, Long
     Optional<StatusMaster> findFirstByCompany_CompanyIdAndSequenceNoAndIsActiveTrue(Long companyId, Integer sequenceNo);
 
     List<StatusMaster> findByCompanyCompanyId(Long orgId);
+
+    List<StatusMaster> findByCompanyCompanyIdAndWorkItemCodeOrderBySequenceNoAsc(Long orgId, String requestType);
+
+    List<StatusMaster> findByCompanyCompanyIdAndWorkItemCodeAndIsActiveTrueOrderBySequenceNoAsc(Long orgId, String requestType);
 }

@@ -10,6 +10,7 @@ import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.StatusMasterVO;
 import com.flickzz.desk.vo.StatusVisibilityVO;
 import com.flickzz.desk.vo.request.StatusVisibilityUpdateRequestVO;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -228,10 +229,12 @@ public class StatusService {
     }
 
     @Transactional(readOnly = true)
-    public List<StatusMasterVO> getStatusByOrgId(Long orgId, Boolean active) {
+    public List<StatusMasterVO> getStatusByOrgId(Long orgId, String requestType, Boolean active) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         List<StatusMaster> statuses = Boolean.TRUE.equals(active)
-                ? statusMasterRepository.findByCompanyCompanyIdAndIsActiveTrue(orgId)
+                ? StringUtils.isNotBlank(requestType)
+                ? statusMasterRepository.findByCompanyCompanyIdAndWorkItemCodeAndIsActiveTrueOrderBySequenceNoAsc(orgId, requestType)
+                : statusMasterRepository.findByCompanyCompanyIdAndIsActiveTrue(orgId)
                 : statusMasterRepository.findByCompanyCompanyId(orgId);
         return statuses.stream().map(mapper::toStatusMasterVo).toList();
     }
@@ -500,6 +503,33 @@ public class StatusService {
                             ? existingStatus.getCompany().getCompanyId() : null,
                     FAILED, e.getMessage());
             log.error("Exception in changeStatus method in StatusService", e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public List<StatusMasterVO> getVisibleStatus(Long orgId, Long statusId, String requestType) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            if (orgId == null || orgId <= 0) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(),
+                                "Organization ID is required and must be valid"));
+            }
+            if (statusId == null || statusId <= 0) {
+                List<StatusMaster> statuses = StringUtils.isNotBlank(requestType)
+                        ? statusMasterRepository.findByCompanyCompanyIdAndWorkItemCodeAndIsActiveTrueOrderBySequenceNoAsc(orgId, requestType)
+                        : statusMasterRepository.findByCompanyCompanyIdAndIsActiveTrue(orgId);
+                return statuses.stream().map(mapper::toStatusMasterVo).toList();
+            }
+            List<StatusVisibility> visibilityList = statusVisibilityRepository
+                    .findByCompanyCompanyIdAndCurrentStatusStatusIdAndIsActiveTrue(orgId, statusId);
+            return visibilityList.stream()
+                    .map(visibility -> mapper.toStatusMasterVo(visibility.getVisibleStatus()))
+                    .toList();
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getVisibleStatus method in StatusService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }
