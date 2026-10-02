@@ -11,4 +11,6 @@ public interface StatusVisibilityRepository extends JpaRepository<StatusVisibili
 
     List<StatusVisibility> findByCompanyCompanyIdAndWorkItemItemIdAndCurrentStatusStatusId(
             Long companyId, Long workItemId, Long currentStatusId);
+
+    List<StatusVisibility> findByCompanyCompanyIdAndCurrentStatusStatusIdAndIsActiveTrue(Long orgId, Long statusId);
 }

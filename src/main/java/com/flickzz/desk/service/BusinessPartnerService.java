@@ -2416,7 +2416,7 @@ public class BusinessPartnerService {
                     .countBySupportGroupSupportGroupIdAndIsActiveTrue(supportGroupId);
             long unassignedRitmCount = ritmMasterRepository
                     .countBySupportGroupSupportGroupIdAndAssignedToIsNullAndIsActiveTrue(supportGroupId);
-            List<StatusMaster> statuses = statusMasterRepository.findByCompanyCompanyId(companyId);
+            List<StatusMaster> statuses = statusMasterRepository.findByCompanyCompanyIdAndWorkItemCodeOrderBySequenceNoAsc(companyId, RITM);
 
             List<BPSupportGroupStatusCountInfoVO> statusCountInfoList = new ArrayList<>();
             long inactiveRitmCount = 0L;

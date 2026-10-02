@@ -42,17 +42,17 @@ public class StatusController {
     public ResponseEntity<FlickzzDeskResponse> getStatus(@PathVariable("orgId") Long orgId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
-        List<StatusMasterVO> statuses = statusService.getStatusByOrgId(orgId, INACTIVE);
+        List<StatusMasterVO> statuses = statusService.getStatusByOrgId(orgId, null, INACTIVE);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status"), statuses);
     }
 
-    @GetMapping("/get/active/{orgId}")
-    public ResponseEntity<FlickzzDeskResponse> getActiveStatus(@PathVariable("orgId") Long orgId) {
+    @GetMapping("/get/active/{requestType}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getActiveStatus(@PathVariable("orgId") Long orgId, @PathVariable("requestType") String requestType) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
-        List<StatusMasterVO> statuses = statusService.getStatusByOrgId(orgId, ACTIVE);
+        List<StatusMasterVO> statuses = statusService.getStatusByOrgId(orgId, requestType, ACTIVE);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status"), statuses);
@@ -84,5 +84,17 @@ public class StatusController {
         statusService.changeStatus(status);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(UPDATE_SUCCESS, "RITM status changed successfully");
+    }
+
+    @GetMapping("/visible")
+    public ResponseEntity<FlickzzDeskResponse> getVisibleStatus(@RequestParam Long companyId,
+                                                                @RequestParam Long statusId,
+                                                                @RequestParam String requestType) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<StatusMasterVO> isVisible = statusService.getVisibleStatus(companyId, statusId, requestType);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM status visibility"), isVisible);
     }
 }
