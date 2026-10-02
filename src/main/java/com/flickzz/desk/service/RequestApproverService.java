@@ -152,7 +152,7 @@ public class RequestApproverService {
         List<RequestApproverVO> approvers = approverRepository
                 .findByApproverConfig_ApproverConfigIdAndIsActiveTrueOrderByApproverSequenceAsc(config.getApproverConfigId())
                 .stream().map(approver -> RequestApproverVO.builder().approverId(approver.getApproverId())
-                        .agent(mapper.toAgentMasterVO(approver.getAgent())).approverSequence(approver.getApproverSequence())
+                        .agent(mapper.toRitmAgentMasterVO(approver.getAgent())).approverSequence(approver.getApproverSequence())
                         .isActive(approver.getIsActive()).createdBy(approver.getCreatedBy()).updatedBy(approver.getUpdatedBy())
                         .createdAt(approver.getCreatedAt()).updatedAt(approver.getUpdatedAt()).build()).toList();
         return RequestApproverConfigVO.builder().approverConfigId(config.getApproverConfigId()).approverCode(config.getApproverCode())

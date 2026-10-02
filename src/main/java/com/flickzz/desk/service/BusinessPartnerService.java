@@ -99,7 +99,7 @@ public class BusinessPartnerService {
     @Autowired
     private RitmMasterRepository ritmMasterRepository;
     @Autowired
-    private RitmStatusRepository ritmStatusRepository;
+    private StatusMasterRepository statusMasterRepository;
 
     @Value("${ritm.other.status.color}")
     private String ritmOtherStatusColor;
@@ -2416,12 +2416,12 @@ public class BusinessPartnerService {
                     .countBySupportGroupSupportGroupIdAndIsActiveTrue(supportGroupId);
             long unassignedRitmCount = ritmMasterRepository
                     .countBySupportGroupSupportGroupIdAndAssignedToIsNullAndIsActiveTrue(supportGroupId);
-            List<RitmStatus> statuses = ritmStatusRepository.findByCompanyCompanyId(companyId);
+            List<StatusMaster> statuses = statusMasterRepository.findByCompanyCompanyId(companyId);
 
             List<BPSupportGroupStatusCountInfoVO> statusCountInfoList = new ArrayList<>();
             long inactiveRitmCount = 0L;
 
-            for (RitmStatus status : statuses) {
+            for (StatusMaster status : statuses) {
                 if (status.getIsActive()) {
                     long count = ritmMasterRepository
                             .countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(

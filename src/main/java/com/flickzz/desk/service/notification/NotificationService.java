@@ -142,6 +142,34 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void notifyRitmApprovalRequired(RitmMaster ritm, Long actorId, Boolean isActorAdmin,
+                                           List<AgentMaster> recipients, Integer level) {
+        if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        Set<Long> sent = new HashSet<>();
+        for (AgentMaster recipient : recipients) {
+            if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
+            saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval required",
+                    "RITM " + ritm.getRitmNumber() + " requires your approval at level " + level + ".",
+                    "APPROVAL", true);
+        }
+    }
+
+    @Transactional
+    public void notifyRitmApprovalCancelled(RitmMaster ritm, Long actorId, Boolean isActorAdmin,
+                                           List<AgentMaster> recipients) {
+        if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        Set<Long> sent = new HashSet<>();
+        for (AgentMaster recipient : recipients) {
+            if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
+            saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval cancelled",
+                    "Another approver completed RITM " + ritm.getRitmNumber() + "; your approval is no longer required.",
+                    "DELETE", true);
+        }
+    }
+
     @Async
     @Transactional
     public void notifyConfigChange(BPConfigurationChangeRequest changeRequest, String changeType) {

@@ -10,4 +10,6 @@ public interface ApprovalRepository extends JpaRepository<ApprovalMaster, Long> 
     List<ApprovalMaster> findByApproverUserId(Long approverUserId);
 
     List<ApprovalMaster> findByRequestTypeAndRequestIdIn(String requestType, List<Long> requestIds);
+
+    List<ApprovalMaster> findByRequestTypeAndRequestId(String requestType, Long requestId);
 }

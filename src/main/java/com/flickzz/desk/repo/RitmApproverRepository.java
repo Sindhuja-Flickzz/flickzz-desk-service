@@ -8,4 +8,6 @@ import java.util.List;
 public interface RitmApproverRepository extends JpaRepository<RitmApprover, Long> {
 
     List<RitmApprover> findByRitmId_RitmIdAndIsActiveTrueOrderByApproverSequenceAsc(Long ritmId);
+
+    List<RitmApprover> findByRitmId_RitmIdOrderByApproverSequenceAsc(Long ritmId);
 }

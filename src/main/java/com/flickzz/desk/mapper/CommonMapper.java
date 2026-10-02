@@ -685,16 +685,6 @@ public class CommonMapper {
                 .updatedBy(pla.getUpdatedBy()).build();
     }
 
-    public WorkItemVO toWorkItemVO(WorkItem workItem) {
-        if (workItem == null) {
-            return null;
-        }
-        return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel())
-                .isActive(workItem.getIsActive()).createdBy(workItem.getCreatedBy())
-                .isCreatedByAdmin(workItem.getIsCreatorAdmin()).isUpdatedByAdmin(workItem.getIsUpdaterAdmin())
-                .updatedBy(workItem.getUpdatedBy()).build();
-    }
-
     public FieldTypeVO toFieldTypeVO(FieldType fieldType) {
         if (fieldType == null) {
             return null;
@@ -999,28 +989,6 @@ public class CommonMapper {
                 .build();
     }
 
-    public BPConfigurationChangeRequestRemarkVO toBPConfigurationChangeRequestRemarkVO(BPConfigurationChangeRequestRemark remark) {
-        if (remark == null) {
-            return null;
-        }
-
-        return BPConfigurationChangeRequestRemarkVO.builder()
-                .remarkId(remark.getRemarkId())
-            .ccrId(remark.getConfigurationChangeRequest() != null
-                ? BPConfigurationChangeRequestVO.builder()
-                    .ccrId(remark.getConfigurationChangeRequest().getCcrId())
-                    .build()
-                : null)
-                .remarkType(remark.getRemarkType())
-                .approverLevel(remark.getApproverLevel())
-                .approvalStatus(remark.getApprovalStatus())
-                .userId(remark.getUserId())
-                .organizationId(remark.getOrganizationId())
-                .remark(remark.getRemark())
-                .createdOn(remark.getCreatedOn())
-                .build();
-    }
-
     public BPConfigurationChangeRequestVO toBPConfigurationChangeRequestVO(BPConfigurationChangeRequest changeRequest) {
         if (changeRequest == null) {
             return null;
@@ -1055,8 +1023,8 @@ public class CommonMapper {
                 .updatedBy(changeRequest.getUpdatedBy())
                 .isCreatorAdmin(changeRequest.getIsCreatorAdmin())
                 .remarks(changeRequest.getRemarks() != null
-                    ? changeRequest.getRemarks().stream().map(this::toBPConfigurationChangeRequestRemarkVO).toList()
-                    : List.of())
+                        ? changeRequest.getRemarks().stream().map(this::toBPConfigurationChangeRequestRemarkVO).toList()
+                        : List.of())
                 .build();
     }
 
@@ -1070,6 +1038,28 @@ public class CommonMapper {
                 .isCreatorAdmin(configurations.getIsCreatorAdmin() != null ? configurations.getIsCreatorAdmin() : false)
                 .updatedBy(configurations.getUpdatedBy())
                 .isUpdaterAdmin(configurations.getIsUpdaterAdmin() != null ? configurations.getIsUpdaterAdmin() : false)
+                .build();
+    }
+
+    public BPConfigurationChangeRequestRemarkVO toBPConfigurationChangeRequestRemarkVO(BPConfigurationChangeRequestRemark remark) {
+        if (remark == null) {
+            return null;
+        }
+
+        return BPConfigurationChangeRequestRemarkVO.builder()
+                .remarkId(remark.getRemarkId())
+                .ccrId(remark.getConfigurationChangeRequest() != null
+                        ? BPConfigurationChangeRequestVO.builder()
+                        .ccrId(remark.getConfigurationChangeRequest().getCcrId())
+                        .build()
+                        : null)
+                .remarkType(remark.getRemarkType())
+                .approverLevel(remark.getApproverLevel())
+                .approvalStatus(remark.getApprovalStatus())
+                .userId(remark.getUserId())
+                .organizationId(remark.getOrganizationId())
+                .remark(remark.getRemark())
+                .createdOn(remark.getCreatedOn())
                 .build();
     }
 
@@ -1400,11 +1390,11 @@ public class CommonMapper {
                 .build();
     }
 
-    private RitmStatusVO toRitmStatusVO(RitmStatus status) {
+    private StatusMasterVO toRitmStatusVO(StatusMaster status) {
         if (status == null) {
             return null;
         }
-        return RitmStatusVO.builder()
+        return StatusMasterVO.builder()
                 .statusId(status.getStatusId())
                 .statusCode(status.getStatusCode())
                 .sequenceNo(status.getSequenceNo())
@@ -1539,5 +1529,66 @@ public class CommonMapper {
         return BPSubCategoryVO.builder().subCategoryId(bpSubCategory.getSubCategoryId()).category(null)
                 .subCategoryName(bpSubCategory.getSubCategoryName()).isActive(bpSubCategory.getIsActive())
                 .createdBy(bpSubCategory.getCreatedBy()).updatedBy(bpSubCategory.getUpdatedBy()).build();
+    }
+
+    public StatusMasterVO toStatusMasterVo(StatusMaster status) {
+        if (status == null) {
+            return null;
+        }
+        return StatusMasterVO.builder()
+                .statusId(status.getStatusId())
+                .companyId(status.getCompany() != null ? status.getCompany().getCompanyId() : null)
+                .statusCode(status.getStatusCode())
+                .workItem(status.getWorkItem() != null ? toWorkItemVO(status.getWorkItem()) : null)
+                .visibleStatuses(status.getVisibility() != null
+                        ? status.getVisibility().stream().filter(visibility -> Boolean.TRUE.equals(visibility.getIsActive()))
+                        .map(this::toStatusVisibilityVO).toList()
+                        : null)
+                .statusColor(status.getStatusColor())
+                .isActive(status.getIsActive())
+                .sequenceNo(status.getSequenceNo())
+                .createdBy(status.getCreatedBy())
+                .updatedBy(status.getUpdatedBy())
+                .isCreatorAdmin(status.getIsCreatorAdmin())
+                .isUpdaterAdmin(status.getIsUpdaterAdmin())
+                .createdAt(status.getCreatedAt())
+                .updatedAt(status.getUpdatedAt())
+                .requestType(status.getWorkItem() != null ? status.getWorkItem().getCode() : null)
+                .build();
+    }
+
+    public WorkItemVO toWorkItemVO(WorkItem workItem) {
+        if (workItem == null) {
+            return null;
+        }
+        return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel()).build();
+    }
+
+    private StatusVisibilityVO toStatusVisibilityVO(StatusVisibility statusVisibility) {
+        if (statusVisibility == null) {
+            return null;
+        }
+        return StatusVisibilityVO.builder()
+                .visibilityId(statusVisibility.getVisibilityId())
+                .statusCode(statusVisibility.getVisibleStatus() != null
+                        ? statusVisibility.getVisibleStatus().getStatusCode()
+                        : null)
+                .workItem(statusVisibility.getWorkItem() != null ? toWorkItemVO(statusVisibility.getWorkItem()) : null)
+                .visibleStatus(toStatusMasterReferenceVO(statusVisibility.getVisibleStatus()))
+                .build();
+    }
+
+    private StatusMasterVO toStatusMasterReferenceVO(StatusMaster status) {
+        if (status == null) {
+            return null;
+        }
+        return StatusMasterVO.builder()
+                .statusId(status.getStatusId())
+                .statusCode(status.getStatusCode())
+                .workItem(status.getWorkItem() != null ? toWorkItemVO(status.getWorkItem()) : null)
+                .sequenceNo(status.getSequenceNo())
+                .statusColor(status.getStatusColor())
+                .requestType(status.getWorkItem() != null ? status.getWorkItem().getCode() : null)
+                .build();
     }
 }

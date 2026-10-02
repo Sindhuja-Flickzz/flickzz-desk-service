@@ -15,9 +15,9 @@ public interface RequestConfigRepository extends JpaRepository<RequestConfig, Lo
     @Query("""
                 SELECT COALESCE(MAX(r.revision), 0)
                 FROM RequestConfig r
-                WHERE r.company.companyId = :companyId
+                WHERE r.company.companyId = :companyId AND r.requestType = :requestType
             """)
-    Integer findMaxRevisionByCompanyId(@Param("companyId") Long companyId);
+    Integer findMaxRevisionByCompanyId(@Param("companyId") Long companyId, @Param("requestType") String requestType);
 
     List<RequestConfig> findByCompany_CompanyId(Long orgId);
 

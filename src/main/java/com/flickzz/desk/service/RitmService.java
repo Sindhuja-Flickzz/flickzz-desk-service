@@ -84,7 +84,11 @@ public class RitmService {
     @Autowired
     private TemplateFieldRepository templateFieldRepository;
     @Autowired
-    private RitmStatusRepository ritmStatusRepository;
+    private StatusMasterRepository statusMasterRepository;
+    @Autowired
+    private StatusVisibilityRepository statusVisibilityRepository;
+    @Autowired
+    private WorkItemRepository workItemRepository;
     @Autowired
     private AuditService auditService;
     @Autowired
@@ -99,9 +103,15 @@ public class RitmService {
                     getDescription(ALREADY_EXISTS.getDescription(), "RITM approvers"));
         }
         List<AgentMaster> targets = resolveRitmApproverTargets(request);
-        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets);
+        boolean followSequence = Boolean.TRUE.equals(request.getIsGroupApprover())
+                && isRitmApproverSequenceEnabled(request.getApproverConfigId());
+        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets, followSequence);
+        List<AgentMaster> notificationTargets = followSequence
+                ? saved.stream().filter(approver -> Objects.equals(approver.getApproverSequence(), 1))
+                .map(RitmApprover::getApproverAgent).toList()
+                : targets;
         notificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
-                request.getIsCreatorAdmin(), targets, "CREATE");
+                request.getIsCreatorAdmin(), notificationTargets, "CREATE");
         recordRitmApproverAudit(ritm, request, CREATE, null, saved);
         return mapper.toRitmApproverVOList(saved);
     }
@@ -177,8 +187,14 @@ public class RitmService {
         return targets;
     }
 
+    private boolean isRitmApproverSequenceEnabled(Long approverConfigId) {
+        return requestApproverConfigRepository.findById(approverConfigId)
+                .map(config -> Boolean.TRUE.equals(config.getFollowSequence()))
+                .orElse(false);
+    }
+
     private List<RitmApprover> saveRitmApprovers(RitmMaster ritm, RitmApproverRequestVO request,
-                                                 List<AgentMaster> targets) {
+                                                 List<AgentMaster> targets, boolean firstLevelOnly) {
         RequestApproverConfig config = Boolean.TRUE.equals(request.getIsGroupApprover())
                 ? requestApproverConfigRepository.findById(request.getApproverConfigId()).orElseThrow() : null;
         Map<Long, Integer> groupSequences = new HashMap<>();
@@ -205,10 +221,11 @@ public class RitmService {
         }
         List<RitmApprover> savedApprovers = ritmApproverRepository.saveAllAndFlush(approvers);
         List<ApprovalMaster> approvals = savedApprovers.stream()
+                .filter(approver -> !firstLevelOnly || Objects.equals(approver.getApproverSequence(), 1))
                 .map(approver -> ApprovalMaster.builder()
                         .requestId(approver.getRitmApproverId())
                         .requestType(RITM_REQUEST_TYPE)
-                        .approvalType(RITM_REQUEST_TYPE)
+                        .approvalType(DRAFTED)
                         .description(limitApprovalDescription(approver.getApprovalRemark(), ritm))
                         .approverType(Boolean.TRUE.equals(approver.getIsGroupApprover()) ? "GROUP" : "INDIVIDUAL")
                         .approverLevel(approver.getApproverSequence())
@@ -223,7 +240,17 @@ public class RitmService {
                         .updatedOn(approver.getUpdatedOn())
                         .build())
                 .toList();
-        approvalRepository.saveAllAndFlush(approvals);
+        List<ApprovalMaster> savedApprovals = approvalRepository.saveAllAndFlush(approvals);
+        for (ApprovalMaster approval : savedApprovals) {
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                    .entityName("ApprovalMaster").entityId(approval.getApprovalId()).action(CREATE)
+                    .newValue("{\"ritmApproverId\":" + approval.getRequestId()
+                            + ",\"approverUserId\":" + approval.getApproverUserId()
+                            + ",\"approverLevel\":" + approval.getApproverLevel()
+                            + ",\"status\":\"" + approval.getStatus() + "\",\"active\":true}")
+                    .userId(request.getAssignedBy()).companyId(ritm.getCompany().getCompanyId())
+                    .status(SUCCESS).build());
+        }
         return savedApprovers;
     }
 
@@ -248,8 +275,12 @@ public class RitmService {
             RitmApprover approver = approvers.get(index);
             if (index > 0) snapshot.append(',');
             snapshot.append("{\"agentId\":").append(approver.getApproverAgent().getAgentId())
+                    .append(",\"ritmApproverId\":").append(approver.getRitmApproverId())
                     .append(",\"approverConfigId\":")
                     .append(approver.getApproverConfig() == null ? "null" : approver.getApproverConfig().getApproverConfigId())
+                    .append(",\"sequence\":").append(approver.getApproverSequence())
+                    .append(",\"status\":\"").append(approver.getApprovalStatus()).append('"')
+                    .append(",\"active\":").append(approver.getIsActive())
                     .append('}');
         }
         return snapshot.append("]}").toString();
@@ -284,7 +315,7 @@ public class RitmService {
             approval.setUpdatedOn(updatedOn);
         });
         approvalRepository.saveAll(currentApprovals);
-        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets);
+        List<RitmApprover> saved = saveRitmApprovers(ritm, request, targets, false);
         notificationService.notifyRitmApproverAssignment(ritm, request.getAssignedBy(),
                 request.getIsCreatorAdmin(), findAgents(affectedAgentIds), "UPDATE");
         recordRitmApproverAudit(ritm, request, UPDATE, oldValue, saved);
@@ -534,7 +565,7 @@ public class RitmService {
             String ritmNumber = generateFreshRitmNumber(ritmVO.getOrgId(), ritmVO.getRitmNumber());
             Long createdBy = ritmVO.getCreatedBy() != null ? ritmVO.getCreatedBy() : openedById;
             Long updatedBy = ritmVO.getUpdatedBy() != null ? ritmVO.getUpdatedBy() : createdBy;
-            RitmStatus status = ritmStatusRepository.findFirstByCompanyCompanyIdAndIsActiveTrueOrderBySequenceNoAsc(ritmVO.getOrgId())
+            StatusMaster status = statusMasterRepository.findFirstByCompanyCompanyIdAndIsActiveTrueOrderBySequenceNoAsc(ritmVO.getOrgId())
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "No active RITM status found for org " + ritmVO.getOrgId())));
 
@@ -877,7 +908,7 @@ public class RitmService {
                 }
             }
             if (request.getStatus() != null) {
-                RitmStatus status = ritmStatusRepository.findById(request.getStatus())
+                StatusMaster status = statusMasterRepository.findById(request.getStatus())
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "RITM status with ID " + request.getStatus())));
                 if (status.getCompany() == null || !Objects.equals(status.getCompany().getCompanyId(), companyId)) {
@@ -980,7 +1011,7 @@ public class RitmService {
         if (entity instanceof BPSubCategory subCategory) return subCategory.getSubCategoryId();
         if (entity instanceof BPPriority priority) return priority.getPriorityId();
         if (entity instanceof BPSupportGroup supportGroup) return supportGroup.getSupportGroupId();
-        if (entity instanceof RitmStatus status) return status.getStatusId();
+        if (entity instanceof StatusMaster status) return status.getStatusId();
         return null;
     }
 
@@ -1438,161 +1469,6 @@ public class RitmService {
         }
     }
 
-    public List<RitmStatusVO> createRitmStatus(List<RitmStatusVO> statusVOS) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        try {
-            if (statusVOS == null || statusVOS.isEmpty()) {
-                throw new FlickzzDeskException(INVALID_REQUEST,
-                        getDescription(INVALID_REQUEST.getDescription(), "RITM status data is required"));
-            }
-
-            List<RitmStatus> statusesToSave = new ArrayList<>();
-            Set<String> statusCodes = new HashSet<>();
-            Set<String> sequenceNumbers = new HashSet<>();
-            CompanyMaster companyMaster = companyMasterRepository.findByCompanyIdAndIsActiveTrue(statusVOS.get(0).getCompanyId())
-                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                            getDescription(DOES_NOT_EXIST.getDescription(), "Company with ID " + statusVOS.get(0).getCompanyId())));
-            for (RitmStatusVO statusVO : statusVOS) {
-                if (statusVO == null) {
-                    throw new FlickzzDeskException(INVALID_REQUEST,
-                            getDescription(INVALID_REQUEST.getDescription(), "RITM status data is required"));
-                }
-                if (statusVO.getCompanyId() == null || statusVO.getCompanyId() <= 0) {
-                    throw new FlickzzDeskException(INVALID_REQUEST,
-                            getDescription(INVALID_REQUEST.getDescription(), "Company ID is required and must be valid"));
-                }
-                if (statusVO.getStatusCode() == null || statusVO.getStatusCode().isBlank()) {
-                    throw new FlickzzDeskException(INVALID_REQUEST,
-                            getDescription(INVALID_REQUEST.getDescription(), "Status code is required"));
-                }
-                if (statusVO.getSequenceNo() == null || statusVO.getSequenceNo() < 0) {
-                    throw new FlickzzDeskException(INVALID_REQUEST,
-                            getDescription(INVALID_REQUEST.getDescription(), "Sequence number is required and must be non-negative"));
-                }
-
-                String statusCodeKey = statusVO.getCompanyId() + "|" + statusVO.getStatusCode();
-                String sequenceNumberKey = statusVO.getCompanyId() + "|" + statusVO.getSequenceNo();
-                if (!statusCodes.add(statusCodeKey)
-                        || ritmStatusRepository.existsByCompanyCompanyIdAndStatusCode(statusVO.getCompanyId(), statusVO.getStatusCode())) {
-                    throw new FlickzzDeskException(ALREADY_EXISTS,
-                            getDescription(ALREADY_EXISTS.getDescription(), "RITM status code"));
-                }
-                if (!sequenceNumbers.add(sequenceNumberKey)
-                        || ritmStatusRepository.existsByCompanyCompanyIdAndSequenceNo(statusVO.getCompanyId(), statusVO.getSequenceNo())) {
-                    throw new FlickzzDeskException(ALREADY_EXISTS,
-                            getDescription(ALREADY_EXISTS.getDescription(), "RITM status sequence"));
-                }
-
-                RitmStatus status = RitmStatus.builder()
-                        .company(companyMaster)
-                        .statusCode(statusVO.getStatusCode())
-                        .sequenceNo(statusVO.getSequenceNo())
-                        .statusColor(statusVO.getStatusColor())
-                        .isActive(statusVO.getIsActive() != null ? statusVO.getIsActive() : true)
-                        .createdBy(statusVO.getCreatedBy())
-                        .isCreatorAdmin(statusVO.getIsCreatorAdmin() != null ? statusVO.getIsCreatorAdmin() : false)
-                        .build();
-                statusesToSave.add(status);
-            }
-
-            List<RitmStatus> savedStatuses = ritmStatusRepository.saveAllAndFlush(statusesToSave);
-            for (RitmStatus savedStatus : savedStatuses) {
-                recordSystemAudit("RitmStatus", savedStatus.getStatusId(), CREATE, null,
-                        savedStatus.getStatusCode(), savedStatus.getCreatedBy(), savedStatus.getCompany().getCompanyId(), SUCCESS, null);
-            }
-            List<RitmStatusVO> response = savedStatuses.stream().map(savedStatus -> RitmStatusVO.builder()
-                    .statusId(savedStatus.getStatusId())
-                    .statusCode(savedStatus.getStatusCode())
-                    .isActive(savedStatus.getIsActive())
-                    .sequenceNo(savedStatus.getSequenceNo())
-                    .createdBy(savedStatus.getCreatedBy())
-                    .isCreatorAdmin(savedStatus.getIsCreatorAdmin())
-                    .build()).toList();
-            return response;
-        } catch (FlickzzDeskException e) {
-            RitmStatusVO firstStatus = statusVOS != null && !statusVOS.isEmpty() ? statusVOS.get(0) : null;
-            recordSystemAudit("RitmStatus", null, CREATE, null,
-                    firstStatus != null ? firstStatus.getStatusCode() : null,
-                    firstStatus != null ? firstStatus.getCreatedBy() : null,
-                    firstStatus != null ? firstStatus.getCompany().getCompanyId() : null, FAILED, e.getDescription());
-            throw e;
-        } catch (Exception e) {
-            RitmStatusVO firstStatus = statusVOS != null && !statusVOS.isEmpty() ? statusVOS.get(0) : null;
-            recordSystemAudit("RitmStatus", null, CREATE, null,
-                    firstStatus != null ? firstStatus.getStatusCode() : null,
-                    firstStatus != null ? firstStatus.getCreatedBy() : null,
-                    firstStatus != null ? firstStatus.getCompany().getCompanyId() : null, FAILED, e.getMessage());
-            log.error("Exception in createRitmStatus method in RitmService", e);
-            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-        }
-    }
-
-    public List<RitmStatusVO> getRitmStatusByOrgId(Long orgId, Boolean active) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        if (active.equals(ACTIVE)) {
-            return ritmStatusRepository.findByCompanyCompanyIdAndIsActiveTrue(orgId).stream().map(status -> RitmStatusVO.builder()
-                    .statusId(status.getStatusId())
-                    .statusCode(status.getStatusCode())
-                    .statusColor(status.getStatusColor())
-                    .isActive(status.getIsActive())
-                    .sequenceNo(status.getSequenceNo())
-                    .createdBy(status.getCreatedBy())
-                    .updatedBy(status.getUpdatedBy())
-                    .build()).toList();
-        } else {
-            return ritmStatusRepository.findByCompanyCompanyId(orgId).stream().map(status -> RitmStatusVO.builder()
-                    .statusId(status.getStatusId())
-                    .statusCode(status.getStatusCode())
-                    .statusColor(status.getStatusColor())
-                    .isActive(status.getIsActive())
-                    .sequenceNo(status.getSequenceNo())
-                    .createdBy(status.getCreatedBy())
-                    .updatedBy(status.getUpdatedBy())
-                    .build()).toList();
-        }
-    }
-
-    @Transactional
-    public void deleteRitmStatus(Long statusId) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        RitmStatus status = null;
-        try {
-            if (statusId == null || statusId <= 0) {
-                throw new FlickzzDeskException(INVALID_REQUEST,
-                        getDescription(INVALID_REQUEST.getDescription(), "RITM status ID is required and must be valid"));
-            }
-
-            status = ritmStatusRepository.findById(statusId)
-                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                            getDescription(DOES_NOT_EXIST.getDescription(), "RITM status with ID " + statusId)));
-
-            Long companyId = status.getCompany() != null ? status.getCompany().getCompanyId() : null;
-            Long actorId = status.getUpdatedBy() != null ? status.getUpdatedBy() : status.getCreatedBy();
-            String statusCode = status.getStatusCode();
-
-            ritmStatusRepository.delete(status);
-            ritmStatusRepository.flush();
-            recordSystemAudit("RitmStatus", statusId, DELETE, statusCode, null,
-                    actorId, companyId, SUCCESS, null);
-            log.info(generateLog(EXIT, this.getClass().getName()));
-        } catch (FlickzzDeskException e) {
-            recordSystemAudit("RitmStatus", statusId, DELETE,
-                    status != null ? status.getStatusCode() : null, null,
-                    status != null ? (status.getUpdatedBy() != null ? status.getUpdatedBy() : status.getCreatedBy()) : null,
-                    status != null && status.getCompany() != null ? status.getCompany().getCompanyId() : null,
-                    FAILED, e.getDescription());
-            throw e;
-        } catch (Exception e) {
-            recordSystemAudit("RitmStatus", statusId, DELETE,
-                    status != null ? status.getStatusCode() : null, null,
-                    status != null ? (status.getUpdatedBy() != null ? status.getUpdatedBy() : status.getCreatedBy()) : null,
-                    status != null && status.getCompany() != null ? status.getCompany().getCompanyId() : null,
-                    FAILED, e.getMessage());
-            log.error("Exception in deleteRitmStatus method in RitmService", e);
-            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-        }
-    }
-
     public List<RitmMasterVO> getUnassignedRitms(Long supportGroupId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
@@ -1618,39 +1494,6 @@ public class RitmService {
         } catch (FlickzzDeskException e) {
             throw e;
         } catch (Exception e) {
-            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-        }
-    }
-
-    public void updateRitmStatus(RitmStatusVO status) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        try {
-            if (status == null || status.getStatusId() == null) {
-                throw new FlickzzDeskException(INVALID_REQUEST,
-                        getDescription(INVALID_REQUEST.getDescription(), "RITM status data is required"));
-            }
-            RitmStatus existingStatus = ritmStatusRepository.findById(status.getStatusId())
-                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                            getDescription(DOES_NOT_EXIST.getDescription(), "RITM status with ID " + status.getStatusId())));
-            existingStatus.setIsActive(status.getIsActive());
-            existingStatus.setUpdatedBy(status.getUpdatedBy());
-            existingStatus.setIsUpdaterAdmin(status.getIsUpdaterAdmin());
-            ritmStatusRepository.saveAndFlush(existingStatus);
-            recordSystemAudit("RitmStatus", existingStatus.getStatusId(), UPDATE, String.valueOf(!existingStatus.getIsActive()), String.valueOf(status.getIsActive()),
-                    existingStatus.getUpdatedBy(), existingStatus.getCompany().getCompanyId(), SUCCESS, null);
-        } catch (FlickzzDeskException e) {
-            recordSystemAudit("RitmStatus", status != null ? status.getStatusId() : null,
-                    UPDATE, status != null ? status.getStatusCode() : null, null,
-                    status != null ? status.getUpdatedBy() : null,
-                    status != null && status.getCompany() != null ? status.getCompany().getCompanyId() : null,
-                    FAILED, e.getDescription());
-            throw e;
-        } catch (Exception e) {
-            recordSystemAudit("RitmStatus", status != null ? status.getStatusId() : null,
-                    UPDATE, status != null ? status.getStatusCode() : null, null,
-                    status != null ? status.getUpdatedBy() : null,
-                    status != null && status.getCompany() != null ? status.getCompany().getCompanyId() : null,
-                    FAILED, e.getMessage());
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

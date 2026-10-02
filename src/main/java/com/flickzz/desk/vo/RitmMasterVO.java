@@ -31,7 +31,7 @@ public class RitmMasterVO implements Serializable {
     private List<RitmTemplateDetailVO> templateDetails;
     private List<RitmCommentVO> comments;
     private List<RitmAuditVO> audits;
-    private RitmStatusVO status;
+    private StatusMasterVO status;
     private LocalDateTime requestedAt;
     private LocalDateTime dueDate;
     private LocalDateTime resolvedAt;

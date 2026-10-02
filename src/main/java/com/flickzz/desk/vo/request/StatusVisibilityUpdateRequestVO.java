@@ -1,28 +1,25 @@
-package com.flickzz.desk.vo;
+package com.flickzz.desk.vo.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
+import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmStatusVO implements Serializable {
+public class StatusVisibilityUpdateRequestVO {
 
-    private static final long serialVersionUID = 1L;
     private Long statusId;
     private Long companyId;
-    private CompanyMasterVO company;
+    private String requestType;
     private String statusCode;
     private Integer sequenceNo;
     private String statusColor;
-    private Boolean isActive;
-    private Long createdBy;
-    private Boolean isCreatorAdmin;
-    private Boolean isUpdaterAdmin;
+    private List<String> visibleStatuses;
     private Long updatedBy;
+    private Boolean isUpdaterAdmin;
 }

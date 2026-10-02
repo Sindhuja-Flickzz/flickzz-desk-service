@@ -96,7 +96,7 @@ public class RitmMaster {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "STATUS_ID", nullable = false)
-    private RitmStatus status;
+    private StatusMaster status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REQUEST_TYPE_ID", nullable = false)
