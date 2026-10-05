@@ -11,17 +11,17 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_RITM_AUDIT_DETAIL")
-public class RitmAuditDetail {
+@Table(name = "FD_TICKET_AUDIT_DETAIL")
+public class TicketAuditDetail {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmAuditDetailSeq"
+            generator = "ticketAuditDetailSeq"
     )
     @SequenceGenerator(
-            name = "ritmAuditDetailSeq",
-            sequenceName = "FD_RITM_AUDIT_DETAIL_SEQ",
+            name = "ticketAuditDetailSeq",
+            sequenceName = "FD_TICKET_AUDIT_DETAIL_SEQ",
             allocationSize = 1
     )
     @Column(name = "AUDIT_DETAIL_ID")
@@ -29,7 +29,7 @@ public class RitmAuditDetail {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "AUDIT_ID", nullable = false)
-    private RitmAudit audit;
+    private TicketAudit audit;
 
     @Column(name = "FIELD_NAME", nullable = false, length = 100)
     private String fieldName;

@@ -7,11 +7,11 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "FD_RITM_FIELD_VALUE",
+        name = "FD_TICKET_FIELD_VALUE",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "UQ_RITM_TEMPLATE_FIELD",
-                        columnNames = {"RITM_ID", "TEMPLATE_FIELD_ID"}
+                        name = "UQ_TICKET_TEMPLATE_FIELD",
+                        columnNames = {"TICKET_ID", "TEMPLATE_FIELD_ID"}
                 )
         }
 )
@@ -20,24 +20,24 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmFieldValue {
+public class TicketFieldValue {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmFieldValueSeq"
+            generator = "ticketFieldValueSeq"
     )
     @SequenceGenerator(
-            name = "ritmFieldValueSeq",
-            sequenceName = "FD_RITM_FIELD_VALUE_SEQ",
+            name = "ticketFieldValueSeq",
+            sequenceName = "FD_TICKET_FIELD_VALUE_SEQ",
             allocationSize = 1
     )
-    @Column(name = "RITM_FIELD_VALUE_ID")
-    private Long ritmFieldValueId;
+    @Column(name = "TICKET_FIELD_VALUE_ID")
+    private Long ticketFieldValueId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritm;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TEMPLATE_FIELD_ID", nullable = false)

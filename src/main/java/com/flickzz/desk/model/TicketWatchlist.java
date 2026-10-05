@@ -13,25 +13,25 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_RITM_WATCHLIST", uniqueConstraints = {@UniqueConstraint(name = "UK_RITM_WATCHLIST", columnNames = {"RITM_ID", "WATCHED_BY"})})
-public class RitmWatchlist {
+@Table(name = "FD_TICKET_WATCHLIST", uniqueConstraints = {@UniqueConstraint(name = "UK_TICKET_WATCHLIST", columnNames = {"TICKET_ID", "WATCHED_BY"})})
+public class TicketWatchlist {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmWatchlistSeq"
+            generator = "ticketWatchlistSeq"
     )
     @SequenceGenerator(
-            name = "ritmWatchlistSeq",
-            sequenceName = "FD_RITM_WATCHLIST_SEQ",
+            name = "ticketWatchlistSeq",
+            sequenceName = "FD_TICKET_WATCHLIST_SEQ",
             allocationSize = 1
     )
     @Column(name = "WATCHLIST_ID")
     private Long watchlistId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritm;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "WATCHED_BY", nullable = false)

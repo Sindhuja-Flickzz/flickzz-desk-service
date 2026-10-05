@@ -45,30 +45,30 @@ public class NotificationService {
     private CommonMapper mapper;
 
     @Transactional
-    public void notifyRitmCreated(RitmMaster ritm, Long createdBy, AgentMaster openedBy,
+    public void notifyRitmCreated(TicketMaster ritm, Long createdBy, AgentMaster openedBy,
                                   List<AgentMaster> recipients) {
         if (ritm == null || recipients == null || recipients.isEmpty()) return;
         for (AgentMaster recipient : recipients) {
             saveRitmNotification(ritm, recipient, createdBy, openedBy != null ? openedBy.getAgentName() : "System",
                     "New RITM created",
-                    "A new RITM " + ritm.getRitmNumber() + " has been created and requires attention.",
+                    "A new RITM " + ritm.getTicketNumber() + " has been created and requires attention.",
                     "CREATE", false);
         }
     }
 
-    private void saveRitmNotification(RitmMaster ritm, AgentMaster recipient, Long actorId, String actorName,
+    private void saveRitmNotification(TicketMaster ritm, AgentMaster recipient, Long actorId, String actorName,
                                       String title, String message, String action, boolean publish) {
         if (recipient == null || recipient.getAgentId() == null) return;
         CompanyMaster company = ritm.getCompany();
         Notification notification = Notification.builder()
-                .requestId(ritm.getRitmId())
+                .requestId(ritm.getTicketId())
                 .requestType("RITM")
                 .title(title)
                 .message(message)
                 .notificationType("RITM")
                 .action(action)
                 .referenceType("RITM")
-                .referenceId(ritm.getRitmId())
+                .referenceId(ritm.getTicketId())
                 .triggeredByUser(actorName)
                 .triggeredUserOrg(company != null ? company.getCompanyName() : null)
                 .recipientUserId(recipient.getAgentId())
@@ -98,7 +98,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void notifyRitmUpdated(RitmMaster ritm, Long actorId) {
+    public void notifyRitmUpdated(TicketMaster ritm, Long actorId) {
         if (ritm == null || actorId == null) return;
         boolean requestedForUpdated = ritm.getRequestedFor() != null
                 && actorId.equals(ritm.getRequestedFor().getAgentId());
@@ -109,20 +109,20 @@ public class NotificationService {
         String actorName = requestedForUpdated
                 ? ritm.getRequestedFor().getAgentName() : ritm.getAssignedTo().getAgentName();
         saveRitmNotification(ritm, recipient, actorId, actorName, "RITM updated",
-                "RITM " + ritm.getRitmNumber() + " has been updated and requires your attention.",
+                "RITM " + ritm.getTicketNumber() + " has been updated and requires your attention.",
                 "UPDATE", false);
     }
 
     @Transactional
-    public void notifyRitmAssigned(RitmMaster ritm, AgentMaster actor) {
+    public void notifyRitmAssigned(TicketMaster ritm, AgentMaster actor) {
         if (ritm == null || actor == null || ritm.getAssignedTo() == null) return;
-        saveRitmNotification(ritm, ritm.getAssignedTo(), actor.getAgentId(), actor.getAgentName(),
-                "RITM assigned", "RITM " + ritm.getRitmNumber() + " has been assigned to you.",
+        saveRitmNotification(ritm, ritm.getAssignedTo(), actor.getUser().getUserId(), actor.getAgentName(),
+                "RITM assigned", "RITM " + ritm.getTicketNumber() + " has been assigned to you.",
                 "ASSIGN", false);
     }
 
     @Transactional
-    public void notifyRitmApproverAssignment(RitmMaster ritm, Long actorId, Boolean isCreatorAdmin,
+    public void notifyRitmApproverAssignment(TicketMaster ritm, Long actorId, Boolean isCreatorAdmin,
                                              List<AgentMaster> recipients, String action) {
         if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
         String operation = switch (action) {
@@ -132,7 +132,7 @@ public class NotificationService {
             default -> "changed";
         };
         String title = "RITM " + action.toLowerCase(Locale.ROOT);
-        String message = "RITM " + ritm.getRitmNumber() + " approver assignment was " + operation
+        String message = "RITM " + ritm.getTicketNumber() + " approver assignment was " + operation
                 + " and requires your attention.";
         String actorName = commonService.loadUserNameByUserId(actorId, isCreatorAdmin);
         Set<Long> sent = new HashSet<>();
@@ -143,7 +143,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public void notifyRitmApprovalRequired(RitmMaster ritm, Long actorId, Boolean isActorAdmin,
+    public void notifyRitmApprovalRequired(TicketMaster ritm, Long actorId, Boolean isActorAdmin,
                                            List<AgentMaster> recipients, Integer level) {
         if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
         String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
@@ -151,21 +151,21 @@ public class NotificationService {
         for (AgentMaster recipient : recipients) {
             if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
             saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval required",
-                    "RITM " + ritm.getRitmNumber() + " requires your approval at level " + level + ".",
+                    "RITM " + ritm.getTicketNumber() + " requires your approval at level " + level + ".",
                     "APPROVAL", true);
         }
     }
 
     @Transactional
-    public void notifyRitmApprovalCancelled(RitmMaster ritm, Long actorId, Boolean isActorAdmin,
-                                           List<AgentMaster> recipients) {
+    public void notifyRitmApprovalCancelled(TicketMaster ritm, Long actorId, Boolean isActorAdmin,
+                                            List<AgentMaster> recipients) {
         if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
         String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
         Set<Long> sent = new HashSet<>();
         for (AgentMaster recipient : recipients) {
             if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
             saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval cancelled",
-                    "Another approver completed RITM " + ritm.getRitmNumber() + "; your approval is no longer required.",
+                    "Another approver completed RITM " + ritm.getTicketNumber() + "; your approval is no longer required.",
                     "DELETE", true);
         }
     }

@@ -16,31 +16,31 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(
-        name = "FD_RITM_MASTER",
+        name = "FD_TICKET_MASTER",
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "UK_RITM_NUMBER",
-                        columnNames = "RITM_NUMBER"
+                        name = "UK_TICKET_NUMBER",
+                        columnNames = "TICKET_NUMBER"
                 )
         }
 )
-public class RitmMaster {
+public class TicketMaster {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmSeq"
+            generator = "ticketSeq"
     )
     @SequenceGenerator(
-            name = "ritmSeq",
-            sequenceName = "FD_RITM_SEQ",
+            name = "ticketSeq",
+            sequenceName = "FD_TICKET_SEQ",
             allocationSize = 1
     )
-    @Column(name = "RITM_ID")
-    private Long ritmId;
+    @Column(name = "TICKET_ID")
+    private Long ticketId;
 
-    @Column(name = "RITM_NUMBER", nullable = false, length = 50)
-    private String ritmNumber;
+    @Column(name = "TICKET_NUMBER", nullable = false, length = 50)
+    private String ticketNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "COMPANY_ID", nullable = false)
@@ -53,6 +53,10 @@ public class RitmMaster {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "REQUESTED_FOR", nullable = false)
     private AgentMaster requestedFor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "WORK_ITEM_ID", nullable = false)
+    private WorkItem workItem;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CATEGORY_ID", nullable = false)
@@ -74,25 +78,25 @@ public class RitmMaster {
     @JoinColumn(name = "ASSIGNED_TO")
     private AgentMaster assignedTo;
 
-    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<RitmWatchlist> watchlist;
+    private List<TicketWatchlist> watchlist;
 
-    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<RitmFieldValue> fieldValues;
+    private List<TicketFieldValue> fieldValues;
 
-    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<RitmAttachment> attachment;
+    private List<TicketAttachment> attachment;
 
-    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<RitmComment> comments;
+    private List<TicketComment> comments;
 
-    @OneToMany(mappedBy = "ritm", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private List<RitmAudit> audits;
+    private List<TicketAudit> audits;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "STATUS_ID", nullable = false)

@@ -13,14 +13,14 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmAuditVO implements Serializable {
+public class TicketAuditVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private Long auditId;
-    private RitmMasterVO ritmId;
+    private TicketMasterVO ticketId;
     private String actionType;
     private String description;
-    private List<RitmAuditDetailVO> auditDetails;
+    private List<TicketAuditDetailVO> auditDetails;
     private Long changedBy;
     private LocalDateTime changedAt;
 }

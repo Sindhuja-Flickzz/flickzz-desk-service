@@ -1200,20 +1200,20 @@ public class CommonMapper {
         return AgentMasterVO.builder().agentId(agent.getAgentId()).agentName(agent.getAgentName()).build();
     }
 
-    public List<RitmApproverVO> toRitmApproverVOList(List<RitmApprover> approvers) {
+    public List<TicketApproverVO> toRitmApproverVOList(List<TicketApprover> approvers) {
         if (approvers == null) {
             return Collections.emptyList();
         }
         return approvers.stream().map(this::toRitmApproverVO).toList();
     }
 
-    public RitmApproverVO toRitmApproverVO(RitmApprover approver) {
+    public TicketApproverVO toRitmApproverVO(TicketApprover approver) {
         if (approver == null) {
             return null;
         }
-        return RitmApproverVO.builder()
-                .ritmApproverId(approver.getRitmApproverId())
-                .requestId(approver.getRitmId() != null ? approver.getRitmId().getRitmId() : null)
+        return TicketApproverVO.builder()
+                .ticketApproverId(approver.getTicketApproverId())
+                .requestId(approver.getTicket() != null ? approver.getTicket().getTicketId() : null)
                 .requestType("RITM")
                 .isGroupApprover(approver.getIsGroupApprover())
                 .approverConfig(toRequestApproverConfigVo(approver.getApproverConfig()))
@@ -1221,7 +1221,7 @@ public class CommonMapper {
                 .approverSequence(approver.getApproverSequence())
                 .isMainApprover(approver.getIsMainApprover())
                 .approvalStatus(approver.getApprovalStatus())
-                .approvalRemark(approver.getApprovalRemark())
+                .remark(toTicketApproverRemarkVO(approver.getRemark()))
                 .approvedOn(approver.getApprovedOn())
                 .createdBy(approver.getCreatedBy())
                 .createdOn(approver.getCreatedOn())
@@ -1250,6 +1250,16 @@ public class CommonMapper {
                 .build();
     }
 
+    private TicketApproverRemarkVO toTicketApproverRemarkVO(TicketApproverRemark remark) {
+        if (remark == null) {
+            return null;
+        }
+        return TicketApproverRemarkVO.builder()
+                .remarkId(remark.getRemarkId())
+                .remark(remark.getRemark())
+                .build();
+    }
+
     private RequestApproverVO toRequestApproverVO(RequestApprover approver) {
         if (approver == null) {
             return null;
@@ -1266,13 +1276,13 @@ public class CommonMapper {
                 .build();
     }
 
-    public RitmMasterVO toRitmMasterVo(RitmMaster savedRitm) {
+    public TicketMasterVO toRitmMasterVo(TicketMaster savedRitm) {
         if (savedRitm == null) {
             return null;
         }
-        return RitmMasterVO.builder()
-                .ritmId(savedRitm.getRitmId())
-                .ritmNumber(savedRitm.getRitmNumber())
+        return TicketMasterVO.builder()
+                .ticketId(savedRitm.getTicketId())
+                .ticketNumber(savedRitm.getTicketNumber())
                 .requestedBy(toRitmAgentMasterVO(savedRitm.getRequestedBy()))
                 .requestedFor(toRitmAgentMasterVO(savedRitm.getRequestedFor()))
                 .category(toRitmBPCategoryVo(savedRitm.getCategory()))
@@ -1280,12 +1290,14 @@ public class CommonMapper {
                 .supportGroup(toRitmSupportGroupVo(savedRitm.getSupportGroup()))
                 .priority(toRitmBPPriorityVo(savedRitm.getPriority()))
                 .assignedTo(toRitmAgentMasterVO(savedRitm.getAssignedTo()))
+                .customerResolution(savedRitm.getCustomerResolutionDate())
+                .requestType(toRitmRequestTypeVO(savedRitm.getRequestType()))
                 .watchlist(savedRitm.getWatchlist() != null
                         ? savedRitm.getWatchlist().stream().map(this::toRitmWatchlistVOForRitm).toList()
                         : null)
                 .templateDetails(savedRitm.getFieldValues() != null
                         ? savedRitm.getFieldValues().stream().filter(value -> Boolean.TRUE.equals(value.getIsActive()))
-                        .map(value -> com.flickzz.desk.vo.RitmTemplateDetailVO.builder()
+                        .map(value -> TicketTemplateDetailVO.builder()
                                 .fieldId(value.getTemplateField().getFieldId()).fieldName(value.getTemplateField().getFieldName())
                                 .value(value.getFieldValue())
                                 .build()).toList()
@@ -1360,33 +1372,43 @@ public class CommonMapper {
                 .code(priority.getCode()).build();
     }
 
-    private RitmWatchlistVO toRitmWatchlistVOForRitm(RitmWatchlist ritmWatchlist) {
-        if (ritmWatchlist == null) {
+    private RequestTypeMasterVO toRitmRequestTypeVO(RequestTypeMaster requestType) {
+        if (requestType == null) {
             return null;
         }
-        return RitmWatchlistVO.builder()
-                .watchlistId(ritmWatchlist.getWatchlistId())
-                .watchedBy(toRitmAgentMasterVO(ritmWatchlist.getWatchedBy()))
+        return RequestTypeMasterVO.builder()
+                .requestTypeId(requestType.getRequestTypeId())
+                .requestTypeName(requestType.getRequestTypeName())
                 .build();
     }
 
-    private RitmAttachmentVO toRitmAttachmentVO(RitmAttachment ritmAttachment) {
-        if (ritmAttachment == null) {
+    private TicketWatchlistVO toRitmWatchlistVOForRitm(TicketWatchlist ticketWatchlist) {
+        if (ticketWatchlist == null) {
             return null;
         }
-        return RitmAttachmentVO.builder()
-                .attachmentId(ritmAttachment.getAttachmentId())
-                .fileName(ritmAttachment.getFileName())
-                .originalFileName(ritmAttachment.getOriginalFileName())
-                .mimeType(ritmAttachment.getMimeType())
-                .fileSize(ritmAttachment.getFileSize())
-                .storageType(ritmAttachment.getStorageType())
-                .storagePath(ritmAttachment.getStoragePath())
-                .isActive(ritmAttachment.getIsActive())
-                .uploadedBy(ritmAttachment.getUploadedBy())
-                .uploadedAt(ritmAttachment.getUploadedAt())
-                .deletedBy(ritmAttachment.getDeletedBy())
-                .deletedAt(ritmAttachment.getDeletedAt())
+        return TicketWatchlistVO.builder()
+                .watchlistId(ticketWatchlist.getWatchlistId())
+                .watchedBy(toRitmAgentMasterVO(ticketWatchlist.getWatchedBy()))
+                .build();
+    }
+
+    private TicketAttachmentVO toRitmAttachmentVO(TicketAttachment ticketAttachment) {
+        if (ticketAttachment == null) {
+            return null;
+        }
+        return TicketAttachmentVO.builder()
+                .attachmentId(ticketAttachment.getAttachmentId())
+                .fileName(ticketAttachment.getFileName())
+                .originalFileName(ticketAttachment.getOriginalFileName())
+                .mimeType(ticketAttachment.getMimeType())
+                .fileSize(ticketAttachment.getFileSize())
+                .storageType(ticketAttachment.getStorageType())
+                .storagePath(ticketAttachment.getStoragePath())
+                .isActive(ticketAttachment.getIsActive())
+                .uploadedBy(ticketAttachment.getUploadedBy())
+                .uploadedAt(ticketAttachment.getUploadedAt())
+                .deletedBy(ticketAttachment.getDeletedBy())
+                .deletedAt(ticketAttachment.getDeletedAt())
                 .build();
     }
 
@@ -1402,61 +1424,61 @@ public class CommonMapper {
                 .build();
     }
 
-    private RitmCommentVO toRitmCommentVO(RitmComment ritmComment) {
-        if (ritmComment == null) {
+    private TicketCommentVO toRitmCommentVO(TicketComment ticketComment) {
+        if (ticketComment == null) {
             return null;
         }
-        return RitmCommentVO.builder()
-                .commentId(ritmComment.getCommentId())
-                .commentType(ritmComment.getCommentType())
-                .commentText(ritmComment.getCommentText())
-                .isInternal(ritmComment.getIsInternal())
-                .createdBy(ritmComment.getCreatedBy())
-                .createdAt(ritmComment.getCreatedAt())
-                .updatedBy(ritmComment.getUpdatedBy())
-                .updatedAt(ritmComment.getUpdatedAt())
+        return TicketCommentVO.builder()
+                .commentId(ticketComment.getCommentId())
+                .commentType(ticketComment.getCommentType())
+                .commentText(ticketComment.getCommentText())
+                .isInternal(ticketComment.getIsInternal())
+                .createdBy(ticketComment.getCreatedBy())
+                .createdAt(ticketComment.getCreatedAt())
+                .updatedBy(ticketComment.getUpdatedBy())
+                .updatedAt(ticketComment.getUpdatedAt())
                 .build();
     }
 
-    private RitmAuditVO toRitmAuditVO(RitmAudit ritmAudit) {
-        if (ritmAudit == null) {
+    private TicketAuditVO toRitmAuditVO(TicketAudit ticketAudit) {
+        if (ticketAudit == null) {
             return null;
         }
-        return RitmAuditVO.builder()
-                .auditId(ritmAudit.getAuditId())
-                .actionType(ritmAudit.getActionType())
-                .description(ritmAudit.getDescription())
-                .auditDetails(ritmAudit.getAuditDetails() != null
-                        ? ritmAudit.getAuditDetails().stream().map(this::toRitmAuditDetailVO).toList()
+        return TicketAuditVO.builder()
+                .auditId(ticketAudit.getAuditId())
+                .actionType(ticketAudit.getActionType())
+                .description(ticketAudit.getDescription())
+                .auditDetails(ticketAudit.getAuditDetails() != null
+                        ? ticketAudit.getAuditDetails().stream().map(this::toRitmAuditDetailVO).toList()
                         : null)
-                .changedBy(ritmAudit.getChangedBy())
-                .changedAt(ritmAudit.getChangedAt())
+                .changedBy(ticketAudit.getChangedBy())
+                .changedAt(ticketAudit.getChangedAt())
                 .build();
     }
 
-    private RitmAuditDetailVO toRitmAuditDetailVO(RitmAuditDetail ritmAuditDetail) {
-        if (ritmAuditDetail == null) {
+    private TicketAuditDetailVO toRitmAuditDetailVO(TicketAuditDetail ticketAuditDetail) {
+        if (ticketAuditDetail == null) {
             return null;
         }
-        return RitmAuditDetailVO.builder()
-                .auditDetailId(ritmAuditDetail.getAuditDetailId())
-                .fieldName(ritmAuditDetail.getFieldName())
-                .oldValue(ritmAuditDetail.getOldValue())
-                .newValue(ritmAuditDetail.getNewValue())
+        return TicketAuditDetailVO.builder()
+                .auditDetailId(ticketAuditDetail.getAuditDetailId())
+                .fieldName(ticketAuditDetail.getFieldName())
+                .oldValue(ticketAuditDetail.getOldValue())
+                .newValue(ticketAuditDetail.getNewValue())
                 .build();
     }
 
-    private RitmWatchlistVO toNoBackRefRitmWatchlistVO(RitmWatchlist ritmWatchlist) {
-        if (ritmWatchlist == null) {
+    private TicketWatchlistVO toNoBackRefRitmWatchlistVO(TicketWatchlist ticketWatchlist) {
+        if (ticketWatchlist == null) {
             return null;
         }
-        return RitmWatchlistVO.builder()
-                .watchlistId(ritmWatchlist.getWatchlistId())
-                .ritm(null)
-                .watchedBy(toNoBackRefAgentMasterVO(ritmWatchlist.getWatchedBy()))
-                .isActive(ritmWatchlist.getIsActive())
-                .createdAt(ritmWatchlist.getCreatedAt())
-                .removedAt(ritmWatchlist.getRemovedAt())
+        return TicketWatchlistVO.builder()
+                .watchlistId(ticketWatchlist.getWatchlistId())
+                .ticket(null)
+                .watchedBy(toNoBackRefAgentMasterVO(ticketWatchlist.getWatchedBy()))
+                .isActive(ticketWatchlist.getIsActive())
+                .createdAt(ticketWatchlist.getCreatedAt())
+                .removedAt(ticketWatchlist.getRemovedAt())
                 .build();
     }
 

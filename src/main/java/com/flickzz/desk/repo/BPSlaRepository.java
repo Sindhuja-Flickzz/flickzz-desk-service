@@ -14,6 +14,10 @@ public interface BPSlaRepository extends JpaRepository<BPSla, Long> {
 
 	Optional<BPSla> findBySlaIdAndIsActive(Long slaId, Boolean active);
 
+	Optional<BPSla> findByPriorityPriorityId(Long priorityId);
+
+	Optional<BPSla> findFirstByPriorityPriorityIdAndIsActiveTrueOrderByVersionDesc(Long priorityId);
+
 	boolean existsByConfigurationConfigurationIdAndPriorityPriorityIdAndIsActive(Long configurationId, Long priorityId,
 			Boolean active);
 

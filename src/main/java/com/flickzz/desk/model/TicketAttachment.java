@@ -13,18 +13,18 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_RITM_ATTACHMENT")
-public class RitmAttachment {
-	
+@Table(name = "FD_TICKET_ATTACHMENT")
+public class TicketAttachment {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ritmAttachmentSeq")
-    @SequenceGenerator(name = "ritmAttachmentSeq", sequenceName = "FD_RITM_ATTACHMENT_SEQ", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ticketAttachmentSeq")
+    @SequenceGenerator(name = "ticketAttachmentSeq", sequenceName = "FD_TICKET_ATTACHMENT_SEQ", allocationSize = 1)
     @Column(name = "ATTACHMENT_ID")
     private Long attachmentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritm;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @Column(name = "FILE_NAME", nullable = false, length = 255)
     private String fileName;

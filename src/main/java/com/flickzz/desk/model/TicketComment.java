@@ -13,25 +13,25 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "FD_RITM_COMMENT")
-public class RitmComment {
+@Table(name = "FD_TICKET_COMMENT")
+public class TicketComment {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmCommentSeq"
+            generator = "ticketCommentSeq"
     )
     @SequenceGenerator(
-            name = "ritmCommentSeq",
-            sequenceName = "FD_RITM_COMMENT_SEQ",
+            name = "ticketCommentSeq",
+            sequenceName = "FD_TICKET_COMMENT_SEQ",
             allocationSize = 1
     )
     @Column(name = "COMMENT_ID")
     private Long commentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritm;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @Column(name = "COMMENT_TYPE", nullable = false, length = 30)
     private String commentType;

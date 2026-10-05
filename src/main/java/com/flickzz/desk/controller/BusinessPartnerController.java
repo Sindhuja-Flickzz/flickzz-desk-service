@@ -181,6 +181,17 @@ public class BusinessPartnerController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), SLA), response);
     }
 
+    @GetMapping("/sla/priority/{priorityId}")
+    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSLAConfigurationByPriorityId(
+            @PathVariable Long priorityId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        BPSlaVO response = businessPartnerService.getBusinessPartnerSLAConfigurationByPriorityId(priorityId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), SLA), response);
+    }
+
     @GetMapping("/config/sla/{businessPartnerId}")
     public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerSLAConfiguration(
             @PathVariable String businessPartnerId) {

@@ -13,4 +13,6 @@ public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
     List<WorkItem> findByIsActive(Boolean active);
 
     Optional<WorkItem> findByCodeAndIsActiveTrue(String item);
+
+    Optional<WorkItem> findByCodeAndCompany_CompanyIdAndIsActiveTrue(String item, Long companyId);
 }

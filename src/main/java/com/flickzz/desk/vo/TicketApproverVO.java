@@ -13,19 +13,21 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmApproverVO implements Serializable {
+public class TicketApproverVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Long ritmApproverId;
+    private Long ticketApproverId;
 
     private Long requestId;
 
     private String requestType;
 
-    private RitmMasterVO ritm;
+    private TicketMasterVO ticket;
 
     private Boolean isGroupApprover;
+
+    private TicketApproverRemarkVO remark;
 
     private RequestApproverConfigVO approverConfig;
 
@@ -36,8 +38,6 @@ public class RitmApproverVO implements Serializable {
     private Boolean isMainApprover;
 
     private String approvalStatus;
-
-    private String approvalRemark;
 
     private LocalDateTime approvedOn;
 
@@ -51,5 +51,5 @@ public class RitmApproverVO implements Serializable {
 
     private Boolean isActive;
 
-    private List<RitmTemplateDetailVO> templateDetails;
+    private List<TicketTemplateDetailVO> templateDetails;
 }

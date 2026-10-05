@@ -61,13 +61,13 @@ public class ApprovalService {
     @Autowired
     NotificationService notificationService;
     @Autowired
-    RitmApproverRepository ritmApproverRepository;
+    TicketApproverRepository ticketApproverRepository;
     @Autowired
-    RitmMasterRepository ritmMasterRepository;
+    TicketMasterRepository ticketMasterRepository;
     @Autowired
     StatusMasterRepository statusMasterRepository;
     @Autowired
-    RitmAuditRepository ritmAuditRepository;
+    TicketAuditRepository ticketAuditRepository;
     @Autowired
     AuditService auditService;
 
@@ -189,16 +189,16 @@ public class ApprovalService {
                 || !Objects.equals(approval.getApproverUserId(), request.getUpdatedBy())) {
             throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
         }
-        RitmApprover ritmApprover = ritmApproverRepository.findById(approval.getRequestId())
+        TicketApprover ticketApprover = ticketApproverRepository.findById(approval.getRequestId())
                 .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), "Active RITM approver with ID " + approval.getRequestId())));
-        AgentMaster actingAgent = ritmApprover.getApproverAgent();
+        AgentMaster actingAgent = ticketApprover.getApproverAgent();
         if (actingAgent == null || actingAgent.getUser() == null
                 || !Objects.equals(actingAgent.getUser().getUserId(), request.getUpdatedBy())) {
             throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
         }
-        RitmMaster ritm = ritmMasterRepository.findById(ritmApprover.getRitmId().getRitmId())
+        TicketMaster ritm = ticketMasterRepository.findById(ticketApprover.getTicket().getTicketId())
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), "RITM")));
 
@@ -211,34 +211,41 @@ public class ApprovalService {
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
             approval.setApprovedOn(now);
         }
-        ritmApprover.setApprovalStatus(approvalStatus);
-        ritmApprover.setUpdatedBy(actingAgent.getAgentId());
+        ticketApprover.setApprovalStatus(approvalStatus);
+        ticketApprover.setUpdatedBy(actingAgent.getAgentId());
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
-            ritmApprover.setApprovedOn(now);
+            ticketApprover.setApprovedOn(now);
         }
         approvalRepository.saveAndFlush(approval);
-        ritmApproverRepository.saveAndFlush(ritmApprover);
+        ticketApproverRepository.saveAndFlush(ticketApprover);
 
         boolean completed = false;
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
-            if (!Boolean.TRUE.equals(ritmApprover.getIsGroupApprover())) {
+            RequestApproverConfig config = ticketApprover.getApproverConfig();
+            if (config != null) {
+                if (Boolean.TRUE.equals(config.getFollowSequence())) {
+                    completed = advanceRitmApprovalSequence(ritm, ticketApprover, approval, actingAgent, request);
+                } else {
+                    deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
+                    completed = true;
+                }
+            } else if (!Boolean.TRUE.equals(ticketApprover.getIsGroupApprover())) {
                 completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
-                deactivateOtherRitmApprovals(ritm, ritmApprover, approval, actingAgent, request);
+                deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
                 completed = true;
             } else {
-                RequestApproverConfig config = ritmApprover.getApproverConfig();
                 if (config == null) {
                     throw new FlickzzDeskException(INVALID_FIELD, "RITM group approver config is missing");
                 }
                 if (Boolean.TRUE.equals(config.getIsAnyApprovalSufficient())) {
                     completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
-                    deactivateOtherRitmApprovals(ritm, ritmApprover, approval, actingAgent, request);
+                    deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
                     completed = true;
                 } else if (Boolean.TRUE.equals(config.getFollowSequence())) {
-                    completed = advanceRitmApprovalSequence(ritm, ritmApprover, approval, actingAgent, request);
+                    completed = advanceRitmApprovalSequence(ritm, ticketApprover, approval, actingAgent, request);
                 } else {
-                    List<RitmApprover> approvers = ritmApproverRepository
-                            .findByRitmId_RitmIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getRitmId());
+                    List<TicketApprover> approvers = ticketApproverRepository
+                            .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId());
                     if (!approvers.isEmpty() && approvers.stream()
                             .allMatch(value -> APPROVED.equalsIgnoreCase(value.getApprovalStatus()))) {
                         completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
@@ -491,104 +498,28 @@ public class ApprovalService {
         return REQUEST_CLARIFICATION;
     }
 
-    private void completeRitmApproval(RitmMaster ritm, AgentMaster actingAgent, Long actorUserId,
-                                      Boolean actorIsAdmin) {
-        Long companyId = ritm.getCompany().getCompanyId();
-        StatusMaster approvedStatus = statusMasterRepository
-                .findFirstByCompany_CompanyIdAndSequenceNoAndIsActiveTrue(companyId, 2)
-                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                        getDescription(DOES_NOT_EXIST.getDescription(), "Active RITM status with sequence 2")));
-        String previousStatus = ritm.getStatus() != null ? ritm.getStatus().getStatusCode() : null;
-        ritm.setStatus(approvedStatus);
-        ritm.setUpdatedBy(actingAgent.getAgentId());
-        ritm.setIsUpdaterAdmin(Boolean.TRUE.equals(actorIsAdmin));
-        ritmMasterRepository.saveAndFlush(ritm);
-        auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
-                .entityName("RitmMaster").entityId(ritm.getRitmId()).action("STATUS_UPDATE")
-                .oldValue("{\"status\":\"" + previousStatus + "\"}")
-                .newValue("{\"statusId\":" + approvedStatus.getStatusId()
-                        + ",\"status\":\"" + approvedStatus.getStatusCode() + "\"}")
-                .userId(actorUserId).companyId(companyId).status(SUCCESS).build());
-        ritmAuditRepository.saveAndFlush(RitmAudit.builder()
-                .ritm(ritm)
-                .actionType("APPROVAL")
-                .description("RITM approval completed; status changed from " + previousStatus
-                        + " to " + approvedStatus.getStatusCode())
-                .changedBy(actingAgent.getAgentId())
-                .build());
-    }
-
-    private void deactivateOtherRitmApprovals(RitmMaster ritm, RitmApprover currentApprover,
-                                              ApprovalMaster currentApproval, AgentMaster actingAgent,
-                                              BpConfigRequestVO request) {
-        List<RitmApprover> activeApprovers = ritmApproverRepository
-                .findByRitmId_RitmIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getRitmId());
-        List<RitmApprover> others = activeApprovers.stream()
-                .filter(value -> !Objects.equals(value.getRitmApproverId(), currentApprover.getRitmApproverId()))
-                .toList();
-        if (others.isEmpty()) return;
-
-        LocalDateTime now = LocalDateTime.now();
-        others.forEach(value -> {
-            String oldValue = "{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":true}";
-            value.setIsActive(false);
-            value.setUpdatedBy(actingAgent.getAgentId());
-            value.setUpdatedOn(now);
-            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
-                    .entityName("RitmApprover").entityId(value.getRitmApproverId()).action("DELETE")
-                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":false}")
-                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId())
-                    .status(SUCCESS).build());
-        });
-        ritmApproverRepository.saveAllAndFlush(others);
-
-        List<Long> otherIds = others.stream().map(RitmApprover::getRitmApproverId).toList();
-        List<ApprovalMaster> otherApprovals = approvalRepository.findByRequestTypeAndRequestIdIn("RITM", otherIds)
-                .stream().filter(value -> !Objects.equals(value.getApprovalId(), currentApproval.getApprovalId())
-                        && Boolean.TRUE.equals(value.getActive())).toList();
-        otherApprovals.forEach(value -> {
-            String oldValue = "{\"status\":\"" + value.getStatus() + "\",\"active\":true}";
-            value.setActive(false);
-            value.setUpdatedBy(request.getUpdatedBy());
-            value.setUpdatedOn(now);
-            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
-                    .entityName("ApprovalMaster").entityId(value.getApprovalId()).action("DELETE")
-                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getStatus() + "\",\"active\":false}")
-                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId()).status(SUCCESS).build());
-        });
-        approvalRepository.saveAllAndFlush(otherApprovals);
-        notificationService.notifyRitmApprovalCancelled(ritm, request.getUpdatedBy(), request.getIsUpdatedByAdmin(),
-                others.stream().map(RitmApprover::getApproverAgent).toList());
-        ritmAuditRepository.saveAndFlush(RitmAudit.builder()
-                .ritm(ritm)
-                .actionType("APPROVAL_CANCEL")
-                .description("Other RITM approvals were cancelled after approval completion")
-                .changedBy(actingAgent.getAgentId())
-                .build());
-    }
-
-    private boolean advanceRitmApprovalSequence(RitmMaster ritm, RitmApprover currentApprover,
+    private boolean advanceRitmApprovalSequence(TicketMaster ritm, TicketApprover currentApprover,
                                                 ApprovalMaster currentApproval, AgentMaster actingAgent,
                                                 BpConfigRequestVO request) {
-        List<RitmApprover> activeApprovers = ritmApproverRepository
-                .findByRitmId_RitmIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getRitmId());
-        Optional<RitmApprover> nextApprover = activeApprovers.stream()
+        List<TicketApprover> activeApprovers = ticketApproverRepository
+                .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId());
+        Optional<TicketApprover> nextApprover = activeApprovers.stream()
                 .filter(value -> value.getApproverSequence() != null
                         && value.getApproverSequence() > currentApprover.getApproverSequence())
-                .min(Comparator.comparing(RitmApprover::getApproverSequence));
+                .min(Comparator.comparing(TicketApprover::getApproverSequence));
         if (nextApprover.isEmpty()) {
-            completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
+            deactivateOtherRitmApprovals(ritm, currentApprover, currentApproval, actingAgent, request);
             return true;
         }
 
-        RitmApprover next = nextApprover.get();
-        List<ApprovalMaster> existing = approvalRepository.findByRequestTypeAndRequestId("RITM", next.getRitmApproverId());
+        TicketApprover next = nextApprover.get();
+        List<ApprovalMaster> existing = approvalRepository.findByRequestTypeAndRequestId("RITM", next.getTicketApproverId());
         if (existing.stream().noneMatch(value -> Boolean.TRUE.equals(value.getActive()))) {
             ApprovalMaster nextApproval = ApprovalMaster.builder()
-                    .requestId(next.getRitmApproverId())
+                    .requestId(next.getTicketApproverId())
                     .requestType("RITM")
                     .approvalType(DRAFTED)
-                    .description("Approval for RITM " + ritm.getRitmNumber())
+                    .description("Approval for RITM " + ritm.getTicketNumber())
                     .approverType("GROUP")
                     .approverLevel(next.getApproverSequence())
                     .approverUserId(next.getApproverAgent().getUser().getUserId())
@@ -608,8 +539,8 @@ public class ApprovalService {
                             + ",\"status\":\"" + nextApproval.getStatus() + "\",\"active\":true}")
                     .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId())
                     .status(SUCCESS).build());
-            ritmAuditRepository.saveAndFlush(RitmAudit.builder()
-                    .ritm(ritm)
+            ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                    .ticket(ritm)
                     .actionType("APPROVAL_NEXT_LEVEL")
                     .description("Approval activated for sequence level " + next.getApproverSequence())
                     .changedBy(actingAgent.getAgentId())
@@ -620,7 +551,83 @@ public class ApprovalService {
         return false;
     }
 
-    private void recordRitmApprovalAudit(RitmMaster ritm, ApprovalMaster approval, AgentMaster actingAgent,
+    private void deactivateOtherRitmApprovals(TicketMaster ritm, TicketApprover currentApprover,
+                                              ApprovalMaster currentApproval, AgentMaster actingAgent,
+                                              BpConfigRequestVO request) {
+        List<TicketApprover> activeApprovers = ticketApproverRepository
+                .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId());
+        List<TicketApprover> others = activeApprovers.stream()
+                .filter(value -> !Objects.equals(value.getTicketApproverId(), currentApprover.getTicketApproverId()))
+                .toList();
+        if (others.isEmpty()) return;
+
+        LocalDateTime now = LocalDateTime.now();
+        others.forEach(value -> {
+            String oldValue = "{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":true}";
+            value.setIsActive(false);
+            value.setUpdatedBy(actingAgent.getAgentId());
+            value.setUpdatedOn(now);
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                    .entityName("RitmApprover").entityId(value.getTicketApproverId()).action("DELETE")
+                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":false}")
+                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId())
+                    .status(SUCCESS).build());
+        });
+        ticketApproverRepository.saveAllAndFlush(others);
+
+        List<Long> otherIds = others.stream().map(TicketApprover::getTicketApproverId).toList();
+        List<ApprovalMaster> otherApprovals = approvalRepository.findByRequestTypeAndRequestIdIn("RITM", otherIds)
+                .stream().filter(value -> !Objects.equals(value.getApprovalId(), currentApproval.getApprovalId())
+                        && Boolean.TRUE.equals(value.getActive())).toList();
+        otherApprovals.forEach(value -> {
+            String oldValue = "{\"status\":\"" + value.getStatus() + "\",\"active\":true}";
+            value.setActive(false);
+            value.setUpdatedBy(request.getUpdatedBy());
+            value.setUpdatedOn(now);
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                    .entityName("ApprovalMaster").entityId(value.getApprovalId()).action("DELETE")
+                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getStatus() + "\",\"active\":false}")
+                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId()).status(SUCCESS).build());
+        });
+        approvalRepository.saveAllAndFlush(otherApprovals);
+        notificationService.notifyRitmApprovalCancelled(ritm, request.getUpdatedBy(), request.getIsUpdatedByAdmin(),
+                others.stream().map(TicketApprover::getApproverAgent).toList());
+        ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                .ticket(ritm)
+                .actionType("APPROVAL_CANCEL")
+                .description("Other RITM approvals were cancelled after approval completion")
+                .changedBy(actingAgent.getAgentId())
+                .build());
+    }
+
+    private void completeRitmApproval(TicketMaster ritm, AgentMaster actingAgent, Long actorUserId,
+                                      Boolean actorIsAdmin) {
+        Long companyId = ritm.getCompany().getCompanyId();
+        StatusMaster approvedStatus = statusMasterRepository
+                .findFirstByCompany_CompanyIdAndSequenceNoAndIsActiveTrue(companyId, 2)
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Active RITM status with sequence 2")));
+        String previousStatus = ritm.getStatus() != null ? ritm.getStatus().getStatusCode() : null;
+        ritm.setStatus(approvedStatus);
+        ritm.setUpdatedBy(actingAgent.getAgentId());
+        ritm.setIsUpdaterAdmin(Boolean.TRUE.equals(actorIsAdmin));
+        ticketMasterRepository.saveAndFlush(ritm);
+        auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                .entityName("RitmMaster").entityId(ritm.getTicketId()).action("STATUS_UPDATE")
+                .oldValue("{\"status\":\"" + previousStatus + "\"}")
+                .newValue("{\"statusId\":" + approvedStatus.getStatusId()
+                        + ",\"status\":\"" + approvedStatus.getStatusCode() + "\"}")
+                .userId(actorUserId).companyId(companyId).status(SUCCESS).build());
+        ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                .ticket(ritm)
+                .actionType("APPROVAL")
+                .description("RITM approval completed; status changed from " + previousStatus
+                        + " to " + approvedStatus.getStatusCode())
+                .changedBy(actingAgent.getAgentId())
+                .build());
+    }
+
+    private void recordRitmApprovalAudit(TicketMaster ritm, ApprovalMaster approval, AgentMaster actingAgent,
                                          Long actorUserId, String oldStatus, String newStatus, String outcome,
                                          String action) {
         String oldValue = "{\"status\":\"" + oldStatus + "\"}";
@@ -629,8 +636,8 @@ public class ApprovalService {
                 .entityName("ApprovalMaster").entityId(approval.getApprovalId()).action(action)
                 .oldValue(oldValue).newValue(newValue).userId(actorUserId)
                 .companyId(ritm.getCompany().getCompanyId()).status(SUCCESS).build());
-        ritmAuditRepository.saveAndFlush(RitmAudit.builder()
-                .ritm(ritm)
+        ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                .ticket(ritm)
                 .actionType("APPROVAL")
                 .description("RITM approver " + actingAgent.getAgentId() + " changed approval status from "
                         + oldStatus + " to " + newStatus)

@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmFieldValueVO implements Serializable {
+public class TicketFieldValueVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private Long ritmFieldValueId;
-    private RitmMasterVO ritmId;
+    private Long ticketFieldValueId;
+    private TicketMasterVO ticketId;
     private TemplateFieldVO templateFieldId;
     private String fieldValue;
     private Boolean isActive;

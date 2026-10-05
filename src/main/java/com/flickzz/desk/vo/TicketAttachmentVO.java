@@ -12,13 +12,13 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmAttachmentVO implements Serializable {
+public class TicketAttachmentVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     private Long attachmentId;
 
-    private RitmMasterVO ritmId;
+    private TicketMasterVO ticketId;
 
     private String fileName;
 
