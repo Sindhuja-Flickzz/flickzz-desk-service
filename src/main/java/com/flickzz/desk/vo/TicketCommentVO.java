@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmCommentVO implements Serializable {
+public class TicketCommentVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private Long commentId;
-    private Long ritmId;
+    private Long ticketId;
     private String commentType;
     private String commentText;
     private Boolean isInternal;

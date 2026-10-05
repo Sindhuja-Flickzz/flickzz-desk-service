@@ -13,11 +13,11 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmMasterVO implements Serializable {
+public class TicketMasterVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private Long ritmId;
-    private String ritmNumber;
+    private Long ticketId;
+    private String ticketNumber;
     private CompanyMasterVO company;
     private AgentMasterVO requestedBy;
     private AgentMasterVO requestedFor;
@@ -26,17 +26,19 @@ public class RitmMasterVO implements Serializable {
     private BPSupportGroupVO supportGroup;
     private BPPriorityVO priority;
     private AgentMasterVO assignedTo;
-    private List<RitmAttachmentVO> ritmAttachments;
-    private List<RitmWatchlistVO> watchlist;
-    private List<RitmTemplateDetailVO> templateDetails;
-    private List<RitmCommentVO> comments;
-    private List<RitmAuditVO> audits;
+    private RequestTypeMasterVO requestType;
+    private List<TicketAttachmentVO> ritmAttachments;
+    private List<TicketWatchlistVO> watchlist;
+    private List<TicketTemplateDetailVO> templateDetails;
+    private List<TicketCommentVO> comments;
+    private List<TicketAuditVO> audits;
     private StatusMasterVO status;
     private LocalDateTime requestedAt;
     private LocalDateTime dueDate;
     private LocalDateTime resolvedAt;
     private LocalDateTime closedAt;
     private LocalDateTime cancelledAt;
+    private LocalDateTime customerResolution;
     private String actionReason;
     private Boolean isActive;
     private Long createdBy;

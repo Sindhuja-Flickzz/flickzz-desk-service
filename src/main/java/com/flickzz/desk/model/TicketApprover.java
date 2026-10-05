@@ -8,28 +8,28 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "FD_RITM_APPROVER")
+@Table(name = "FD_TICKET_APPROVER")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmApprover {
+public class TicketApprover {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritm_approver_seq"
+            generator = "ticket_approver_seq"
     )
     @SequenceGenerator(
-            name = "ritm_approver_seq",
-            sequenceName = "FD_RITM_APPROVER_SEQ",
+            name = "ticket_approver_seq",
+            sequenceName = "FD_TICKET_APPROVER_SEQ",
             allocationSize = 1
     )
-    @Column(name = "RITM_APPROVER_ID")
-    private Long ritmApproverId;
+    @Column(name = "TICKET_APPROVER_ID")
+    private Long ticketApproverId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritmId;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @Column(name = "IS_GROUP_APPROVER", nullable = false)
     private Boolean isGroupApprover = false;
@@ -45,14 +45,14 @@ public class RitmApprover {
     @Column(name = "APPROVER_SEQUENCE")
     private Integer approverSequence;
 
+    @OneToOne(mappedBy = "ticketApprover", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private TicketApproverRemark remark;
+
     @Column(name = "IS_MAIN_APPROVER", nullable = false)
     private Boolean isMainApprover = false;
 
     @Column(name = "APPROVAL_STATUS", nullable = false, length = 30)
     private String approvalStatus = "Pending";
-
-    @Column(name = "APPROVAL_REMARK", length = 2000)
-    private String approvalRemark;
 
     @Column(name = "APPROVED_ON")
     private LocalDateTime approvedOn;

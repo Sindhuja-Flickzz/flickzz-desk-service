@@ -1,25 +1,26 @@
 package com.flickzz.desk.repo;
 
-import com.flickzz.desk.model.RitmMaster;
+import com.flickzz.desk.model.TicketMaster;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface RitmMasterRepository extends JpaRepository<RitmMaster, Long> {
+public interface TicketMasterRepository extends JpaRepository<TicketMaster, Long> {
 
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
-    List<RitmMaster> findByCompanyCompanyId(Long orgId);
+    List<TicketMaster> findByCompanyCompanyId(Long orgId);
 
     @Override
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
-    java.util.Optional<RitmMaster> findById(Long ritmId);
+    Optional<TicketMaster> findById(Long ticketId);
 
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
-    List<RitmMaster> findByRequestedByAgentId(Long agentId);
+    List<TicketMaster> findByRequestedByAgentId(Long agentId);
 
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
-    List<RitmMaster> findByAssignedToAgentId(Long agentId);
+    List<TicketMaster> findByAssignedToAgentId(Long agentId);
 
     long countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(Long supportGroupId, Long statusId);
 
@@ -30,11 +31,11 @@ public interface RitmMasterRepository extends JpaRepository<RitmMaster, Long> {
     long countBySupportGroupSupportGroupIdAndAssignedToAgentIdAndIsActiveTrue(Long supportGroupId, Long agentId);
 
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
-    List<RitmMaster> findByAssignedToIsNullAndSupportGroupSupportGroupIdIn(List<Long> supportGroupIds);
+    List<TicketMaster> findByAssignedToIsNullAndSupportGroupSupportGroupIdIn(List<Long> supportGroupIds);
 
-    List<RitmMaster> findByAssignedToIsNullAndSupportGroupSupportGroupId(Long supportGroupId);
+    List<TicketMaster> findByAssignedToIsNullAndSupportGroupSupportGroupId(Long supportGroupId);
 
-    List<RitmMaster> findByStatusStatusIdAndSupportGroupSupportGroupId(Long statusId, Long supportGroupId);
+    List<TicketMaster> findByStatusStatusIdAndSupportGroupSupportGroupId(Long statusId, Long supportGroupId);
 
-    List<RitmMaster> findBySupportGroupSupportGroupIdAndStatusIsActiveFalse(Long supportGroupId);
+    List<TicketMaster> findBySupportGroupSupportGroupIdAndStatusIsActiveFalse(Long supportGroupId);
 }

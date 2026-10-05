@@ -97,7 +97,7 @@ public class BusinessPartnerService {
     @Autowired
     private EnquiryRegistrationRepository enquiryRegistrationRepository;
     @Autowired
-    private RitmMasterRepository ritmMasterRepository;
+    private TicketMasterRepository ticketMasterRepository;
     @Autowired
     private StatusMasterRepository statusMasterRepository;
 
@@ -1215,6 +1215,25 @@ public class BusinessPartnerService {
             throw e;
         } catch (Exception e) {
             log.error("Exception in getBusinessPartnerSLAConfigurationById method in BusinessPartnerService");
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public BPSlaVO getBusinessPartnerSLAConfigurationByPriorityId(Long priorityId) {
+
+        log.info(generateLog("getBusinessPartnerSLAConfigurationByPriorityId", this.getClass().getName()));
+        try {
+            Optional<BPSla> existingSla = bpSlaRepository.findByPriorityPriorityId(priorityId);
+
+            if (existingSla.isEmpty()) {
+                throw new FlickzzDeskException(DOES_NOT_EXIST, getDescription(DOES_NOT_EXIST.getDescription(), SLA));
+            }
+
+            return mapper.toBPSlaVo(existingSla.get());
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getBusinessPartnerSLAConfigurationByPriorityId method in BusinessPartnerService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }
@@ -2412,9 +2431,9 @@ public class BusinessPartnerService {
                             getDescription(DOES_NOT_EXIST.getDescription(), "Support group")));
 
             Long companyId = supportGroup.getConfiguration().getBusinessPartner().getCompany().getCompanyId();
-            long totalCountRitm = ritmMasterRepository
+            long totalCountRitm = ticketMasterRepository
                     .countBySupportGroupSupportGroupIdAndIsActiveTrue(supportGroupId);
-            long unassignedRitmCount = ritmMasterRepository
+            long unassignedRitmCount = ticketMasterRepository
                     .countBySupportGroupSupportGroupIdAndAssignedToIsNullAndIsActiveTrue(supportGroupId);
             List<StatusMaster> statuses = statusMasterRepository.findByCompanyCompanyIdAndWorkItemCodeOrderBySequenceNoAsc(companyId, RITM);
 
@@ -2423,7 +2442,7 @@ public class BusinessPartnerService {
 
             for (StatusMaster status : statuses) {
                 if (status.getIsActive()) {
-                    long count = ritmMasterRepository
+                    long count = ticketMasterRepository
                             .countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(
                                     supportGroupId,
                                     status.getStatusId());
@@ -2436,7 +2455,7 @@ public class BusinessPartnerService {
                                     .build()
                     );
                 } else {
-                    long count = ritmMasterRepository
+                    long count = ticketMasterRepository
                             .countBySupportGroupSupportGroupIdAndStatusStatusIdAndIsActiveTrue(
                                     supportGroupId,
                                     status.getStatusId());
@@ -2461,7 +2480,7 @@ public class BusinessPartnerService {
                     .map(member -> BPSupportGroupAgentInfoVO.builder()
                             .agentId(member.getAgent().getAgentId())
                             .agentName(member.getAgent().getAgentName())
-                            .ritmCount(ritmMasterRepository
+                            .ritmCount(ticketMasterRepository
                                     .countBySupportGroupSupportGroupIdAndAssignedToAgentIdAndIsActiveTrue(
                                             supportGroupId, member.getAgent().getAgentId()))
                             .build())

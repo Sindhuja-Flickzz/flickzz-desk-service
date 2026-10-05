@@ -11,10 +11,12 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmTemplateDetailVO implements Serializable {
+public class TicketAuditDetailVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    private Long fieldId;
+    private Long auditDetailId;
+    private TicketAuditVO audit;
     private String fieldName;
-    private String value;
+    private String oldValue;
+    private String newValue;
 }

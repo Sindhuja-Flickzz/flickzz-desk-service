@@ -34,6 +34,7 @@ public class RitmRequestVO implements Serializable {
     private Long assignedTo;
     private Long assignedBy;
     private Long status;
+    private LocalDateTime customerResolution;
     private LocalDateTime dueDate;
     private LocalDateTime resolvedAt;
     private LocalDateTime closedAt;
@@ -44,6 +45,7 @@ public class RitmRequestVO implements Serializable {
     private Boolean isCreatorAdmin;
     private Boolean isUpdaterAdmin;
     private String requestType;
+    private Long requestTypeId;
     private String location;
     private String availabilityTime;
     private String currentTime;

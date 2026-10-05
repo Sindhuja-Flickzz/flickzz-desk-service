@@ -12,11 +12,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RitmWatchlistVO implements Serializable {
+public class TicketWatchlistVO implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private Long watchlistId;
-    private RitmMasterVO ritm;
+    private TicketMasterVO ticket;
     private AgentMasterVO watchedBy;
     private Boolean isActive;
     private LocalDateTime createdAt;

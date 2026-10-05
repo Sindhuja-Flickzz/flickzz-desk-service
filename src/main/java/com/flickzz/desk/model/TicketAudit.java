@@ -15,25 +15,25 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "FD_RITM_AUDIT")
-public class RitmAudit {
+@Table(name = "FD_TICKET_AUDIT")
+public class TicketAudit {
 
     @Id
     @GeneratedValue(
             strategy = GenerationType.SEQUENCE,
-            generator = "ritmAuditSeq"
+            generator = "ticketAuditSeq"
     )
     @SequenceGenerator(
-            name = "ritmAuditSeq",
-            sequenceName = "FD_RITM_AUDIT_SEQ",
+            name = "ticketAuditSeq",
+            sequenceName = "FD_TICKET_AUDIT_SEQ",
             allocationSize = 1
     )
     @Column(name = "AUDIT_ID")
     private Long auditId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RITM_ID", nullable = false)
-    private RitmMaster ritm;
+    @JoinColumn(name = "TICKET_ID", nullable = false)
+    private TicketMaster ticket;
 
     @Column(name = "ACTION_TYPE", nullable = false, length = 50)
     private String actionType;
@@ -43,7 +43,7 @@ public class RitmAudit {
 
     @OneToMany(mappedBy = "audit", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonBackReference
-    private List<RitmAuditDetail> auditDetails;
+    private List<TicketAuditDetail> auditDetails;
 
     @Column(name = "CHANGED_BY", nullable = false)
     private Long changedBy;
