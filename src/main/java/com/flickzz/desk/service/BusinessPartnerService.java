@@ -3089,24 +3089,24 @@ public class BusinessPartnerService {
         }
     }
 
-    public List<ApprovalMasterVO> getBusinessPartnerApprovalList(Long userId) {
-        log.info(generateLog(ENTRY, this.getClass().getName()));
-        try {
-            if (userId == null) {
-                throw new FlickzzDeskException(INVALID_FIELD,
-                        getDescription(INVALID_FIELD.getDescription(), "User ID"));
-            }
-
-            List<ApprovalMaster> approvals = approvalRepository.findByApproverUserId(userId);
-            log.info(generateLog(EXIT, this.getClass().getName()));
-            return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
-        } catch (FlickzzDeskException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
-            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
-        }
-    }
+//    public List<ApprovalMasterVO> getBusinessPartnerApprovalList(Long userId) {
+//        log.info(generateLog(ENTRY, this.getClass().getName()));
+//        try {
+//            if (userId == null) {
+//                throw new FlickzzDeskException(INVALID_FIELD,
+//                        getDescription(INVALID_FIELD.getDescription(), "User ID"));
+//            }
+//
+//            List<ApprovalMaster> approvals = approvalRepository.findByApproverUserId(userId);
+//            log.info(generateLog(EXIT, this.getClass().getName()));
+//            return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
+//        } catch (FlickzzDeskException e) {
+//            throw e;
+//        } catch (Exception e) {
+//            log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
+//            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+//        }
+//    }
 
     public ApprovalMasterVO actionOnConfigApproval(BpConfigRequestVO request) {
         log.info(generateLog(ENTRY, this.getClass().getName()));

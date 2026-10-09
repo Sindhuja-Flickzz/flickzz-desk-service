@@ -219,6 +219,7 @@ public class TicketService {
                     .forEach(entry -> groupSequences.put(entry.getAgent().getAgentId(), entry.getApproverSequence()));
         }
         List<TicketApprover> approvers = new ArrayList<>();
+        List<TicketApproverRemark> remarks = new ArrayList<>();
         for (int index = 0; index < targets.size(); index++) {
             AgentMaster agent = targets.get(index);
             int sequence = config == null ? index + 1 : groupSequences.getOrDefault(agent.getAgentId(), index + 1);
@@ -238,17 +239,19 @@ public class TicketService {
             remark.setRemarkType(CREATE);
             remark.setRemark(request.getReason());
             remark.setCreatedBy(request.getAssignedBy());
-            approver.setRemark(remark);
+            remarks.add(remark);
             approvers.add(approver);
         }
         List<TicketApprover> savedApprovers = ticketApproverRepository.saveAllAndFlush(approvers);
+        ticketApproverRemarkRepository.saveAllAndFlush(remarks);
+        remarks.forEach(remark -> remark.getTicketApprover().setRemark(List.of(remark)));
         List<ApprovalMaster> approvals = savedApprovers.stream()
                 .filter(approver -> !firstLevelOnly || Objects.equals(approver.getApproverSequence(), 1))
                 .map(approver -> ApprovalMaster.builder()
                         .requestId(approver.getTicketApproverId())
                         .requestType(RITM_REQUEST_TYPE)
                         .approvalType(DRAFTED)
-                        .description(limitApprovalDescription(approver.getRemark().getRemark(), ritm))
+                        .description(limitApprovalDescription(request.getReason(), ritm))
                         .approverType(Boolean.TRUE.equals(approver.getIsGroupApprover()) ? "GROUP" : "INDIVIDUAL")
                         .approverLevel(approver.getApproverSequence())
                         .approverUserId(approver.getApproverAgent().getUser().getUserId())

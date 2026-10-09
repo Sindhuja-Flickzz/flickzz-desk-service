@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface TicketApproverRepository extends JpaRepository<TicketApprover, Long> {
 
+    List<TicketApprover> findByTicket_TicketId(Long ticketId);
+
     List<TicketApprover> findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(Long ticketId);
 }
