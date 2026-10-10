@@ -3,7 +3,9 @@ package com.flickzz.desk.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 
@@ -35,6 +37,8 @@ public class TicketApproverRemark {
                     name = "FK_RITM_APPROVER_REMARK_APPROVER"
             )
     )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private TicketApprover ticketApprover;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,6 +49,8 @@ public class TicketApproverRemark {
                     name = "FK_TICKET_APPROVER_REMARK_TICKET"
             )
     )
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private TicketMaster ticket;
 
     @Column(

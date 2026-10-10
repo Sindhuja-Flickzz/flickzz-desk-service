@@ -25,9 +25,11 @@ public class TicketApproverVO implements Serializable {
 
     private TicketMasterVO ticket;
 
+    private String ticketNumber;
+
     private Boolean isGroupApprover;
 
-    private TicketApproverRemarkVO remark;
+    private List<TicketApproverRemarkVO> remark;
 
     private RequestApproverConfigVO approverConfig;
 

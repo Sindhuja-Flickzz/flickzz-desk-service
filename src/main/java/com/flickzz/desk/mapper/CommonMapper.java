@@ -1216,12 +1216,14 @@ public class CommonMapper {
                 .requestId(approver.getTicket() != null ? approver.getTicket().getTicketId() : null)
                 .requestType("RITM")
                 .isGroupApprover(approver.getIsGroupApprover())
+                .ticketNumber(approver.getTicket().getTicketNumber())
                 .approverConfig(toRequestApproverConfigVo(approver.getApproverConfig()))
                 .approverAgent(toApproverAgentVO(approver.getApproverAgent()))
                 .approverSequence(approver.getApproverSequence())
                 .isMainApprover(approver.getIsMainApprover())
                 .approvalStatus(approver.getApprovalStatus())
-                .remark(toTicketApproverRemarkVO(approver.getRemark()))
+                .remark(approver.getRemark() == null ? List.of()
+                        : approver.getRemark().stream().map(this::toTicketApproverRemarkVO).toList())
                 .approvedOn(approver.getApprovedOn())
                 .createdBy(approver.getCreatedBy())
                 .createdOn(approver.getCreatedOn())
@@ -1257,6 +1259,7 @@ public class CommonMapper {
         return TicketApproverRemarkVO.builder()
                 .remarkId(remark.getRemarkId())
                 .remark(remark.getRemark())
+                .remarkType(remark.getRemarkType())
                 .build();
     }
 
@@ -1305,6 +1308,7 @@ public class CommonMapper {
                 .ritmAttachments(savedRitm.getAttachment() != null
                         ? savedRitm.getAttachment().stream().map(this::toRitmAttachmentVO).toList()
                         : null)
+                .workItem(toWorkItemVO(savedRitm.getWorkItem()))
                 .comments(null)
                 .audits(null)
                 .status(toRitmStatusVO(savedRitm.getStatus()))
@@ -1410,6 +1414,13 @@ public class CommonMapper {
                 .deletedBy(ticketAttachment.getDeletedBy())
                 .deletedAt(ticketAttachment.getDeletedAt())
                 .build();
+    }
+
+    public WorkItemVO toWorkItemVO(WorkItem workItem) {
+        if (workItem == null) {
+            return null;
+        }
+        return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel()).build();
     }
 
     private StatusMasterVO toRitmStatusVO(StatusMaster status) {
@@ -1577,13 +1588,6 @@ public class CommonMapper {
                 .updatedAt(status.getUpdatedAt())
                 .requestType(status.getWorkItem() != null ? status.getWorkItem().getCode() : null)
                 .build();
-    }
-
-    public WorkItemVO toWorkItemVO(WorkItem workItem) {
-        if (workItem == null) {
-            return null;
-        }
-        return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel()).build();
     }
 
     private StatusVisibilityVO toStatusVisibilityVO(StatusVisibility statusVisibility) {

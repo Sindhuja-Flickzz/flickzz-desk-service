@@ -219,6 +219,7 @@ public class TicketService {
                     .forEach(entry -> groupSequences.put(entry.getAgent().getAgentId(), entry.getApproverSequence()));
         }
         List<TicketApprover> approvers = new ArrayList<>();
+        List<TicketApproverRemark> remarks = new ArrayList<>();
         for (int index = 0; index < targets.size(); index++) {
             AgentMaster agent = targets.get(index);
             int sequence = config == null ? index + 1 : groupSequences.getOrDefault(agent.getAgentId(), index + 1);
@@ -238,17 +239,19 @@ public class TicketService {
             remark.setRemarkType(CREATE);
             remark.setRemark(request.getReason());
             remark.setCreatedBy(request.getAssignedBy());
-            approver.setRemark(remark);
+            remarks.add(remark);
             approvers.add(approver);
         }
         List<TicketApprover> savedApprovers = ticketApproverRepository.saveAllAndFlush(approvers);
+        ticketApproverRemarkRepository.saveAllAndFlush(remarks);
+        remarks.forEach(remark -> remark.getTicketApprover().setRemark(List.of(remark)));
         List<ApprovalMaster> approvals = savedApprovers.stream()
                 .filter(approver -> !firstLevelOnly || Objects.equals(approver.getApproverSequence(), 1))
                 .map(approver -> ApprovalMaster.builder()
                         .requestId(approver.getTicketApproverId())
                         .requestType(RITM_REQUEST_TYPE)
                         .approvalType(DRAFTED)
-                        .description(limitApprovalDescription(approver.getRemark().getRemark(), ritm))
+                        .description(limitApprovalDescription(request.getReason(), ritm))
                         .approverType(Boolean.TRUE.equals(approver.getIsGroupApprover()) ? "GROUP" : "INDIVIDUAL")
                         .approverLevel(approver.getApproverSequence())
                         .approverUserId(approver.getApproverAgent().getUser().getUserId())
@@ -534,6 +537,22 @@ public class TicketService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Company with ID " + ritmVO.getOrgId())));
 
+            boolean isRitmSubtask = "RITM_SUBTASK".equalsIgnoreCase(ritmVO.getRequestType());
+            TicketMaster parentRitm = null;
+            if (isRitmSubtask) {
+                if (ritmVO.getParentRitmId() == null) {
+                    throw new FlickzzDeskException(INVALID_REQUEST,
+                            getDescription(INVALID_REQUEST.getDescription(), "Parent RITM ID is required for an RITM subtask"));
+                }
+                parentRitm = ticketMasterRepository.findById(ritmVO.getParentRitmId())
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Parent RITM with ID " + ritmVO.getParentRitmId())));
+                if (!Objects.equals(parentRitm.getCompany().getCompanyId(), ritmVO.getOrgId())) {
+                    throw new FlickzzDeskException(INVALID_REQUEST,
+                            getDescription(INVALID_REQUEST.getDescription(), "Parent RITM belongs to a different organization"));
+                }
+            }
+
             Long openedById = ritmVO.getOpenedBy() != null ? ritmVO.getOpenedBy() : ritmVO.getCreatedBy();
             if (openedById == null) {
                 throw new FlickzzDeskException(INVALID_REQUEST,
@@ -543,13 +562,18 @@ public class TicketService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Agent with ID " + openedById)));
 
-            if (ritmVO.getRequestedFor() == null) {
+            Long requestedForId = ritmVO.getRequestedFor();
+            if (requestedForId == null && parentRitm != null && parentRitm.getRequestedFor() != null) {
+                requestedForId = parentRitm.getRequestedFor().getAgentId();
+            }
+            Long resolvedRequestedForId = requestedForId;
+            if (resolvedRequestedForId == null) {
                 throw new FlickzzDeskException(INVALID_REQUEST,
                         getDescription(INVALID_REQUEST.getDescription(), "Requested for is required"));
             }
-            AgentMaster requestedFor = agentMasterRepository.findById(ritmVO.getRequestedFor())
+            AgentMaster requestedFor = agentMasterRepository.findById(resolvedRequestedForId)
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                            getDescription(DOES_NOT_EXIST.getDescription(), "Agent with ID " + ritmVO.getRequestedFor())));
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Agent with ID " + resolvedRequestedForId)));
 
             Long supportGroupId = ritmVO.getAssignmentGroup() != null ? ritmVO.getAssignmentGroup() : ritmVO.getSupportGroup();
             if (supportGroupId == null) {
@@ -602,7 +626,10 @@ public class TicketService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Work item with code " + ritmVO.getRequestType() + " does not exist")));
 
-            String ritmNumber = generateFreshRitmNumber(ritmVO.getOrgId(), ritmVO.getRitmNumber());
+            String ticketNumber = generateFreshRitmNumber(ritmVO.getOrgId(), ritmVO.getRequestType(), ritmVO.getRitmNumber());
+            AgentMaster assignedTo = ritmVO.getAssignedTo() == null ? null : agentMasterRepository.findById(ritmVO.getAssignedTo())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Agent with ID " + ritmVO.getAssignedTo())));
             Long createdBy = ritmVO.getCreatedBy() != null ? ritmVO.getCreatedBy() : openedById;
             Long updatedBy = ritmVO.getUpdatedBy() != null ? ritmVO.getUpdatedBy() : createdBy;
             StatusMaster status = statusMasterRepository.findFirstByCompanyCompanyIdAndIsActiveTrueOrderBySequenceNoAsc(ritmVO.getOrgId())
@@ -611,10 +638,11 @@ public class TicketService {
             LocalDateTime customerResolutionDate = calculateCustomerResolutionDate(priority.getPriorityId(), LocalDateTime.now());
 
             TicketMaster ritm = TicketMaster.builder()
-                    .ticketNumber(ritmNumber)
+                    .ticketNumber(ticketNumber)
                     .company(company)
                     .requestedBy(openedBy)
                     .requestedFor(requestedFor)
+                    .assignedTo(assignedTo)
                     .category(category)
                     .subCategory(subCategory)
                     .supportGroup(supportGroup)
@@ -622,6 +650,7 @@ public class TicketService {
                     .priority(priority)
                     .workItem(workItem)
                     .status(status)
+                    .ticketReference(parentRitm)
                     .requestedAt(LocalDateTime.now())
                     .customerResolutionDate(customerResolutionDate != null ? customerResolutionDate : ritmVO.getCustomerResolution())
                     .dueDate(ritmVO.getDueDate())
@@ -697,24 +726,25 @@ public class TicketService {
         }
     }
 
-    private String generateFreshRitmNumber(Long orgId, String providedRitmNumber) {
+    private String generateFreshRitmNumber(Long orgId, String requestType, String providedRitmNumber) {
         if (providedRitmNumber != null && !providedRitmNumber.isBlank()) {
-            log.info("Ignoring provided RITM number {} and generating a fresh sequence number for org {}", providedRitmNumber, orgId);
+            log.info("Ignoring provided {} number {} and generating a fresh sequence number for org {}",
+                    requestType, providedRitmNumber, orgId);
         }
 
-        RequestConfig requestConfig = requestConfigRepository.findByRequestTypeAndCompany_CompanyIdAndIsActiveTrueAndIsEnabledTrue(RITM_REQUEST_TYPE, orgId)
+        RequestConfig requestConfig = requestConfigRepository.findByRequestTypeAndCompany_CompanyIdAndIsActiveTrueAndIsEnabledTrue(requestType, orgId)
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                        getDescription(DOES_NOT_EXIST.getDescription(), "Request config for RITM in org " + orgId)));
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Request config for " + requestType + " in org " + orgId)));
 
         if (!Boolean.TRUE.equals(requestConfig.getIsActive()) || !Boolean.TRUE.equals(requestConfig.getIsEnabled())) {
             throw new FlickzzDeskException(INACTIVE_ERROR,
-                    getDescription(INACTIVE_ERROR.getDescription(), "RITM request config is disabled"));
+                    getDescription(INACTIVE_ERROR.getDescription(), requestType + " request config is disabled"));
         }
 
         Integer nextRange = requestConfig.getCurrentRange() == null ? requestConfig.getRangeFrom() : requestConfig.getCurrentRange() + 1;
         if (nextRange > requestConfig.getRangeTo() || nextRange < requestConfig.getRangeFrom()) {
             throw new FlickzzDeskException(INVALID_REQUEST,
-                    getDescription(INVALID_REQUEST.getDescription(), "No available RITM number range is left"));
+                    getDescription(INVALID_REQUEST.getDescription(), "No available " + requestType + " number range is left"));
         }
 
         requestConfig.setCurrentRange(nextRange);
@@ -1378,6 +1408,26 @@ public class TicketService {
             return ticketMasterRepository.findByCompanyCompanyId(orgId).stream().map(ritm -> mapper.toRitmMasterVo(ritm)).toList();
         } catch (Exception e) {
             log.error("Error occurred while fetching RITM list for organization: {}", orgId, e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public List<TicketMasterVO> getTicketsByReferenceId(Long ticketReferenceId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        try {
+            if (ticketReferenceId == null || ticketReferenceId <= 0) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "Ticket reference ID is required and must be valid"));
+            }
+
+            return ticketMasterRepository.findByTicketReferenceTicketId(ticketReferenceId)
+                    .stream()
+                    .map(mapper::toRitmMasterVo)
+                    .toList();
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getTicketsByReferenceId method in TicketService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

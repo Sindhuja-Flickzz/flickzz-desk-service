@@ -137,6 +137,18 @@ public class TicketController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
     }
 
+    @GetMapping("/reference/{ticketReferenceId}")
+    public ResponseEntity<FlickzzDeskResponse> getTicketsByReferenceId(
+            @PathVariable("ticketReferenceId") Long ticketReferenceId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<TicketMasterVO> tickets = ticketService.getTicketsByReferenceId(ticketReferenceId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "tickets"), tickets);
+    }
+
     @GetMapping({"/agent/{agentId}/{requestType}"})
     public ResponseEntity<FlickzzDeskResponse> getRitmByAgentAndRequestType(@PathVariable("agentId") Long agentId,
                                                                             @PathVariable("requestType") String requestType) {

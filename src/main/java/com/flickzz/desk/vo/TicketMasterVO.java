@@ -27,6 +27,8 @@ public class TicketMasterVO implements Serializable {
     private BPPriorityVO priority;
     private AgentMasterVO assignedTo;
     private RequestTypeMasterVO requestType;
+    private TicketMasterVO ticketReference;
+    private WorkItemVO workItem;
     private List<TicketAttachmentVO> ritmAttachments;
     private List<TicketWatchlistVO> watchlist;
     private List<TicketTemplateDetailVO> templateDetails;

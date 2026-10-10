@@ -170,6 +170,38 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void notifyRitmApprovalDeclined(TicketMaster ritm, Long actorId, Boolean isActorAdmin,
+                                          List<AgentMaster> recipients) {
+        if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        Set<Long> sent = new HashSet<>();
+        for (AgentMaster recipient : recipients) {
+            if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
+            saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval declined",
+                    "An approver declined RITM " + ritm.getTicketNumber()
+                            + "; your approval is no longer required.",
+                    "DELETE", true);
+        }
+    }
+
+    @Transactional
+    public void notifyRitmApprovalClarification(TicketMaster ritm, Long actorId, Boolean isActorAdmin,
+                                               List<AgentMaster> recipients, String remarks) {
+        if (ritm == null || actorId == null || recipients == null || recipients.isEmpty()) return;
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        String message = actorName + " requested clarification for RITM " + ritm.getTicketNumber() + ".";
+        if (remarks != null && !remarks.isBlank()) {
+            message += " Remarks: " + remarks;
+        }
+        Set<Long> sent = new HashSet<>();
+        for (AgentMaster recipient : recipients) {
+            if (recipient == null || recipient.getAgentId() == null || !sent.add(recipient.getAgentId())) continue;
+            saveRitmNotification(ritm, recipient, actorId, actorName, "RITM approval clarification",
+                    message, "CLARIFY", true);
+        }
+    }
+
     @Async
     @Transactional
     public void notifyConfigChange(BPConfigurationChangeRequest changeRequest, String changeType) {

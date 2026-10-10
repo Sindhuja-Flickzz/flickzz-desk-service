@@ -63,6 +63,8 @@ public class ApprovalService {
     @Autowired
     TicketApproverRepository ticketApproverRepository;
     @Autowired
+    TicketApproverRemarkRepository ticketApproverRemarkRepository;
+    @Autowired
     TicketMasterRepository ticketMasterRepository;
     @Autowired
     StatusMasterRepository statusMasterRepository;
@@ -79,7 +81,7 @@ public class ApprovalService {
                         getDescription(INVALID_FIELD.getDescription(), "User ID"));
             }
 
-            List<ApprovalMaster> approvals = approvalRepository.findByApproverUserId(userId);
+            List<ApprovalMaster> approvals = approvalRepository.findByApproverUserIdAndActiveTrue(userId);
             log.info(generateLog(EXIT, this.getClass().getName()));
             return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
         } catch (FlickzzDeskException e) {
@@ -119,11 +121,11 @@ public class ApprovalService {
 
             CompanyApprover companyApprover = approver.get();
             if (companyApprover.getIsActive() == null || !companyApprover.getIsActive()) {
-                throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
+                throw new FlickzzDeskException(INVALID_FIELD, "Your privilege to approve change request is not valid");
             }
 
             if (companyApprover.getLevel() == null || companyApprover.getLevel() <= 0) {
-                throw new FlickzzDeskException(INVALID_FIELD, "Your previlege to approve change request is not valid");
+                throw new FlickzzDeskException(INVALID_FIELD, "Your privilege to approve change request is not valid");
             }
 
             BPConfigurationChangeRequest changeRequest = bpConfigurationChangeRequestRepository.findById(approval.getRequestId()).orElse(null);
@@ -207,6 +209,7 @@ public class ApprovalService {
         LocalDateTime now = LocalDateTime.now();
         approval.setStatus(approvalStatus);
         approval.setUpdatedBy(request.getUpdatedBy());
+        approval.setDescription(request.getRemarks() != null ? request.getRemarks() : approval.getDescription());
         approval.setUpdatedOn(now);
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
             approval.setApprovedOn(now);
@@ -216,11 +219,24 @@ public class ApprovalService {
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
             ticketApprover.setApprovedOn(now);
         }
+        updateRitmApprovalRemark(ticketApprover, ritm, request, now);
         approvalRepository.saveAndFlush(approval);
         ticketApproverRepository.saveAndFlush(ticketApprover);
 
         boolean completed = false;
-        if (APPROVE.equalsIgnoreCase(request.getAction())) {
+        if (DECLINE.equalsIgnoreCase(request.getAction())) {
+            deactivateAllRitmApprovals(ritm, actingAgent, request);
+            completed = true;
+        } else if (REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction())) {
+            List<AgentMaster> otherApprovers = ticketApproverRepository
+                    .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId()).stream()
+                    .filter(value -> value.getApproverAgent() != null && value.getApproverAgent().getUser() != null
+                            && !Objects.equals(value.getApproverAgent().getUser().getUserId(), request.getUpdatedBy()))
+                    .map(value -> value.getApproverAgent())
+                    .toList();
+            notificationService.notifyRitmApprovalClarification(ritm, request.getUpdatedBy(),
+                    request.getIsUpdatedByAdmin(), otherApprovers, request.getRemarks());
+        } else if (APPROVE.equalsIgnoreCase(request.getAction())) {
             RequestApproverConfig config = ticketApprover.getApproverConfig();
             if (config != null) {
                 if (Boolean.TRUE.equals(config.getFollowSequence())) {
@@ -255,8 +271,11 @@ public class ApprovalService {
             }
         }
 
+        String outcome = DECLINE.equalsIgnoreCase(request.getAction()) ? "DECLINED"
+                : REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction()) ? "CLARIFICATION_REQUESTED"
+                : completed ? "COMPLETED" : "UPDATED";
         recordRitmApprovalAudit(ritm, approval, actingAgent, request.getUpdatedBy(), previousApprovalStatus,
-                approvalStatus, completed ? "COMPLETED" : "UPDATED", request.getAction());
+                approvalStatus, outcome, request.getAction());
         return mapper.toConfigChangeApprovalVO(approval);
     }
 
@@ -496,6 +515,73 @@ public class ApprovalService {
         if (DECLINE.equalsIgnoreCase(action)) return DECLINED;
         if (REQUEST_CLARIFICATION.equalsIgnoreCase(action)) return REQUEST_CLARIFICATION;
         return REQUEST_CLARIFICATION;
+    }
+
+    private void updateRitmApprovalRemark(TicketApprover ticketApprover, TicketMaster ritm,
+                                          BpConfigRequestVO request, LocalDateTime now) {
+        TicketApproverRemark remark = new TicketApproverRemark();
+        remark.setTicketApprover(ticketApprover);
+        remark.setTicket(ritm);
+        remark.setRemarkType(request.getAction().equalsIgnoreCase(APPROVE) ? APPROVED : DECLINED);
+        remark.setRemark(request.getRemarks() != null ? request.getRemarks() : "");
+        remark.setCreatedBy(request.getUpdatedBy());
+        remark.setCreatedOn(now);
+        remark.setIsActive(true);
+        ticketApproverRemarkRepository.saveAndFlush(remark);
+    }
+
+    private void deactivateAllRitmApprovals(TicketMaster ritm, AgentMaster actingAgent,
+                                            BpConfigRequestVO request) {
+        List<TicketApprover> allApprovers = ticketApproverRepository.findByTicket_TicketId(ritm.getTicketId());
+        List<TicketApprover> activeApprovers = allApprovers.stream()
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .toList();
+        LocalDateTime now = LocalDateTime.now();
+
+        activeApprovers.forEach(value -> {
+            String oldValue = "{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":true}";
+            value.setIsActive(false);
+            value.setUpdatedBy(actingAgent.getAgentId());
+            value.setUpdatedOn(now);
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                    .entityName("RitmApprover").entityId(value.getTicketApproverId()).action("DELETE")
+                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getApprovalStatus() + "\",\"active\":false}")
+                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId())
+                    .status(SUCCESS).build());
+        });
+        ticketApproverRepository.saveAllAndFlush(activeApprovers);
+
+        List<Long> approverIds = allApprovers.stream().map(value -> value.getTicketApproverId()).toList();
+        List<ApprovalMaster> activeApprovalRecords = approvalRepository
+                .findByRequestTypeAndRequestIdIn("RITM", approverIds).stream()
+                .filter(value -> Boolean.TRUE.equals(value.getActive()))
+                .toList();
+        activeApprovalRecords.forEach(value -> {
+            String oldValue = "{\"status\":\"" + value.getStatus() + "\",\"active\":true}";
+            value.setActive(false);
+            value.setUpdatedBy(request.getUpdatedBy());
+            value.setUpdatedOn(now);
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("RITM Approval")
+                    .entityName("ApprovalMaster").entityId(value.getApprovalId()).action("DELETE")
+                    .oldValue(oldValue).newValue("{\"status\":\"" + value.getStatus() + "\",\"active\":false}")
+                    .userId(request.getUpdatedBy()).companyId(ritm.getCompany().getCompanyId())
+                    .status(SUCCESS).build());
+        });
+        approvalRepository.saveAllAndFlush(activeApprovalRecords);
+
+        List<AgentMaster> otherApprovers = activeApprovers.stream()
+                .filter(value -> value.getApproverAgent() != null && value.getApproverAgent().getUser() != null
+                        && !Objects.equals(value.getApproverAgent().getUser().getUserId(), request.getUpdatedBy()))
+                .map(value -> value.getApproverAgent())
+                .toList();
+        notificationService.notifyRitmApprovalDeclined(ritm, request.getUpdatedBy(),
+                request.getIsUpdatedByAdmin(), otherApprovers);
+        ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                .ticket(ritm)
+                .actionType("APPROVAL_CANCEL")
+                .description("All RITM approvals were cancelled after an approver declined")
+                .changedBy(actingAgent.getAgentId())
+                .build());
     }
 
     private boolean advanceRitmApprovalSequence(TicketMaster ritm, TicketApprover currentApprover,

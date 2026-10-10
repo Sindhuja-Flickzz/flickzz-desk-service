@@ -19,6 +19,7 @@ public class RitmRequestVO implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long ritmId;
     private String ritmNumber;
+    private Long parentRitmId;
     private Long orgId;
     private Long openedBy;
     private Long requestedFor;

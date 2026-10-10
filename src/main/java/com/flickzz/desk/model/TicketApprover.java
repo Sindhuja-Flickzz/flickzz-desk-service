@@ -3,9 +3,12 @@ package com.flickzz.desk.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "FD_TICKET_APPROVER")
@@ -29,6 +32,8 @@ public class TicketApprover {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TICKET_ID", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private TicketMaster ticket;
 
     @Column(name = "IS_GROUP_APPROVER", nullable = false)
@@ -36,17 +41,23 @@ public class TicketApprover {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "APPROVER_CONFIG_ID")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private RequestApproverConfig approverConfig;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "APPROVER_AGENT_ID", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private AgentMaster approverAgent;
 
     @Column(name = "APPROVER_SEQUENCE")
     private Integer approverSequence;
 
-    @OneToOne(mappedBy = "ticketApprover", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private TicketApproverRemark remark;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "ticketApprover")
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<TicketApproverRemark> remark;
 
     @Column(name = "IS_MAIN_APPROVER", nullable = false)
     private Boolean isMainApprover = false;

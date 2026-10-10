@@ -106,6 +106,10 @@ public class TicketMaster {
     @JoinColumn(name = "REQUEST_TYPE_ID", nullable = false)
     private RequestTypeMaster requestType;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TICKET_REFERENCE_ID")
+    private TicketMaster ticketReference;
+
     @Column(name = "REQUESTED_AT")
     private LocalDateTime requestedAt;
 
