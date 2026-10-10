@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.*;
+import static com.flickzz.desk.config.FlickzzDeskConstants.ENTRY;
+import static com.flickzz.desk.config.FlickzzDeskConstants.EXIT;
 import static com.flickzz.desk.config.FlickzzDeskResponseHandler.handleSuccessResponse;
 import static com.flickzz.desk.config.FlickzzDeskSuccessCodes.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
@@ -119,11 +120,11 @@ public class TemplateController {
                 getDescription(UPDATE_SUCCESS.getDescription(), "Template Field Default Value"));
     }
 
-    @GetMapping("/details/RITM/{orgId}")
-    public ResponseEntity<FlickzzDeskResponse> listRITMDefaultTemplates(@PathVariable Long orgId) {
+    @GetMapping("/details/{requestType}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> listRITMDefaultTemplates(@PathVariable Long orgId, @PathVariable String requestType) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
-        List<TemplateVO> fields = templateDetailsService.listRITMDefaultTemplates(RITM, orgId);
+        List<TemplateVO> fields = templateDetailsService.listRITMDefaultTemplates(requestType, orgId);
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS,
