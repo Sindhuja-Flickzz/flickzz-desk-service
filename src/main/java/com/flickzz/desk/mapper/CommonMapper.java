@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -702,7 +703,10 @@ public class CommonMapper {
         return TemplateVO.builder().templateId(entity.getTemplateId()).templateName(entity.getTemplateName())
                 .workItemId(entity.getWorkItem().getItemId())
                 .templateDetails(entity.getFields() != null
-                        ? entity.getFields().stream().map(this::toTemplateDetailFieldVO).toList()
+                        ? entity.getFields().stream()
+                        .filter(field -> Boolean.TRUE.equals(field.getIsActive()))
+                        .sorted(Comparator.comparing(TemplateField::getFieldSequence))
+                        .map(this::toTemplateDetailFieldVO).toList()
                         : null)
                 .isActive(entity.getIsActive()).createdBy(entity.getCreatedBy())
                 .isCreatedByAdmin(entity.getIsCreatorAdmin()).isUpdatedByAdmin(entity.getIsUpdaterAdmin())
@@ -717,8 +721,11 @@ public class CommonMapper {
                 .fieldTypeId(field.getFieldType().getTypeId()).mandatory(field.getMandatory())
                 .fieldSequence(field.getFieldSequence()).isActive(field.getIsActive())
                 .defaultValue(field.getDefaultValue()).isEditable(field.isEditable())
+                .showInInfoPage(field.getShowInInfoPage())
                 .options(field.getOptions() != null
-                        ? field.getOptions().stream().map(this::toTemplateFieldOptionVO).toList()
+                        ? field.getOptions().stream()
+                        .filter(option -> Boolean.TRUE.equals(option.getIsActive()))
+                        .map(this::toTemplateFieldOptionVO).toList()
                         : null)
                 .build();
     }
@@ -1302,6 +1309,7 @@ public class CommonMapper {
                         ? savedRitm.getFieldValues().stream().filter(value -> Boolean.TRUE.equals(value.getIsActive()))
                         .map(value -> TicketTemplateDetailVO.builder()
                                 .fieldId(value.getTemplateField().getFieldId()).fieldName(value.getTemplateField().getFieldName())
+                                .showInInfoPage(value.getTemplateField().getShowInInfoPage())
                                 .value(value.getFieldValue())
                                 .build()).toList()
                         : null)

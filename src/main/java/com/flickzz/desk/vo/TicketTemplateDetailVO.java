@@ -16,5 +16,6 @@ public class TicketTemplateDetailVO implements Serializable {
     private static final long serialVersionUID = 1L;
     private Long fieldId;
     private String fieldName;
+    private Boolean showInInfoPage;
     private String value;
 }

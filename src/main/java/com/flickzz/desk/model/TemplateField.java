@@ -47,6 +47,10 @@ public class TemplateField {
     @Column(name = "MANDATORY", nullable = false)
     private Boolean mandatory;
 
+    @Builder.Default
+    @Column(name = "SHOW_IN_INFO_PAGE", nullable = false)
+    private Boolean showInInfoPage = false;
+
     @Column(name = "FIELD_SEQUENCE", nullable = false)
     private Integer fieldSequence;
 
