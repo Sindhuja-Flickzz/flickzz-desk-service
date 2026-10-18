@@ -148,6 +148,7 @@ public class CommonMapper {
         vo.setAgentName(agent.getAgentName());
         vo.setMailId(agent.getMailId());
         vo.setAccessId(agent.getAccessId());
+        vo.setDailyCapacity(agent.getDailyCapacity());
         vo.setOrganization(toCompanyMasterVO(agent.getOrganization()));
         vo.setCalendar(toCalendarMasterVO(agent.getCalendarMaster()));
         vo.setPhoneCode(agent.getUser().getPhoneCode());

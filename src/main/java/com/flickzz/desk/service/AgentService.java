@@ -199,6 +199,7 @@ public class AgentService {
             AgentMaster agent = AgentMaster.builder().agentName(request.getAgentName()).mailId(request.getMailId())
                     .accessId(request.getAccessId()).organization(company.get()).calendarMaster(calendar.get())
                     .createdBy(request.getCreatedBy()).isCreatorAdmin(request.getIsCreatedByAdmin()).user(newUser)
+                    .dailyCapacity(request.getDailyCapacity())
                     .build();
             AgentMaster agentMaster = agentMasterRepository.save(agent);
 
@@ -308,6 +309,7 @@ public class AgentService {
             agent.setCalendarMaster(calendar.get());
             agent.setUpdatedBy(request.getUpdatedBy());
             agent.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+            agent.setDailyCapacity(request.getDailyCapacity());
             agentMasterRepository.save(agent);
 
             User user = agent.getUser();
