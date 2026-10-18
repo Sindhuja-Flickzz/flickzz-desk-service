@@ -23,6 +23,7 @@ public class TemplateFieldVO implements Serializable {
     private String description;
     private Long fieldTypeId;
     private Boolean mandatory;
+    private Boolean showInInfoPage;
     private Integer fieldSequence;
     private Boolean isActive;
     private List<TemplateFieldOptionVO> options;

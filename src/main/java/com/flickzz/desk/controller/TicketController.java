@@ -242,6 +242,18 @@ public class TicketController {
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM audit history"), audits);
     }
 
+    @GetMapping("/audit/history/{companyId}")
+    public ResponseEntity<FlickzzDeskResponse> getTicketAuditHistoryByCompanyId(
+            @PathVariable Long companyId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+
+        List<TicketAuditHistoryVO> response = ticketService.getTicketAuditHistoryByCompanyId(companyId);
+
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "ticket audit history"), response);
+    }
+
     @GetMapping("/unassigned/{supportGroupId}")
     public ResponseEntity<FlickzzDeskResponse> getUnassignedRitms(@PathVariable Long supportGroupId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));

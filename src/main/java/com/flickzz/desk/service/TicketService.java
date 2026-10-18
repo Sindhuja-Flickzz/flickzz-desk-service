@@ -281,9 +281,25 @@ public class TicketService {
 
     private void recordRitmApproverAudit(TicketMaster ritm, RitmApproverRequestVO request, String action,
                                          String oldValue, List<TicketApprover> approvers) {
+        String newValue = ritmApproverSnapshot(approvers);
+        String actionDescription = switch (action) {
+            case CREATE -> "RITM approvers created";
+            case UPDATE -> "RITM approvers updated";
+            case DELETE -> "RITM approvers deleted";
+            default -> "RITM approvers changed";
+        };
+        TicketAudit ticketAudit = ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                .ticket(ritm)
+                .actionType(action)
+                .description(actionDescription)
+                .changedBy(request.getAssignedBy())
+                .build());
+        ticketAuditDetailRepository.saveAndFlush(
+                buildAuditDetail(ticketAudit, "APPROVERS", oldValue, newValue));
+
         auditService.recordAudit(SystemAuditRequest.builder().module(RITM_REQUEST_TYPE).area("RITM Approver")
                 .entityName("RitmApprover").entityId(ritm.getTicketId()).action(action)
-                .oldValue(oldValue).newValue(ritmApproverSnapshot(approvers))
+                .oldValue(oldValue).newValue(newValue)
                 .userId(request.getAssignedBy()).companyId(request.getCompanyId()).status(SUCCESS).build());
     }
 
@@ -295,20 +311,48 @@ public class TicketService {
     }
 
     private String ritmApproverSnapshot(List<TicketApprover> approvers) {
-        StringBuilder snapshot = new StringBuilder("{\"approvers\":[");
+        List<String> snapshot = new ArrayList<>();
         for (int index = 0; index < approvers.size(); index++) {
             TicketApprover approver = approvers.get(index);
-            if (index > 0) snapshot.append(',');
-            snapshot.append("{\"agentId\":").append(approver.getApproverAgent().getAgentId())
-                    .append(",\"ritmApproverId\":").append(approver.getTicketApproverId())
-                    .append(",\"approverConfigId\":")
-                    .append(approver.getApproverConfig() == null ? "null" : approver.getApproverConfig().getApproverConfigId())
-                    .append(",\"sequence\":").append(approver.getApproverSequence())
-                    .append(",\"status\":\"").append(approver.getApprovalStatus()).append('"')
-                    .append(",\"active\":").append(approver.getIsActive())
-                    .append('}');
+            snapshot.add(approver.getApproverAgent().getAgentName());
         }
-        return snapshot.append("]}").toString();
+        return String.join(", ", snapshot);
+    }
+
+    private TicketAuditDetail buildAuditDetail(TicketAudit audit, String fieldName, String oldValue, String newValue) {
+        return TicketAuditDetail.builder()
+                .audit(audit)
+                .fieldName(fieldName)
+                .oldValue(oldValue)
+                .newValue(newValue)
+                .build();
+    }
+
+    private StringBuilder appendJsonString(StringBuilder json, String value) {
+        if (value == null) {
+            return json.append("null");
+        }
+        json.append('"');
+        for (int index = 0; index < value.length(); index++) {
+            char character = value.charAt(index);
+            switch (character) {
+                case '"' -> json.append("\\\"");
+                case '\\' -> json.append("\\\\");
+                case '\b' -> json.append("\\b");
+                case '\f' -> json.append("\\f");
+                case '\n' -> json.append("\\n");
+                case '\r' -> json.append("\\r");
+                case '\t' -> json.append("\\t");
+                default -> {
+                    if (character < 0x20) {
+                        json.append(String.format("\\u%04x", (int) character));
+                    } else {
+                        json.append(character);
+                    }
+                }
+            }
+        }
+        return json.append('"');
     }
 
     @Transactional
@@ -378,11 +422,11 @@ public class TicketService {
                         getDescription(DOES_NOT_EXIST.getDescription(), RITM_REQUEST_TYPE)));
 
         List<TicketTemplateDetailVO> templateDetails = ritm.getFieldValues() == null ? null : ritm.getFieldValues().stream()
-                .filter(value -> Boolean.TRUE.equals(value.getIsActive())
-                        && Boolean.TRUE.equals(value.getTemplateField().getMandatory()))
+                .filter(value -> (Boolean.TRUE.equals(value.getIsActive())))
                 .map(value -> TicketTemplateDetailVO.builder()
                         .fieldId(value.getTemplateField().getFieldId())
                         .fieldName(value.getTemplateField().getFieldName())
+                        .showInInfoPage(value.getTemplateField().getShowInInfoPage())
                         .value(value.getFieldValue())
                         .build())
                 .toList();
@@ -702,6 +746,20 @@ public class TicketService {
                     .changedBy(createdBy)
                     .build());
 
+            if (parentRitm != null) {
+                ticketAuditDetailRepository.saveAndFlush(buildAuditDetail(ticketAudit, "PARENT_RITM_NUMBER", null,
+                        parentRitm.getTicketNumber()));
+
+                TicketAudit subtaskAudit = ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                        .ticket(parentRitm)
+                        .actionType("SUBTASK_CREATE")
+                        .description("Subtask " + savedRitm.getTicketNumber() + " created")
+                        .changedBy(createdBy)
+                        .build());
+                ticketAuditDetailRepository.saveAndFlush(buildAuditDetail(subtaskAudit, "SUBTASK_CREATED", null,
+                        savedRitm.getTicketNumber()));
+            }
+
             recordSystemAudit("RitmMaster", savedRitm.getTicketId(), CREATE, null,
                     savedRitm.getTicketNumber(), createdBy, company.getCompanyId(), SUCCESS, null);
 
@@ -941,19 +999,39 @@ public class TicketService {
                     .build());
             List<TicketAuditDetail> details = new ArrayList<>();
 
+            if (request.getRequestTypeId() != null) {
+                RequestTypeMaster requestType = requestTypeMasterRepository.findById(request.getRequestTypeId())
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(),
+                                        "Request type with ID " + request.getRequestTypeId())));
+                if (requestType.getCompany() == null
+                        || !Objects.equals(requestType.getCompany().getCompanyId(), companyId)) {
+                    throw new FlickzzDeskException(INVALID_REQUEST,
+                            getDescription(INVALID_REQUEST.getDescription(),
+                                    "Request type does not belong to the RITM organization"));
+                }
+                if (!Objects.equals(idOf(ritm.getRequestType()), requestType.getRequestTypeId())) {
+                    details.add(buildAuditDetail(audit, "REQUEST_TYPE",
+                            ritm.getRequestType() != null ? ritm.getRequestType().getRequestTypeName() : null,
+                            requestType.getRequestTypeName()));
+                    ritm.setRequestType(requestType);
+                }
+            }
+
             if (request.getOpenedBy() != null) {
                 AgentMaster requestedBy = findAgent(request.getOpenedBy(), "Opened by");
                 if (!Objects.equals(idOf(ritm.getRequestedBy()), requestedBy.getAgentId())) {
-                    details.add(buildAuditDetail(audit, "REQUESTED_BY", stringValue(idOf(ritm.getRequestedBy())),
-                            stringValue(requestedBy.getAgentId())));
+                    details.add(buildAuditDetail(audit, "REQUESTED_BY", ritm.getRequestedBy() != null ? ritm.getRequestedBy().getAgentName() : null,
+                            requestedBy.getAgentName()));
                     ritm.setRequestedBy(requestedBy);
                 }
             }
             if (request.getRequestedFor() != null) {
                 AgentMaster requestedFor = findAgent(request.getRequestedFor(), "Requested for");
                 if (!Objects.equals(idOf(ritm.getRequestedFor()), requestedFor.getAgentId())) {
-                    details.add(buildAuditDetail(audit, "REQUESTED_FOR", stringValue(idOf(ritm.getRequestedFor())),
-                            stringValue(requestedFor.getAgentId())));
+                    details.add(buildAuditDetail(audit, "REQUESTED_FOR",
+                            ritm.getRequestedFor() != null ? ritm.getRequestedFor().getAgentName() : null,
+                            requestedFor.getAgentName()));
                     ritm.setRequestedFor(requestedFor);
                 }
             }
@@ -962,8 +1040,8 @@ public class TicketService {
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Category with ID " + request.getCategory())));
                 if (!Objects.equals(idOf(ritm.getCategory()), category.getCategoryId())) {
-                    details.add(buildAuditDetail(audit, "CATEGORY_ID", stringValue(idOf(ritm.getCategory())),
-                            stringValue(category.getCategoryId())));
+                    details.add(buildAuditDetail(audit, "CATEGORY_ID", ritm.getCategory() != null ? ritm.getCategory().getCategoryName() : null,
+                            category.getCategoryName()));
                     ritm.setCategory(category);
                 }
             }
@@ -972,8 +1050,9 @@ public class TicketService {
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Sub category with ID " + request.getSubCategory())));
                 if (!Objects.equals(idOf(ritm.getSubCategory()), subCategory.getSubCategoryId())) {
-                    details.add(buildAuditDetail(audit, "SUB_CATEGORY_ID", stringValue(idOf(ritm.getSubCategory())),
-                            stringValue(subCategory.getSubCategoryId())));
+                    details.add(buildAuditDetail(audit, "SUB_CATEGORY_ID", ritm.getSubCategory() != null ? ritm.getSubCategory().getSubCategoryName() : null,
+                            subCategory.getSubCategoryName()));
+                    stringValue(subCategory.getSubCategoryId());
                     ritm.setSubCategory(subCategory);
                 }
             }
@@ -982,11 +1061,17 @@ public class TicketService {
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Priority with ID " + request.getPriority())));
                 if (!Objects.equals(idOf(ritm.getPriority()), priority.getPriorityId())) {
-                    details.add(buildAuditDetail(audit, "PRIORITY_ID", stringValue(idOf(ritm.getPriority())),
-                            stringValue(priority.getPriorityId())));
+                    details.add(buildAuditDetail(audit, "PRIORITY_ID", ritm.getPriority() != null ? ritm.getPriority().getCode() : null,
+                            priority.getCode()));
                     ritm.setPriority(priority);
-                    ritm.setCustomerResolutionDate(calculateCustomerResolutionDate(
-                            priority.getPriorityId(), LocalDateTime.now()));
+                    LocalDateTime customerResolutionDate = calculateCustomerResolutionDate(
+                            priority.getPriorityId(), LocalDateTime.now());
+                    if (!Objects.equals(ritm.getCustomerResolutionDate(), customerResolutionDate)) {
+                        details.add(buildAuditDetail(audit, "CUSTOMER_RESOLUTION_DATE",
+                                Objects.toString(ritm.getCustomerResolutionDate(), null),
+                                Objects.toString(customerResolutionDate, null)));
+                        ritm.setCustomerResolutionDate(customerResolutionDate);
+                    }
                 }
             }
             Long supportGroupId = request.getAssignmentGroup() != null ? request.getAssignmentGroup() : request.getSupportGroup();
@@ -995,8 +1080,8 @@ public class TicketService {
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Support group with ID " + supportGroupId)));
                 if (!Objects.equals(idOf(ritm.getSupportGroup()), supportGroup.getSupportGroupId())) {
-                    details.add(buildAuditDetail(audit, "SUPPORT_GROUP_ID", stringValue(idOf(ritm.getSupportGroup())),
-                            stringValue(supportGroup.getSupportGroupId())));
+                    details.add(buildAuditDetail(audit, "SUPPORT_GROUP_ID", ritm.getSupportGroup() != null ? ritm.getSupportGroup().getGroupName() : null,
+                            supportGroup.getGroupName()));
                     ritm.setSupportGroup(supportGroup);
                 }
             }
@@ -1017,25 +1102,29 @@ public class TicketService {
             if (request.getAssignedTo() != null) {
                 AgentMaster assignedTo = findAgent(request.getAssignedTo(), "Assigned to");
                 if (!Objects.equals(idOf(ritm.getAssignedTo()), assignedTo.getAgentId())) {
-                    details.add(buildAuditDetail(audit, "ASSIGNED_TO", stringValue(idOf(ritm.getAssignedTo())),
-                            stringValue(assignedTo.getAgentId())));
+                    details.add(buildAuditDetail(audit, "ASSIGNED_TO", ritm.getAssignedTo() != null ? ritm.getAssignedTo().getAgentName() : null,
+                            assignedTo.getAgentName()));
                     ritm.setAssignedTo(assignedTo);
                 }
             }
             if (request.getDueDate() != null && !Objects.equals(ritm.getDueDate(), request.getDueDate())) {
-                details.add(buildAuditDetail(audit, "DUE_DATE", String.valueOf(ritm.getDueDate()), String.valueOf(request.getDueDate())));
+                details.add(buildAuditDetail(audit, "DUE_DATE", Objects.toString(ritm.getDueDate(), null),
+                        Objects.toString(request.getDueDate(), null)));
                 ritm.setDueDate(request.getDueDate());
             }
             if (request.getResolvedAt() != null && !Objects.equals(ritm.getResolvedAt(), request.getResolvedAt())) {
-                details.add(buildAuditDetail(audit, "RESOLVED_AT", String.valueOf(ritm.getResolvedAt()), String.valueOf(request.getResolvedAt())));
+                details.add(buildAuditDetail(audit, "RESOLVED_AT", Objects.toString(ritm.getResolvedAt(), null),
+                        Objects.toString(request.getResolvedAt(), null)));
                 ritm.setResolvedAt(request.getResolvedAt());
             }
             if (request.getClosedAt() != null && !Objects.equals(ritm.getClosedAt(), request.getClosedAt())) {
-                details.add(buildAuditDetail(audit, "CLOSED_AT", String.valueOf(ritm.getClosedAt()), String.valueOf(request.getClosedAt())));
+                details.add(buildAuditDetail(audit, "CLOSED_AT", Objects.toString(ritm.getClosedAt(), null),
+                        Objects.toString(request.getClosedAt(), null)));
                 ritm.setClosedAt(request.getClosedAt());
             }
             if (request.getCancelledAt() != null && !Objects.equals(ritm.getCancelledAt(), request.getCancelledAt())) {
-                details.add(buildAuditDetail(audit, "CANCELLED_AT", String.valueOf(ritm.getCancelledAt()), String.valueOf(request.getCancelledAt())));
+                details.add(buildAuditDetail(audit, "CANCELLED_AT", Objects.toString(ritm.getCancelledAt(), null),
+                        Objects.toString(request.getCancelledAt(), null)));
                 ritm.setCancelledAt(request.getCancelledAt());
             }
             if (request.getActionReason() != null && !Objects.equals(ritm.getActionReason(), request.getActionReason())) {
@@ -1044,34 +1133,90 @@ public class TicketService {
             }
 
             if (request.getWatchList() != null) {
-                ticketWatchlistRepository.deleteByTicket_TicketId(ritm.getTicketId());
-                ticketWatchlistRepository.flush();
+                Set<Long> requestedWatcherIds = new LinkedHashSet<>(request.getWatchList());
+                requestedWatcherIds.remove(null);
+                Map<Long, TicketWatchlist> existingWatchersById = new HashMap<>();
+                Set<Long> activeWatcherIds = new LinkedHashSet<>();
                 if (ritm.getWatchlist() != null) {
-                    ritm.getWatchlist().clear();
-                } else {
-                    ritm.setWatchlist(new ArrayList<>());
+                    for (TicketWatchlist watcher : ritm.getWatchlist()) {
+                        if (watcher != null && watcher.getWatchedBy() != null
+                                && watcher.getWatchedBy().getAgentId() != null) {
+                            Long watcherId = watcher.getWatchedBy().getAgentId();
+                            existingWatchersById.put(watcherId, watcher);
+                            if (Boolean.TRUE.equals(watcher.getIsActive())) {
+                                activeWatcherIds.add(watcherId);
+                            }
+                        }
+                    }
                 }
-                for (Long watcherId : new LinkedHashSet<>(request.getWatchList())) {
-                    if (watcherId != null) {
-                        ritm.getWatchlist().add(TicketWatchlist.builder().ticket(ritm)
-                                .watchedBy(findAgent(watcherId, "Watchlist agent"))
-                                .isActive(true).build());
+                Map<Long, AgentMaster> requestedWatchersById = new LinkedHashMap<>();
+                requestedWatcherIds.forEach(watcherId -> {
+                    AgentMaster watcher = findAgent(watcherId, "Watchlist agent");
+                    requestedWatchersById.put(watcherId, watcher);
+                });
+                if (!activeWatcherIds.equals(requestedWatcherIds)) {
+                    List<String> existingWatcherNames = ritm.getWatchlist() == null ? Collections.emptyList()
+                            : ritm.getWatchlist().stream()
+                            .filter(Objects::nonNull)
+                            .filter(watcher -> Boolean.TRUE.equals(watcher.getIsActive()) && watcher.getWatchedBy() != null)
+                            .map(watcher -> watcher.getWatchedBy().getAgentName())
+                            .filter(Objects::nonNull)
+                            .toList();
+                    List<String> requestedWatcherNames = requestedWatchersById.values().stream()
+                            .map(AgentMaster::getAgentName)
+                            .filter(Objects::nonNull)
+                            .toList();
+                    details.add(buildAuditDetail(audit, "WATCH_LIST", watchlistAuditValue(existingWatcherNames),
+                            watchlistAuditValue(requestedWatcherNames)));
+
+                    if (ritm.getWatchlist() == null) {
+                        ritm.setWatchlist(new ArrayList<>());
+                    }
+                    LocalDateTime watchlistUpdatedAt = LocalDateTime.now();
+                    for (TicketWatchlist existingWatcher : existingWatchersById.values()) {
+                        Long watcherId = existingWatcher.getWatchedBy().getAgentId();
+                        if (requestedWatcherIds.contains(watcherId)) {
+                            existingWatcher.setIsActive(true);
+                            existingWatcher.setRemovedAt(null);
+                        } else if (Boolean.TRUE.equals(existingWatcher.getIsActive())) {
+                            existingWatcher.setIsActive(false);
+                            existingWatcher.setRemovedAt(watchlistUpdatedAt);
+                        }
+                    }
+                    for (Map.Entry<Long, AgentMaster> requestedWatcher : requestedWatchersById.entrySet()) {
+                        if (!existingWatchersById.containsKey(requestedWatcher.getKey())) {
+                            ritm.getWatchlist().add(TicketWatchlist.builder().ticket(ritm)
+                                    .watchedBy(requestedWatcher.getValue()).isActive(true).build());
+                        }
                     }
                 }
             }
 
-            ritm.setUpdatedBy(actorId);
-            ritm.setIsUpdaterAdmin(Boolean.TRUE.equals(request.getIsUpdaterAdmin()));
-            TicketMaster saved = ticketMasterRepository.saveAndFlush(ritm);
-            if (!details.isEmpty()) {
-                ticketAuditDetailRepository.saveAllAndFlush(details);
+            boolean updaterAdmin = Boolean.TRUE.equals(request.getIsUpdaterAdmin());
+            if (!Objects.equals(ritm.getIsUpdaterAdmin(), updaterAdmin)) {
+                details.add(buildAuditDetail(audit, "IS_UPDATER_ADMIN",
+                        Objects.toString(ritm.getIsUpdaterAdmin(), null), String.valueOf(updaterAdmin)));
             }
+            if (!Objects.equals(ritm.getUpdatedBy(), actorId)) {
+                details.add(buildAuditDetail(audit, "UPDATED_BY", ritm.getUpdatedBy() != null ? String.valueOf(ritm.getUpdatedBy()) : null,
+                        String.valueOf(actorId)));
+            }
+            ritm.setUpdatedBy(actorId);
+            ritm.setIsUpdaterAdmin(updaterAdmin);
+            TicketMaster saved = ticketMasterRepository.saveAndFlush(ritm);
             if (request.getTemplateDetails() != null) {
+                addTemplateAuditDetails(audit, details, saved.getTicketId(), request.getTemplateDetails());
                 saveTemplateDetails(saved, request, actorId);
             }
             List<TicketAttachment> attachments = saveRitmFiles(saved, files, actorId);
             if (!attachments.isEmpty()) {
+                for (TicketAttachment attachment : attachments) {
+                    details.add(buildAuditDetail(audit, "ATTACHMENT_ADDED", null, attachment.getOriginalFileName()));
+                }
                 ticketAttachmentRepository.saveAllAndFlush(attachments);
+            }
+            if (!details.isEmpty()) {
+                ticketAuditDetailRepository.saveAllAndFlush(details);
             }
             notificationService.notifyRitmUpdated(saved, actorId);
             recordSystemAudit("RitmMaster", saved.getTicketId(), UPDATE, null, saved.getTicketNumber(), actorId,
@@ -1092,12 +1237,6 @@ public class TicketService {
         }
     }
 
-    private AgentMaster findAgent(Long agentId, String label) {
-        return agentMasterRepository.findById(agentId)
-                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
-                        getDescription(DOES_NOT_EXIST.getDescription(), label + " agent with ID " + agentId)));
-    }
-
     private Long idOf(Object entity) {
         if (entity instanceof AgentMaster agent) return agent.getAgentId();
         if (entity instanceof BPCategory category) return category.getCategoryId();
@@ -1108,17 +1247,59 @@ public class TicketService {
         return null;
     }
 
-    private TicketAuditDetail buildAuditDetail(TicketAudit audit, String fieldName, String oldValue, String newValue) {
-        return TicketAuditDetail.builder()
-                .audit(audit)
-                .fieldName(fieldName)
-                .oldValue(oldValue)
-                .newValue(newValue)
-                .build();
+    private AgentMaster findAgent(Long agentId, String label) {
+        return agentMasterRepository.findById(agentId)
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), label + " agent with ID " + agentId)));
     }
 
     private String stringValue(Long value) {
         return value == null ? null : String.valueOf(value);
+    }
+
+    private String watchlistAuditValue(List<String> watchers) {
+        return watchers.stream()
+                .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private void addTemplateAuditDetails(TicketAudit audit, List<TicketAuditDetail> details, Long ticketId,
+                                         List<RitmTemplateDetailVO> requestedDetails) {
+        Map<Long, String> oldValues = new HashMap<>();
+        Map<Long, String> fieldNames = new HashMap<>();
+        for (TicketFieldValue fieldValue : ticketFieldValueRepository.findAllByTicket_TicketId(ticketId)) {
+            if (fieldValue.getTemplateField() != null && fieldValue.getTemplateField().getFieldId() != null) {
+                oldValues.put(fieldValue.getTemplateField().getFieldId(), fieldValue.getFieldValue());
+                fieldNames.put(fieldValue.getTemplateField().getFieldId(), fieldValue.getTemplateField().getFieldName());
+            }
+        }
+
+        Map<Long, String> newValues = new LinkedHashMap<>();
+        for (RitmTemplateDetailVO detail : requestedDetails) {
+            if (detail != null && detail.getFieldId() != null) {
+                newValues.putIfAbsent(detail.getFieldId(), detail.getValue());
+            }
+        }
+
+        Set<Long> fieldIds = new TreeSet<>(oldValues.keySet());
+        fieldIds.addAll(newValues.keySet());
+        templateFieldRepository.findAllById(fieldIds)
+                .forEach(field -> fieldNames.put(field.getFieldId(), field.getFieldName()));
+
+        for (Long fieldId : fieldIds) {
+            boolean existed = oldValues.containsKey(fieldId);
+            boolean requested = newValues.containsKey(fieldId);
+            String oldValue = oldValues.get(fieldId);
+            String newValue = newValues.get(fieldId);
+            if (existed != requested || !Objects.equals(oldValue, newValue)) {
+                String fieldName = fieldNames.get(fieldId);
+                if (fieldName == null) {
+                    throw new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(),
+                                    "Template field with ID " + fieldId));
+                }
+                details.add(buildAuditDetail(audit, fieldName, oldValue, newValue));
+            }
+        }
     }
 
     @Transactional
@@ -1192,7 +1373,7 @@ public class TicketService {
                         .build());
                 List<TicketAuditDetail> auditDetails = new ArrayList<>();
                 if (!Objects.equals(previousText, commentVO.getCommentText())) {
-                    auditDetails.add(buildAuditDetail(ticketAudit, "COMMENT_TEXT", previousText, commentVO.getCommentText()));
+                    auditDetails.add(buildAuditDetail(ticketAudit, "COMMENT", previousText, commentVO.getCommentText()));
                 }
                 if (commentVO.getCommentType() != null && !Objects.equals(previousType, commentVO.getCommentType())) {
                     auditDetails.add(buildAuditDetail(ticketAudit, "COMMENT_TYPE", previousType, commentVO.getCommentType()));
@@ -1235,7 +1416,7 @@ public class TicketService {
                     .description("RITM comment added")
                     .changedBy(actorId)
                     .build());
-            ticketAuditDetailRepository.saveAllAndFlush(List.of(buildAuditDetail(ticketAudit, "COMMENT_TEXT", null, comment.getCommentText())));
+            ticketAuditDetailRepository.saveAllAndFlush(List.of(buildAuditDetail(ticketAudit, "COMMENT", null, comment.getCommentText())));
             recordSystemAudit("RitmComment", comment.getCommentId(), CREATE, null,
                     comment.getCommentText(), actorId,
                     ritm.getCompany() != null ? ritm.getCompany().getCompanyId() : null, SUCCESS, null);
@@ -1328,8 +1509,8 @@ public class TicketService {
                     .build());
             if (!Objects.equals(ritm.getAssignedTo() != null ? ritm.getAssignedTo().getAgentId() : null, assignedTo.getAgentId())) {
                 auditDetails.add(buildAuditDetail(ticketAudit, "ASSIGNED_TO",
-                        ritm.getAssignedTo() != null ? String.valueOf(ritm.getAssignedTo().getAgentId()) : null,
-                        String.valueOf(assignedTo.getAgentId())));
+                        ritm.getAssignedTo() != null ? ritm.getAssignedTo().getAgentName() : null,
+                        assignedTo.getAgentName()));
                 ritm.setAssignedTo(assignedTo);
                 ritm.setUpdatedBy(actor.getAgentId());
             }
@@ -1532,6 +1713,34 @@ public class TicketService {
             throw e;
         } catch (Exception e) {
             log.error("Exception in getRitmAuditHistoryById method in RitmService", e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    public List<TicketAuditHistoryVO> getTicketAuditHistoryByCompanyId(Long companyId) {
+        log.info(generateLog("getTicketAuditHistoryByCompanyId", this.getClass().getName()));
+        try {
+            if (companyId == null || companyId <= 0) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "Company ID is required and must be valid"));
+            }
+
+            return ticketAuditDetailRepository.findAllByCompanyId(companyId).stream()
+                    .map(detail -> TicketAuditHistoryVO.builder()
+                            .auditDetailId(detail.getAuditDetailId())
+                            .auditId(detail.getAudit().getAuditId())
+                            .ritmNumber(detail.getAudit().getTicket().getTicketNumber())
+                            .fieldName(detail.getFieldName())
+                            .oldValue(detail.getOldValue())
+                            .newValue(detail.getNewValue())
+                            .changedBy(detail.getAudit().getChangedBy())
+                            .changedAt(detail.getAudit().getChangedAt())
+                            .build())
+                    .toList();
+        } catch (FlickzzDeskException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Exception in getTicketAuditHistoryByCompanyId method in TicketService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

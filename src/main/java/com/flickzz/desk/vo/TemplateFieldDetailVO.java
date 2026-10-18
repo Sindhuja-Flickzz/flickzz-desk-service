@@ -1,9 +1,12 @@
 package com.flickzz.desk.vo;
 
-import java.io.*;
-import java.util.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import lombok.*;
+import java.io.Serializable;
+import java.util.List;
 
 @Data
 @Builder
@@ -11,10 +14,12 @@ import lombok.*;
 @AllArgsConstructor
 public class TemplateFieldDetailVO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private String fieldName;
-	private Long fieldTypeId;
-	private Boolean mandatory;
-	private List<TemplateFieldOptionVO> options;
+    private Long fieldId;
+    private String fieldName;
+    private Long fieldTypeId;
+    private Boolean mandatory;
+    private Boolean showInInfoPage;
+    private List<TemplateFieldOptionVO> options;
 }
