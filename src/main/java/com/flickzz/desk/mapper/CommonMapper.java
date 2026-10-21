@@ -378,6 +378,93 @@ public class CommonMapper {
                 .build();
     }
 
+    public List<EffortTypeVO> toEffortTypeVOList(List<EffortType> effortTypes) {
+        if (effortTypes == null) {
+            return Collections.emptyList();
+        }
+        return effortTypes.stream().map(this::toEffortTypeVO).toList();
+    }
+
+    public EffortTypeVO toEffortTypeVO(EffortType effortType) {
+        if (effortType == null) {
+            return null;
+        }
+        return EffortTypeVO.builder().effortTypeId(effortType.getEffortTypeId())
+                .typeName(effortType.getTypeName()).sequence(effortType.getSequence())
+                .orgId(effortType.getCompany().getCompanyId()).createdBy(effortType.getCreatedBy())
+                .updatedBy(effortType.getUpdatedBy()).isCreatedByAdmin(effortType.getIsCreatorAdmin())
+                .isUpdatedByAdmin(effortType.getIsUpdaterAdmin()).isActive(effortType.getIsActive()).build();
+    }
+
+    public AgentEffortLog toAgentEffortLog(EffortLogRequestVO request, TicketMaster ticket,
+                                           AgentMaster agent, EffortType effortType) {
+        if (request == null) {
+            return null;
+        }
+        return AgentEffortLog.builder()
+                .ticket(ticket)
+                .workItem(ticket.getWorkItem())
+                .agent(agent)
+                .effortType(effortType)
+                .effortDate(request.getDate())
+                .effortHours(request.getEffortHours())
+                .effortMinutes(request.getEffortMinutes())
+                .remark(request.getRemark())
+                .createdBy(request.getCreatedBy())
+                .isCreatorAdmin(request.getIsCreatedByAdmin())
+                .updatedBy(request.getUpdatedBy())
+                .isUpdaterAdmin(request.getIsUpdatedByAdmin())
+                .build();
+    }
+
+    public AgentEffortLog updateAgentEffortLog(AgentEffortLog effortLog, EffortLogRequestVO request,
+                                               TicketMaster ticket, AgentMaster agent, EffortType effortType) {
+        if (effortLog == null || request == null) {
+            return effortLog;
+        }
+        effortLog.setTicket(ticket);
+        effortLog.setWorkItem(ticket.getWorkItem());
+        effortLog.setAgent(agent);
+        effortLog.setEffortType(effortType);
+        effortLog.setEffortDate(request.getDate());
+        effortLog.setEffortHours(request.getEffortHours());
+        effortLog.setEffortMinutes(request.getEffortMinutes());
+        effortLog.setRemark(request.getRemark());
+        effortLog.setUpdatedBy(request.getUpdatedBy());
+        effortLog.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+        return effortLog;
+    }
+
+    public List<EffortLogVO> toEffortLogVOList(List<AgentEffortLog> effortLogs) {
+        if (effortLogs == null) {
+            return Collections.emptyList();
+        }
+        return effortLogs.stream().map(this::toEffortLogVO).toList();
+    }
+
+    public EffortLogVO toEffortLogVO(AgentEffortLog effortLog) {
+        if (effortLog == null) {
+            return null;
+        }
+        return EffortLogVO.builder()
+                .effortId(effortLog.getEffortId())
+                .ticketId(effortLog.getTicket().getTicketId())
+                .orgId(effortLog.getTicket().getCompany().getCompanyId())
+                .date(effortLog.getEffortDate())
+                .effortHours(effortLog.getEffortHours())
+                .effortMinutes(effortLog.getEffortMinutes())
+                .effortTypeId(effortLog.getEffortType().getEffortTypeId())
+                .effortTypeName(effortLog.getEffortType().getTypeName())
+                .remark(effortLog.getRemark())
+                .userWorked(effortLog.getAgent().getAgentId())
+                .agentName(effortLog.getAgent().getAgentName())
+                .createdBy(effortLog.getCreatedBy())
+                .updatedBy(effortLog.getUpdatedBy())
+                .isCreatedByAdmin(effortLog.getIsCreatorAdmin())
+                .isUpdatedByAdmin(effortLog.getIsUpdaterAdmin())
+                .build();
+    }
+
     public ImpactMaster toImpactMaster(ImpactRequestVO request, CompanyMaster companyMaster) {
         if (request == null) {
             return null;

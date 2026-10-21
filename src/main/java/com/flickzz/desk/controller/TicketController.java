@@ -1,12 +1,11 @@
 package com.flickzz.desk.controller;
 
 import com.flickzz.desk.config.FlickzzDeskResponse;
+import com.flickzz.desk.service.EffortLogService;
+import com.flickzz.desk.service.EffortTypeService;
 import com.flickzz.desk.service.TicketService;
 import com.flickzz.desk.vo.*;
-import com.flickzz.desk.vo.request.RitmApproverRequestVO;
-import com.flickzz.desk.vo.request.RitmAssignmentRequestVO;
-import com.flickzz.desk.vo.request.RitmRequestTypeRequestVO;
-import com.flickzz.desk.vo.request.RitmRequestVO;
+import com.flickzz.desk.vo.request.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,132 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+
+    @Autowired
+    private EffortTypeService effortTypeService;
+
+    @Autowired
+    private EffortLogService effortLogService;
+
+    @PostMapping("/create/effort")
+    public ResponseEntity<FlickzzDeskResponse> createEffortLog(@RequestBody EffortLogRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        EffortLogVO response = effortLogService.create(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "effort"), response);
+    }
+
+    @PostMapping("/update/effort")
+    public ResponseEntity<FlickzzDeskResponse> saveEffortLog(@RequestBody EffortLogRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        boolean updating = request != null && request.getEffortId() != null;
+        EffortLogVO response = updating
+                ? effortLogService.update(request)
+                : effortLogService.create(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(updating ? UPDATE_SUCCESS : CREATE_SUCCESS,
+                getDescription((updating ? UPDATE_SUCCESS : CREATE_SUCCESS).getDescription(), "effort"), response);
+    }
+
+    @PutMapping("/update/effort")
+    public ResponseEntity<FlickzzDeskResponse> updateEffortLog(@RequestBody EffortLogRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        EffortLogVO response = effortLogService.update(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "effort"), response);
+    }
+
+    @GetMapping("/effort/{ticketId}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getEffortLogs(@PathVariable Long ticketId,
+                                                             @PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortLogVO> response = effortLogService.list(ticketId, orgId, INACTIVE);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "effort"), response);
+    }
+
+    @GetMapping("/effort/active/{ticketId}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getActiveEffortLogs(@PathVariable Long ticketId,
+                                                                   @PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortLogVO> response = effortLogService.list(ticketId, orgId, ACTIVE);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "effort"), response);
+    }
+
+    @GetMapping("/effort/agent/{agentId}/{ticketId}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getAgentEffortLogs(@PathVariable Long agentId,
+                                                                  @PathVariable Long ticketId,
+                                                                  @PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortLogVO> response = effortLogService.listByAgent(agentId, ticketId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "agent effort"), response);
+    }
+
+    @DeleteMapping("/delete/effort")
+    public ResponseEntity<FlickzzDeskResponse> deleteEffortLog(@RequestParam Long effortId,
+                                                               @RequestParam Long ticketId,
+                                                               @RequestParam Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        effortLogService.delete(effortId, ticketId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "effort"));
+    }
+
+    @PostMapping("/effort/type/create")
+    public ResponseEntity<FlickzzDeskResponse> createEffortTypes(
+            @RequestBody List<EffortTypeRequestVO> requests) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortTypeVO> response = effortTypeService.create(requests);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "effort type"), response);
+    }
+
+    @GetMapping("/effort/type/active/list/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getActiveEffortTypes(@PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortTypeVO> response = effortTypeService.list(orgId, ACTIVE);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "effort type"), response);
+    }
+
+    @GetMapping("/effort/type/list/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getEffortTypes(@PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<EffortTypeVO> response = effortTypeService.list(orgId, INACTIVE);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "effort type"), response);
+    }
+
+    @PostMapping("/effort/type/status/change")
+    public ResponseEntity<FlickzzDeskResponse> changeEffortTypeStatus(
+            @RequestBody EffortTypeStatusRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        EffortTypeVO response = effortTypeService.changeStatus(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "effort type status"), response);
+    }
+
+    @DeleteMapping("/effort/type/delete")
+    public ResponseEntity<FlickzzDeskResponse> deleteEffortType(@RequestParam Long effortId,
+                                                                @RequestParam Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        effortTypeService.delete(effortId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "effort type"));
+    }
 
     @GetMapping("/type/list")
     public ResponseEntity<FlickzzDeskResponse> getTicketTypeMasterList() {
@@ -135,6 +260,25 @@ public class TicketController {
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), RITM), ritmList);
+    }
+
+    @RequestMapping(value = "/update/hours/planned",
+            method = {RequestMethod.POST, RequestMethod.PUT}, consumes = "application/json")
+    public ResponseEntity<FlickzzDeskResponse> updatePlannedHours(@RequestBody PlannedHoursRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        PlannedHoursVO response = ticketService.updatePlannedHours(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "planned hours"), response);
+    }
+
+    @GetMapping("/list/hours/planned/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getPlannedHours(@PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<PlannedHoursVO> response = ticketService.getPlannedHours(orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "planned hours"), response);
     }
 
     @GetMapping("/reference/{ticketReferenceId}")
