@@ -1593,6 +1593,55 @@ public class TicketService {
         }
     }
 
+    @Transactional
+    public PlannedHoursVO updatePlannedHours(PlannedHoursRequestVO request) {
+        if (request == null || request.getTicketId() == null || request.getTicketId() <= 0
+                || request.getOrgId() == null || request.getOrgId() <= 0) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Valid ticket, organization, planned hours, and updater data are required"));
+        }
+
+        TicketMaster ticket = ticketMasterRepository.findById(request.getTicketId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Ticket with ID " + request.getTicketId())));
+        if (ticket.getCompany() == null
+                || !Objects.equals(ticket.getCompany().getCompanyId(), request.getOrgId())) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Ticket does not belong to the provided organization"));
+        }
+
+        ticket.setPlannedHours(request.getHoursPlanned());
+        ticket.setPlannedMinutes(request.getMinutesPlanned());
+        ticket.setUpdatedBy(request.getUpdatedBy());
+        ticket.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+        TicketMaster savedTicket = ticketMasterRepository.save(ticket);
+        return toPlannedHoursVO(savedTicket);
+    }
+
+    private PlannedHoursVO toPlannedHoursVO(TicketMaster ticket) {
+        return PlannedHoursVO.builder()
+                .ticketId(ticket.getTicketId())
+                .orgId(ticket.getCompany().getCompanyId())
+                .hoursPlanned(ticket.getPlannedHours())
+                .minutesPlanned(ticket.getPlannedMinutes())
+                .build();
+    }
+
+    public List<PlannedHoursVO> getPlannedHours(Long orgId) {
+        if (orgId == null || orgId <= 0) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Organization ID is required and must be valid"));
+        }
+        try {
+            return ticketMasterRepository.findByCompanyCompanyIdAndPlannedHoursIsNotNull(orgId).stream()
+                    .map(this::toPlannedHoursVO)
+                    .toList();
+        } catch (Exception e) {
+            log.error("Error occurred while fetching planned hours for organization: {}", orgId, e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
     public List<TicketMasterVO> getTicketsByReferenceId(Long ticketReferenceId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
