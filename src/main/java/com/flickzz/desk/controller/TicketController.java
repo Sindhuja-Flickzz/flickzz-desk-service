@@ -84,9 +84,9 @@ public class TicketController {
 
     @DeleteMapping("/approval/workflow/delete")
     public ResponseEntity<FlickzzDeskResponse> deleteTicketClosureApprovalWorkflow(
-            @RequestParam Long configId, @RequestParam Long orgId) {
+            @RequestBody TicketClosureApprovalConfigRequestVO request) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        ticketClosureApprovalConfigService.delete(configId, orgId);
+        ticketClosureApprovalConfigService.delete(request);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(DELETE_SUCCESS,
                 getDescription(DELETE_SUCCESS.getDescription(), "ticket approval workflow"));

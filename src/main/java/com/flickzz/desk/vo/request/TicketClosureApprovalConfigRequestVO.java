@@ -25,6 +25,7 @@ public class TicketClosureApprovalConfigRequestVO implements Serializable {
     private Long statusAfterAutoAction;
     private Long createdBy;
     private Long updatedBy;
+    private Long deletedBy;
     private Boolean isCreatedByAdmin;
     private Boolean isUpdatedByAdmin;
 }

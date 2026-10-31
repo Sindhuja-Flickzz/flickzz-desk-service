@@ -14,5 +14,8 @@ public interface TicketClosureApprovalConfigRepository
     List<TicketClosureApprovalConfig> findByWorkItem_ItemIdAndCompany_CompanyIdAndIsActiveTrueOrderByConfigIdAsc(
             Long workItemId, Long companyId);
 
+    Optional<TicketClosureApprovalConfig> findFirstByCompany_CompanyIdAndWorkItem_ItemIdAndApprovalPendingStatus_StatusIdAndIsActiveTrueOrderByConfigIdAsc(
+            Long companyId, Long workItemId, Long approvalPendingStatusId);
+
     Optional<TicketClosureApprovalConfig> findByConfigIdAndCompany_CompanyId(Long configId, Long companyId);
 }

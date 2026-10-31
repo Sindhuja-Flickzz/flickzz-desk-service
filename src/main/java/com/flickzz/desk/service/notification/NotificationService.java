@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.PENDING;
@@ -136,6 +137,24 @@ public class NotificationService {
                 "Subtask " + subtaskNumber + " under RITM " + parentNumber
                         + " changed to " + statusCode + " and requires your attention.",
                 "UPDATE", true);
+    }
+
+    @Transactional
+    public void notifyRitmSubtaskApprovalClarification(TicketMaster subtask, Long actorId,
+                                                       Boolean isActorAdmin, String remarks) {
+        if (subtask == null || actorId == null || subtask.getRequestedBy() == null
+                || subtask.getRequestedBy().getUser() == null
+                || Objects.equals(subtask.getRequestedBy().getUser().getUserId(), actorId)) {
+            return;
+        }
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        String message = actorName + " requested clarification for subtask "
+                + subtask.getTicketNumber() + ".";
+        if (remarks != null && !remarks.isBlank()) {
+            message += " Remarks: " + remarks;
+        }
+        saveRitmNotification(subtask, subtask.getRequestedBy(), actorId, actorName,
+                "Subtask approval clarification", message, "CLARIFY", true);
     }
 
     @Transactional

@@ -367,16 +367,16 @@ public class TicketClosureApprovalConfigService {
     }
 
     @Transactional
-    public void delete(Long configId, Long orgId) {
+    public void delete(TicketClosureApprovalConfigRequestVO request) {
         TicketClosureApprovalConfig config = null;
         try {
-            if (configId == null || configId <= 0 || orgId == null || orgId <= 0) {
+            if (request.getConfigId() == null || request.getConfigId() <= 0 || request.getCompanyId() == null || request.getCompanyId() <= 0) {
                 throw new FlickzzDeskException(INVALID_REQUEST,
                         getDescription(INVALID_REQUEST.getDescription(),
                                 "Configuration ID and organization ID are required"));
             }
-            config = configRepository.findByConfigIdAndCompany_CompanyId(configId, orgId)
-                    .orElseThrow(() -> notFound("Ticket approval workflow with ID " + configId));
+            config = configRepository.findByConfigIdAndCompany_CompanyId(request.getConfigId(), request.getCompanyId())
+                    .orElseThrow(() -> notFound("Ticket approval workflow with ID " + request.getConfigId()));
 
             String oldValue = serializeSnapshot(config);
             config.setIsActive(false);
@@ -385,13 +385,13 @@ public class TicketClosureApprovalConfigService {
             auditService.recordAudit(mapper.toSystemAuditRequest(
                     "Ticket", "Approval Workflow", "TicketClosureApprovalConfig", saved.getConfigId(),
                     "DELETE", serializeSnapshot(saved), oldValue, "[\"isActive\",\"updatedAt\"]",
-                    null, null, orgId, SUCCESS, null));
+                    request.getDeletedBy(), null, request.getCompanyId(), SUCCESS, null));
         } catch (FlickzzDeskException e) {
-            auditException(configId, orgId, null, "DELETE", e);
+            auditException(request.getConfigId(), request.getCompanyId(), null, "DELETE", e);
             throw e;
         } catch (Exception e) {
-            log.error("Failed to delete ticket closure approval workflow {}", configId, e);
-            auditException(configId, orgId, null, "DELETE", e);
+            log.error("Failed to delete ticket closure approval workflow {}", request.getConfigId(), e);
+            auditException(request.getConfigId(), request.getCompanyId(), null, "DELETE", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }

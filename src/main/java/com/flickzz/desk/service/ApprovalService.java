@@ -71,6 +71,10 @@ public class ApprovalService {
     @Autowired
     TicketAuditRepository ticketAuditRepository;
     @Autowired
+    TicketAuditDetailRepository ticketAuditDetailRepository;
+    @Autowired
+    TicketClosureApprovalConfigRepository ticketClosureApprovalConfigRepository;
+    @Autowired
     AuditService auditService;
 
     public List<ApprovalMasterVO> getApprovalList(Long userId) {
@@ -109,6 +113,9 @@ public class ApprovalService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
 
+            if ("RITM_SUBTASK".equalsIgnoreCase(approval.getRequestType())) {
+                return actionOnRitmSubtaskApproval(approval, request);
+            }
             if (RITM.equalsIgnoreCase(approval.getRequestType())) {
                 return actionOnRitmApproval(approval, request);
             }
@@ -276,6 +283,154 @@ public class ApprovalService {
                 : completed ? "COMPLETED" : "UPDATED";
         recordRitmApprovalAudit(ticket, approval, actingAgent, request.getUpdatedBy(), previousApprovalStatus,
                 approvalStatus, outcome, request.getAction());
+        return mapper.toConfigChangeApprovalVO(approval);
+    }
+
+    private ApprovalMasterVO actionOnRitmSubtaskApproval(ApprovalMaster approval, BpConfigRequestVO request) {
+        if (request.getUpdatedBy() == null || !Boolean.TRUE.equals(approval.getActive())
+                || !PENDING.equalsIgnoreCase(approval.getStatus())
+                || !Objects.equals(approval.getApproverUserId(), request.getUpdatedBy())) {
+            throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
+        }
+        if (!APPROVE.equalsIgnoreCase(request.getAction())
+                && !DECLINE.equalsIgnoreCase(request.getAction())
+                && !REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction())) {
+            throw new FlickzzDeskException(INVALID_FIELD, "Unsupported approval action");
+        }
+
+        TicketApprover ticketApprover = ticketApproverRepository.findById(approval.getRequestId())
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(),
+                                "Active subtask approver with ID " + approval.getRequestId())));
+        AgentMaster actingAgent = ticketApprover.getApproverAgent();
+        if (actingAgent == null || actingAgent.getUser() == null
+                || !Objects.equals(actingAgent.getUser().getUserId(), request.getUpdatedBy())) {
+            throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
+        }
+        if (ticketApprover.getTicket() == null || ticketApprover.getTicket().getTicketId() == null) {
+            throw new FlickzzDeskException(DOES_NOT_EXIST,
+                    getDescription(DOES_NOT_EXIST.getDescription(), "Subtask"));
+        }
+        TicketMaster subtask = ticketMasterRepository.findById(ticketApprover.getTicket().getTicketId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Subtask")));
+        if (subtask.getTicketReference() == null || subtask.getCompany() == null || subtask.getWorkItem() == null
+                || subtask.getStatus() == null) {
+            throw new FlickzzDeskException(INVALID_FIELD, "Approval is not associated with a configured subtask");
+        }
+
+        Long companyId = subtask.getCompany().getCompanyId();
+        Long workItemId = subtask.getWorkItem().getItemId();
+        TicketClosureApprovalConfig config = ticketClosureApprovalConfigRepository
+                .findFirstByCompany_CompanyIdAndWorkItem_ItemIdAndApprovalPendingStatus_StatusIdAndIsActiveTrueOrderByConfigIdAsc(
+                        companyId, workItemId, subtask.getStatus().getStatusId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(),
+                                "Subtask approval workflow for the current status")));
+
+        String oldTicketStatus = subtask.getStatus().getStatusCode();
+        StatusMaster targetStatus = null;
+        if (APPROVE.equalsIgnoreCase(request.getAction())) {
+            targetStatus = config.getAutoApproveStatus();
+        } else if (DECLINE.equalsIgnoreCase(request.getAction())) {
+            targetStatus = config.getAutoDeclineStatus();
+        }
+        if (targetStatus != null) {
+            if (!Boolean.TRUE.equals(targetStatus.getIsActive())
+                    || targetStatus.getCompany() == null || targetStatus.getWorkItem() == null
+                    || !Objects.equals(companyId, targetStatus.getCompany().getCompanyId())
+                    || !Objects.equals(workItemId, targetStatus.getWorkItem().getItemId())) {
+                throw new FlickzzDeskException(INVALID_FIELD,
+                        "Configured subtask approval status does not belong to the subtask");
+            }
+        } else if (APPROVE.equalsIgnoreCase(request.getAction())
+                || DECLINE.equalsIgnoreCase(request.getAction())) {
+            throw new FlickzzDeskException(DOES_NOT_EXIST,
+                    getDescription(DOES_NOT_EXIST.getDescription(),
+                            APPROVE.equalsIgnoreCase(request.getAction())
+                                    ? "Configured auto-approve status" : "Configured auto-decline status"));
+        }
+        TicketMaster parentRitm = null;
+        if (targetStatus != null) {
+            if (subtask.getTicketReference().getTicketId() == null) {
+                throw new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Parent RITM"));
+            }
+            parentRitm = ticketMasterRepository.findById(subtask.getTicketReference().getTicketId())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Parent RITM")));
+            subtask.setStatus(targetStatus);
+        }
+
+        String oldApprovalStatus = approval.getStatus();
+        String approvalStatus = approvalStatusForAction(request.getAction());
+        LocalDateTime now = LocalDateTime.now();
+        approval.setStatus(approvalStatus);
+        approval.setUpdatedBy(request.getUpdatedBy());
+        approval.setDescription(request.getRemarks() != null ? request.getRemarks() : approval.getDescription());
+        approval.setUpdatedOn(now);
+        if (APPROVE.equalsIgnoreCase(request.getAction())) {
+            approval.setApprovedOn(now);
+        }
+
+        ticketApprover.setApprovalStatus(approvalStatus);
+        ticketApprover.setUpdatedBy(actingAgent.getAgentId());
+        ticketApprover.setUpdatedOn(now);
+        if (APPROVE.equalsIgnoreCase(request.getAction())) {
+            ticketApprover.setApprovedOn(now);
+        }
+        updateRitmApprovalRemark(ticketApprover, subtask, request, now);
+        if (targetStatus != null) {
+            subtask.setStatus(targetStatus);
+        }
+
+        approvalRepository.saveAndFlush(approval);
+        ticketApproverRepository.saveAndFlush(ticketApprover);
+        if (targetStatus != null) {
+            subtask.setUpdatedBy(actingAgent.getAgentId());
+            subtask.setIsUpdaterAdmin(Boolean.TRUE.equals(request.getIsUpdatedByAdmin()));
+            ticketMasterRepository.saveAndFlush(subtask);
+            TicketAudit statusAudit = ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                    .ticket(subtask)
+                    .actionType("SUBTASK_STATUS_UPDATE")
+                    .description("Subtask status updated through approval")
+                    .changedBy(actingAgent.getAgentId())
+                    .build());
+            ticketAuditDetailRepository.saveAllAndFlush(List.of(
+                    TicketAuditDetail.builder()
+                            .audit(statusAudit)
+                            .fieldName("STATUS")
+                            .oldValue(oldTicketStatus)
+                            .newValue(targetStatus.getStatusCode())
+                            .build(),
+                    TicketAuditDetail.builder()
+                            .audit(statusAudit)
+                            .fieldName("REMARKS")
+                            .newValue(request.getRemarks())
+                            .build()));
+            auditService.recordAudit(SystemAuditRequest.builder().module("RITM").area("Subtask Approval")
+                    .entityName("RitmMaster").entityId(subtask.getTicketId()).action("STATUS_UPDATE")
+                    .oldValue("{\"status\":\"" + oldTicketStatus + "\"}")
+                    .newValue("{\"statusId\":" + targetStatus.getStatusId()
+                            + ",\"status\":\"" + targetStatus.getStatusCode() + "\"}")
+                    .userId(request.getUpdatedBy()).companyId(companyId).status(SUCCESS).build());
+        }
+
+        String outcome = REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction()) ? "CLARIFICATION_REQUESTED"
+                : DECLINE.equalsIgnoreCase(request.getAction()) ? "DECLINED" : "COMPLETED";
+        recordRitmApprovalAudit(subtask, approval, actingAgent, request.getUpdatedBy(), oldApprovalStatus,
+                approvalStatus, outcome, request.getAction());
+
+        if (targetStatus != null) {
+            notificationService.notifyRitmSubtaskStatusUpdated(parentRitm, subtask,
+                    Boolean.TRUE.equals(request.getIsUpdatedByAdmin())
+                            ? request.getUpdatedBy() : actingAgent.getAgentId(),
+                    request.getIsUpdatedByAdmin());
+        } else {
+            notificationService.notifyRitmSubtaskApprovalClarification(subtask, request.getUpdatedBy(),
+                    request.getIsUpdatedByAdmin(), request.getRemarks());
+        }
         return mapper.toConfigChangeApprovalVO(approval);
     }
 
@@ -522,7 +677,7 @@ public class ApprovalService {
         TicketApproverRemark remark = new TicketApproverRemark();
         remark.setTicketApprover(ticketApprover);
         remark.setTicket(ritm);
-        remark.setRemarkType(request.getAction().equalsIgnoreCase(APPROVE) ? APPROVED : DECLINED);
+        remark.setRemarkType(approvalStatusForAction(request.getAction()));
         remark.setRemark(request.getRemarks() != null ? request.getRemarks() : "");
         remark.setCreatedBy(request.getUpdatedBy());
         remark.setCreatedOn(now);
