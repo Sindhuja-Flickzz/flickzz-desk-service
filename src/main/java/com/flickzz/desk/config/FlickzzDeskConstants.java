@@ -69,6 +69,7 @@ public class FlickzzDeskConstants {
     public static final String PASSWORD = "Password";
     public static final String APPROVERS = "Approvers";
     public static final String CREATE = "CREATE";
+    public static final String SUBTASK_CLOSURE_APPROVAL = "SUBTASK CLOSURE APPROVAL";
     public static final String UPDATE = "UPDATE";
     public static final String APPROVE = "APPROVE";
     public static final String DELETE = "DELETE";

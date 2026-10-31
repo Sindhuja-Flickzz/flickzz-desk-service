@@ -32,12 +32,12 @@ public class ApprovalController {
     private ApprovalService approvalService;
 
     @GetMapping("/list/{userId}")
-    public ResponseEntity<FlickzzDeskResponse> getBusinessPartnerApprovalList(
+    public ResponseEntity<FlickzzDeskResponse> getApprovalList(
             @PathVariable String userId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
         List<ApprovalMasterVO> response = approvalService
-                .getBusinessPartnerApprovalList(Long.valueOf(userId));
+                .getApprovalList(Long.valueOf(userId));
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "Approval"), response);

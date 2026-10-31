@@ -73,7 +73,7 @@ public class ApprovalService {
     @Autowired
     AuditService auditService;
 
-    public List<ApprovalMasterVO> getBusinessPartnerApprovalList(Long userId) {
+    public List<ApprovalMasterVO> getApprovalList(Long userId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
             if (userId == null) {
@@ -85,9 +85,9 @@ public class ApprovalService {
             log.info(generateLog(EXIT, this.getClass().getName()));
             return approvals.stream().map(mapper::toConfigChangeApprovalVO).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("Exception in getBusinessPartnerApprovalList method in BusinessPartnerService");
+            log.error("Exception in getApprovalList method in ApprovalService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
     }
@@ -109,7 +109,7 @@ public class ApprovalService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Config Change Approval")));
 
-            if ("RITM".equalsIgnoreCase(approval.getRequestType())) {
+            if (RITM.equalsIgnoreCase(approval.getRequestType())) {
                 return actionOnRitmApproval(approval, request);
             }
 
@@ -178,7 +178,7 @@ public class ApprovalService {
             approvalRepository.save(approval);
             return mapper.toConfigChangeApprovalVO(approval);
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in actionOnConfigApproval method in BusinessPartnerService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -200,7 +200,7 @@ public class ApprovalService {
                 || !Objects.equals(actingAgent.getUser().getUserId(), request.getUpdatedBy())) {
             throw new FlickzzDeskException(INVALID_FIELD, "Approval does not belong to current approver");
         }
-        TicketMaster ritm = ticketMasterRepository.findById(ticketApprover.getTicket().getTicketId())
+        TicketMaster ticket = ticketMasterRepository.findById(ticketApprover.getTicket().getTicketId())
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), "RITM")));
 
@@ -219,52 +219,52 @@ public class ApprovalService {
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
             ticketApprover.setApprovedOn(now);
         }
-        updateRitmApprovalRemark(ticketApprover, ritm, request, now);
+        updateRitmApprovalRemark(ticketApprover, ticket, request, now);
         approvalRepository.saveAndFlush(approval);
         ticketApproverRepository.saveAndFlush(ticketApprover);
 
         boolean completed = false;
         if (DECLINE.equalsIgnoreCase(request.getAction())) {
-            deactivateAllRitmApprovals(ritm, actingAgent, request);
+            deactivateAllRitmApprovals(ticket, actingAgent, request);
             completed = true;
         } else if (REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction())) {
             List<AgentMaster> otherApprovers = ticketApproverRepository
-                    .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId()).stream()
+                    .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ticket.getTicketId()).stream()
                     .filter(value -> value.getApproverAgent() != null && value.getApproverAgent().getUser() != null
                             && !Objects.equals(value.getApproverAgent().getUser().getUserId(), request.getUpdatedBy()))
                     .map(value -> value.getApproverAgent())
                     .toList();
-            notificationService.notifyRitmApprovalClarification(ritm, request.getUpdatedBy(),
+            notificationService.notifyRitmApprovalClarification(ticket, request.getUpdatedBy(),
                     request.getIsUpdatedByAdmin(), otherApprovers, request.getRemarks());
         } else if (APPROVE.equalsIgnoreCase(request.getAction())) {
             RequestApproverConfig config = ticketApprover.getApproverConfig();
             if (config != null) {
                 if (Boolean.TRUE.equals(config.getFollowSequence())) {
-                    completed = advanceRitmApprovalSequence(ritm, ticketApprover, approval, actingAgent, request);
+                    completed = advanceRitmApprovalSequence(ticket, ticketApprover, approval, actingAgent, request);
                 } else {
-                    deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
+                    deactivateOtherRitmApprovals(ticket, ticketApprover, approval, actingAgent, request);
                     completed = true;
                 }
             } else if (!Boolean.TRUE.equals(ticketApprover.getIsGroupApprover())) {
-                completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
-                deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
+                completeRitmApproval(ticket, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
+                deactivateOtherRitmApprovals(ticket, ticketApprover, approval, actingAgent, request);
                 completed = true;
             } else {
                 if (config == null) {
                     throw new FlickzzDeskException(INVALID_FIELD, "RITM group approver config is missing");
                 }
                 if (Boolean.TRUE.equals(config.getIsAnyApprovalSufficient())) {
-                    completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
-                    deactivateOtherRitmApprovals(ritm, ticketApprover, approval, actingAgent, request);
+                    completeRitmApproval(ticket, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
+                    deactivateOtherRitmApprovals(ticket, ticketApprover, approval, actingAgent, request);
                     completed = true;
                 } else if (Boolean.TRUE.equals(config.getFollowSequence())) {
-                    completed = advanceRitmApprovalSequence(ritm, ticketApprover, approval, actingAgent, request);
+                    completed = advanceRitmApprovalSequence(ticket, ticketApprover, approval, actingAgent, request);
                 } else {
                     List<TicketApprover> approvers = ticketApproverRepository
-                            .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ritm.getTicketId());
+                            .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(ticket.getTicketId());
                     if (!approvers.isEmpty() && approvers.stream()
                             .allMatch(value -> APPROVED.equalsIgnoreCase(value.getApprovalStatus()))) {
-                        completeRitmApproval(ritm, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
+                        completeRitmApproval(ticket, actingAgent, request.getUpdatedBy(), request.getIsUpdatedByAdmin());
                         completed = true;
                     }
                 }
@@ -274,7 +274,7 @@ public class ApprovalService {
         String outcome = DECLINE.equalsIgnoreCase(request.getAction()) ? "DECLINED"
                 : REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction()) ? "CLARIFICATION_REQUESTED"
                 : completed ? "COMPLETED" : "UPDATED";
-        recordRitmApprovalAudit(ritm, approval, actingAgent, request.getUpdatedBy(), previousApprovalStatus,
+        recordRitmApprovalAudit(ticket, approval, actingAgent, request.getUpdatedBy(), previousApprovalStatus,
                 approvalStatus, outcome, request.getAction());
         return mapper.toConfigChangeApprovalVO(approval);
     }
@@ -756,7 +756,7 @@ public class ApprovalService {
             List<BPConfigurationChangeRequestRemark> remarks = bpConfigurationChangeRequestRemarkRepository.findByConfigurationChangeRequest_CcrId(changeRequest.getCcrId());
             return remarks.stream().map(mapper::toBPConfigurationChangeRequestRemarkVO).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getApprovalRemarks method in BusinessPartnerService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);

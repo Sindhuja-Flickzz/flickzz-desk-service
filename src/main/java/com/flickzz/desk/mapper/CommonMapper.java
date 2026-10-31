@@ -1390,6 +1390,7 @@ public class CommonMapper {
                 .assignedTo(toRitmAgentMasterVO(savedRitm.getAssignedTo()))
                 .customerResolution(savedRitm.getCustomerResolutionDate())
                 .requestType(toRitmRequestTypeVO(savedRitm.getRequestType()))
+                .ticketReference(toRitmTicketReferenceVO(savedRitm.getTicketReference()))
                 .watchlist(savedRitm.getWatchlist() != null
                         ? savedRitm.getWatchlist().stream().map(this::toRitmWatchlistVOForRitm).toList()
                         : null)
@@ -1421,6 +1422,16 @@ public class CommonMapper {
                 .updatedAt(savedRitm.getUpdatedAt())
                 .isCreatorAdmin(savedRitm.getIsCreatorAdmin())
                 .isUpdaterAdmin(savedRitm.getIsUpdaterAdmin())
+                .build();
+    }
+
+    private TicketMasterVO toRitmTicketReferenceVO(TicketMaster ticketReference) {
+        if (ticketReference == null) {
+            return null;
+        }
+        return TicketMasterVO.builder()
+                .ticketId(ticketReference.getTicketId())
+                .ticketNumber(ticketReference.getTicketNumber())
                 .build();
     }
 

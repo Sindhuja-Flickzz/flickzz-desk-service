@@ -10,14 +10,13 @@ import com.flickzz.desk.repo.AgentEffortLogRepository;
 import com.flickzz.desk.repo.AgentMasterRepository;
 import com.flickzz.desk.repo.EffortTypeRepository;
 import com.flickzz.desk.repo.TicketMasterRepository;
-import com.flickzz.desk.vo.EffortLogVO;
+import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.EffortLogRequestVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.DOES_NOT_EXIST;
@@ -154,6 +153,87 @@ public class EffortLogService {
     }
 
     @Transactional(readOnly = true)
+    public TicketEffortSummaryVO getTicketEffortSummary(Long ticketId, Long orgId) {
+        validateIds(ticketId, orgId);
+        TicketMaster ticket = findTicket(ticketId, orgId);
+//        if (ticket.getWorkItem() == null || !"RITM".equalsIgnoreCase(ticket.getWorkItem().getCode())) {
+//            throw new FlickzzDeskException(INVALID_REQUEST,
+//                    getDescription(INVALID_REQUEST.getDescription(), "Ticket is not a RITM"));
+//        }
+
+        List<TicketMaster> subtasks = ticketMasterRepository
+                .findByTicketReferenceTicketIdAndCompanyCompanyIdOrderByTicketIdAsc(ticketId, orgId);
+        List<Long> ticketIds = new ArrayList<>();
+        ticketIds.add(ticketId);
+        subtasks.stream().map(TicketMaster::getTicketId).forEach(ticketIds::add);
+
+        Map<Long, Map<Long, AgentEffortAccumulator>> effortByTicketAndAgent = new LinkedHashMap<>();
+        effortLogRepository
+                .findByTicket_TicketIdInAndTicket_Company_CompanyIdOrderByEffortDateDescEffortIdDesc(
+                        ticketIds, orgId)
+                .forEach(effortLog -> {
+                    Long effortLogTicketId = effortLog.getTicket().getTicketId();
+                    Long agentId = effortLog.getAgent().getAgentId();
+                    AgentEffortAccumulator agentEffort = effortByTicketAndAgent
+                            .computeIfAbsent(effortLogTicketId, ignored -> new LinkedHashMap<>())
+                            .computeIfAbsent(agentId, ignored -> new AgentEffortAccumulator(
+                                    agentId, effortLog.getAgent().getAgentName()));
+                    agentEffort.add(effortLog.getEffortHours(), effortLog.getEffortMinutes());
+                });
+
+        List<AgentEffortSummaryVO> ticketAgents = toAgentSummaries(effortByTicketAndAgent.get(ticketId));
+        EffortAccumulator ticketEffort = sumAgents(effortByTicketAndAgent.get(ticketId));
+        EffortAccumulator subtasksEffort = new EffortAccumulator();
+        List<SubtaskEffortSummaryVO> subtaskSummaries = subtasks.stream().map(subtask -> {
+            List<AgentEffortSummaryVO> agents = toAgentSummaries(
+                    effortByTicketAndAgent.get(subtask.getTicketId()));
+            EffortAccumulator subtaskEffort = sumAgents(effortByTicketAndAgent.get(subtask.getTicketId()));
+            subtasksEffort.add(subtaskEffort.totalMinutes);
+            return SubtaskEffortSummaryVO.builder()
+                    .subtaskId(subtask.getTicketId())
+                    .subtaskNumber(subtask.getTicketNumber())
+                    .totalLoggedEffort(subtaskEffort.toDurationVO())
+                    .agents(agents)
+                    .build();
+        }).toList();
+
+        EffortAccumulator totalEffort = new EffortAccumulator();
+        totalEffort.add(ticketEffort.totalMinutes);
+        totalEffort.add(subtasksEffort.totalMinutes);
+
+        return TicketEffortSummaryVO.builder()
+                .ticketId(ticketId)
+                .ticketNumber(ticket.getTicketNumber())
+                .plannedEffort(EffortAccumulator.from(ticket.getPlannedHours(), ticket.getPlannedMinutes()).toDurationVO())
+                .ticketLoggedEffort(ticketEffort.toDurationVO())
+                .subtasksLoggedEffort(subtasksEffort.toDurationVO())
+                .totalLoggedEffort(totalEffort.toDurationVO())
+                .agents(ticketAgents)
+                .subtasks(subtaskSummaries)
+                .build();
+    }
+
+    private List<AgentEffortSummaryVO> toAgentSummaries(
+            Map<Long, AgentEffortAccumulator> agentEfforts) {
+        if (agentEfforts == null || agentEfforts.isEmpty()) {
+            return List.of();
+        }
+        return agentEfforts.values().stream()
+                .sorted(Comparator.comparing(AgentEffortAccumulator::getAgentName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .map(AgentEffortAccumulator::toVO)
+                .toList();
+    }
+
+    private EffortAccumulator sumAgents(Map<Long, AgentEffortAccumulator> agentEfforts) {
+        EffortAccumulator total = new EffortAccumulator();
+        if (agentEfforts != null) {
+            agentEfforts.values().forEach(agentEffort -> total.add(agentEffort.totalMinutes));
+        }
+        return total;
+    }
+
+    @Transactional(readOnly = true)
     public List<EffortLogVO> listByAgent(Long agentId, Long ticketId, Long orgId) {
         validateIds(agentId, ticketId, orgId);
         findTicket(ticketId, orgId);
@@ -178,5 +258,55 @@ public class EffortLogService {
     public void delete(Long effortId, Long ticketId, Long orgId) {
         validateIds(effortId, ticketId, orgId);
         effortLogRepository.delete(findEffortLog(effortId, ticketId, orgId));
+    }
+
+    private static class EffortAccumulator {
+        protected long totalMinutes;
+
+        private static EffortAccumulator from(Integer hours, Integer minutes) {
+            EffortAccumulator effort = new EffortAccumulator();
+            effort.add(hours, minutes);
+            return effort;
+        }
+
+        protected void add(Integer hours, Integer minutes) {
+            add((hours == null ? 0L : hours.longValue()) * 60L + (minutes == null ? 0L : minutes));
+        }
+
+        protected void add(long minutes) {
+            totalMinutes += minutes;
+        }
+
+        private EffortDurationVO toDurationVO() {
+            long hours = totalMinutes / 60;
+            int minutes = (int) (totalMinutes % 60);
+            return EffortDurationVO.builder()
+                    .hours(hours)
+                    .minutes(minutes)
+                    .formatted(String.format(Locale.ROOT, "%02d:%02d", hours, minutes))
+                    .build();
+        }
+    }
+
+    private static class AgentEffortAccumulator extends EffortAccumulator {
+        private final Long agentId;
+        private final String agentName;
+
+        private AgentEffortAccumulator(Long agentId, String agentName) {
+            this.agentId = agentId;
+            this.agentName = agentName;
+        }
+
+        private String getAgentName() {
+            return agentName;
+        }
+
+        private AgentEffortSummaryVO toVO() {
+            return AgentEffortSummaryVO.builder()
+                    .agentId(agentId)
+                    .agentName(agentName)
+                    .effort(super.toDurationVO())
+                    .build();
+        }
     }
 }

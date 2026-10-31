@@ -43,6 +43,8 @@ public class TicketService {
     @Autowired
     private TicketMasterRepository ticketMasterRepository;
     @Autowired
+    private TicketClosureApprovalConfigService ticketClosureApprovalConfigService;
+    @Autowired
     private TicketApproverRepository ticketApproverRepository;
     @Autowired
     private TicketApproverRemarkRepository ticketApproverRemarkRepository;
@@ -328,6 +330,163 @@ public class TicketService {
                 .build();
     }
 
+    @Transactional
+    public TicketMasterVO updateSubtaskStatus(SubtaskStatusUpdateRequestVO request) {
+        try {
+            validateSubtaskStatusRequest(request);
+
+            TicketMaster subtask = ticketMasterRepository.findById(request.getTicketId())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(),
+                                    "Subtask with ID " + request.getTicketId())));
+            if (subtask.getCompany() == null
+                    || !Objects.equals(subtask.getCompany().getCompanyId(), request.getOrgId())) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(),
+                                "Subtask does not belong to the provided organization"));
+            }
+            if (subtask.getTicketReference() == null) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(), "Ticket is not a subtask"));
+            }
+            if (subtask.getWorkItem() == null
+                    || !Objects.equals(subtask.getWorkItem().getItemId(), request.getWorkItemId())) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(),
+                                "Work item does not match the subtask"));
+            }
+
+            TicketMaster parentRitm = ticketMasterRepository.findById(
+                            subtask.getTicketReference().getTicketId())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(), "Parent RITM")));
+            if (parentRitm.getCompany() == null
+                    || !Objects.equals(parentRitm.getCompany().getCompanyId(), request.getOrgId())) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(),
+                                "Parent RITM does not belong to the provided organization"));
+            }
+
+            StatusMaster status = statusMasterRepository.findById(request.getStatusId())
+                    .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                            getDescription(DOES_NOT_EXIST.getDescription(),
+                                    "Status with ID " + request.getStatusId())));
+            if (!Boolean.TRUE.equals(status.getIsActive())
+                    || status.getCompany() == null || status.getWorkItem() == null
+                    || !Objects.equals(status.getCompany().getCompanyId(), request.getOrgId())
+                    || !Objects.equals(status.getWorkItem().getItemId(), request.getWorkItemId())) {
+                throw new FlickzzDeskException(INVALID_REQUEST,
+                        getDescription(INVALID_REQUEST.getDescription(),
+                                "Status does not belong to the provided organization and work item"));
+            }
+
+            String oldStatusCode = subtask.getStatus() != null
+                    ? subtask.getStatus().getStatusCode() : null;
+            subtask.setStatus(status);
+            subtask.setUpdatedBy(request.getUpdatedBy());
+            subtask.setIsUpdaterAdmin(request.getIsUpdaterAdmin());
+            TicketMaster savedSubtask = ticketMasterRepository.saveAndFlush(subtask);
+
+            TicketAudit ticketAudit = ticketAuditRepository.saveAndFlush(TicketAudit.builder()
+                    .ticket(savedSubtask)
+                    .actionType("SUBTASK_STATUS_UPDATE")
+                    .description("Subtask status updated")
+                    .changedBy(request.getUpdatedBy())
+                    .build());
+            List<TicketAuditDetail> auditDetails = List.of(
+                    buildAuditDetail(ticketAudit, "STATUS", oldStatusCode, status.getStatusCode()),
+                    buildAuditDetail(ticketAudit, "REMARKS", null, request.getRemarks()));
+            ticketAuditDetailRepository.saveAllAndFlush(auditDetails);
+
+            List<TicketClosureApprovalConfigVO> approvalWorkflows =
+                    ticketClosureApprovalConfigService.list(request.getWorkItemId(), request.getOrgId());
+            approvalWorkflows.stream()
+                    .filter(config -> Boolean.TRUE.equals(config.getIsApprovalRequired())
+                            && Objects.equals(config.getApprovalPendingStatusId(), request.getStatusId()))
+                    .findFirst()
+                    .ifPresent(config -> createSubtaskApproval(savedSubtask, parentRitm, request));
+
+            notificationService.notifyRitmSubtaskStatusUpdated(parentRitm, savedSubtask,
+                    request.getUpdatedBy(), request.getIsUpdaterAdmin());
+            return mapper.toRitmMasterVo(savedSubtask);
+        } catch (FlickzzDeskException e) {
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to update subtask status", e);
+            throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
+        }
+    }
+
+    private void validateSubtaskStatusRequest(SubtaskStatusUpdateRequestVO request) {
+        if (request == null || request.getTicketId() == null || request.getTicketId() <= 0
+                || request.getStatusId() == null || request.getStatusId() <= 0
+                || request.getWorkItemId() == null || request.getWorkItemId() <= 0
+                || request.getUpdatedBy() == null || request.getUpdatedBy() <= 0
+                || request.getIsUpdaterAdmin() == null
+                || request.getOrgId() == null || request.getOrgId() <= 0
+                || request.getRemarks() == null || request.getRemarks().length() > 4000) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(),
+                            "Invalid subtask status update data"));
+        }
+    }
+
+    private void createSubtaskApproval(TicketMaster subtask, TicketMaster parentRitm,
+                                       SubtaskStatusUpdateRequestVO request) {
+        AgentMaster approverAgent = parentRitm.getAssignedTo();
+        if (approverAgent == null || approverAgent.getUser() == null
+                || approverAgent.getOrganization() == null) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(),
+                            "Parent RITM must have an assigned agent to approve the subtask"));
+        }
+        boolean alreadyPending = ticketApproverRepository
+                .findByTicket_TicketIdAndIsActiveTrueOrderByApproverSequenceAsc(subtask.getTicketId())
+                .stream()
+                .anyMatch(approver -> Objects.equals(
+                        approver.getApproverAgent().getAgentId(), approverAgent.getAgentId()));
+        if (alreadyPending) {
+            return;
+        }
+
+        TicketApprover approver = new TicketApprover();
+        approver.setTicket(subtask);
+        approver.setIsGroupApprover(false);
+        approver.setApproverAgent(approverAgent);
+        approver.setApproverSequence(1);
+        approver.setIsMainApprover(true);
+        approver.setApprovalStatus(PENDING);
+        approver.setCreatedBy(request.getUpdatedBy());
+        approver.setIsActive(true);
+        TicketApprover savedApprover = ticketApproverRepository.saveAndFlush(approver);
+
+        TicketApproverRemark remark = new TicketApproverRemark();
+        remark.setTicketApprover(savedApprover);
+        remark.setTicket(subtask);
+        remark.setRemarkType(SUBTASK_CLOSURE_APPROVAL);
+        remark.setRemark(request.getRemarks());
+        remark.setCreatedBy(request.getUpdatedBy());
+        ticketApproverRemarkRepository.saveAndFlush(remark);
+
+        ApprovalMaster approval = ApprovalMaster.builder()
+                .requestId(savedApprover.getTicketApproverId())
+                .requestType(subtask.getWorkItem().getCode())
+                .approvalType(DRAFTED)
+                .description("Approval for subtask " + subtask.getTicketNumber())
+                .approverType("INDIVIDUAL")
+                .approverLevel(1)
+                .approverUserId(approverAgent.getUser().getUserId())
+                .approverOrgId(approverAgent.getOrganization().getCompanyId())
+                .status(PENDING)
+                .mandatory(true)
+                .active(true)
+                .createdBy(request.getUpdatedBy())
+                .createdOn(LocalDateTime.now())
+                .build();
+        approvalRepository.saveAndFlush(approval);
+
+    }
+
     private StringBuilder appendJsonString(StringBuilder json, String value) {
         if (value == null) {
             return json.append("null");
@@ -515,7 +674,7 @@ public class TicketService {
             } catch (FlickzzDeskException e) {
                 recordRequestTypeAudit(null, CREATE, null, request != null ? request.getCreatedBy() : null,
                         request != null ? request.getIsCreatedByAdmin() : null, FAILED, e.getDescription());
-                throw e;
+                throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
             } catch (Exception e) {
                 recordRequestTypeAudit(null, CREATE, null, request != null ? request.getCreatedBy() : null,
                         request != null ? request.getIsCreatedByAdmin() : null, FAILED, e.getMessage());
@@ -774,7 +933,7 @@ public class TicketService {
             recordSystemAudit("RitmMaster", ritmVO != null ? ritmVO.getRitmId() : null, CREATE, null,
                     null, ritmVO != null ? ritmVO.getCreatedBy() : null,
                     ritmVO != null ? ritmVO.getOrgId() : null, FAILED, e.getDescription());
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             recordSystemAudit("RitmMaster", ritmVO != null ? ritmVO.getRitmId() : null, CREATE, null,
                     null, ritmVO != null ? ritmVO.getCreatedBy() : null,
@@ -1227,7 +1386,7 @@ public class TicketService {
             recordSystemAudit("RitmMaster", request != null ? request.getRitmId() : null, UPDATE, null, null,
                     request != null ? request.getUpdatedBy() : null, request != null ? request.getOrgId() : null,
                     FAILED, e.getDescription());
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             recordSystemAudit("RitmMaster", request != null ? request.getRitmId() : null, UPDATE, null, null,
                     request != null ? request.getUpdatedBy() : null, request != null ? request.getOrgId() : null,
@@ -1440,7 +1599,7 @@ public class TicketService {
                     commentVO != null ? commentVO.getCommentText() : null,
                     commentVO != null ? (commentVO.getUpdatedBy() != null ? commentVO.getUpdatedBy() : commentVO.getCreatedBy()) : null,
                     null, FAILED, e.getDescription());
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             recordSystemAudit("RitmComment", commentVO != null ? commentVO.getCommentId() : null,
                     commentVO != null && commentVO.getCommentId() != null ? UPDATE : CREATE, null,
@@ -1533,7 +1692,7 @@ public class TicketService {
             recordSystemAudit("RitmMaster", ritmVO != null ? ritmVO.getRitmId() : null, UPDATE, null,
                     null, ritmVO != null ? ritmVO.getAssignedBy() : null,
                     null, FAILED, e.getDescription());
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             recordSystemAudit("RitmMaster", ritmVO != null ? ritmVO.getRitmId() : null, UPDATE, null,
                     null, ritmVO != null ? ritmVO.getAssignedBy() : null,
@@ -1576,7 +1735,7 @@ public class TicketService {
 
             return ritmList.stream().map(mapper::toRitmMasterVo).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getRitmListByAgentAndRequestType method in RitmService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1655,7 +1814,7 @@ public class TicketService {
                     .map(mapper::toRitmMasterVo)
                     .toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getTicketsByReferenceId method in TicketService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1681,7 +1840,7 @@ public class TicketService {
             log.info(generateLog(EXIT, this.getClass().getName()));
             return mapper.toRitmMasterVo(ritm);
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getRitmDetailsById method in RitmService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1720,7 +1879,7 @@ public class TicketService {
                     .isActive(comment.getIsActive())
                     .build()).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getRitmCommentsById method in RitmService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1759,7 +1918,7 @@ public class TicketService {
                     .changedAt(audit.getChangedAt())
                     .build()).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getRitmAuditHistoryById method in RitmService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1787,7 +1946,7 @@ public class TicketService {
                             .build())
                     .toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getTicketAuditHistoryByCompanyId method in TicketService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1833,7 +1992,7 @@ public class TicketService {
 
             return ritms.stream().map(mapper::toRitmMasterVo).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Exception in getRitmsByAssignment method in RitmService", e);
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
@@ -1846,7 +2005,7 @@ public class TicketService {
             List<TicketMaster> ritms = ticketMasterRepository.findByAssignedToIsNullAndSupportGroupSupportGroupId(supportGroupId);
             return ritms.stream().map(mapper::toRitmMasterVo).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
@@ -1863,7 +2022,7 @@ public class TicketService {
             }
             return ritms.stream().map(mapper::toRitmMasterVo).toList();
         } catch (FlickzzDeskException e) {
-            throw e;
+            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }

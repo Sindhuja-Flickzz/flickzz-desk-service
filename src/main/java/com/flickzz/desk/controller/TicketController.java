@@ -3,6 +3,7 @@ package com.flickzz.desk.controller;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.EffortLogService;
 import com.flickzz.desk.service.EffortTypeService;
+import com.flickzz.desk.service.TicketClosureApprovalConfigService;
 import com.flickzz.desk.service.TicketService;
 import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.*;
@@ -37,6 +38,69 @@ public class TicketController {
 
     @Autowired
     private EffortLogService effortLogService;
+
+    @Autowired
+    private TicketClosureApprovalConfigService ticketClosureApprovalConfigService;
+
+    @PostMapping("/approval/workflow/create")
+    public ResponseEntity<FlickzzDeskResponse> createTicketClosureApprovalWorkflow(
+            @RequestBody TicketClosureApprovalConfigRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        TicketClosureApprovalConfigVO response = ticketClosureApprovalConfigService.create(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "ticket approval workflow"), response);
+    }
+
+    @GetMapping("/approval/workflow/list/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> listTicketClosureApprovalWorkflows(@PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<TicketClosureApprovalConfigVO> response = ticketClosureApprovalConfigService.list(orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "ticket approval workflow"), response);
+    }
+
+    @GetMapping("/approval/workflow/list/{workItemId}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> listTicketClosureApprovalWorkflows(
+            @PathVariable Long workItemId, @PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<TicketClosureApprovalConfigVO> response =
+                ticketClosureApprovalConfigService.list(workItemId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "ticket approval workflow"), response);
+    }
+
+    @PostMapping("/approval/workflow/update")
+    public ResponseEntity<FlickzzDeskResponse> updateTicketClosureApprovalWorkflow(
+            @RequestBody TicketClosureApprovalConfigRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        TicketClosureApprovalConfigVO response = ticketClosureApprovalConfigService.update(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "ticket approval workflow"), response);
+    }
+
+    @DeleteMapping("/approval/workflow/delete")
+    public ResponseEntity<FlickzzDeskResponse> deleteTicketClosureApprovalWorkflow(
+            @RequestParam Long configId, @RequestParam Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        ticketClosureApprovalConfigService.delete(configId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "ticket approval workflow"));
+    }
+
+    @PostMapping("/update/subtask/status")
+    public ResponseEntity<FlickzzDeskResponse> updateSubtaskStatus(
+            @RequestBody SubtaskStatusUpdateRequestVO request) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        TicketMasterVO response = ticketService.updateSubtaskStatus(request);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "subtask status"), response);
+    }
 
     @PostMapping("/create/effort")
     public ResponseEntity<FlickzzDeskResponse> createEffortLog(@RequestBody EffortLogRequestVO request) {
@@ -97,6 +161,16 @@ public class TicketController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS,
                 getDescription(FETCH_SUCCESS.getDescription(), "agent effort"), response);
+    }
+
+    @GetMapping("/effort/summary/{ticketId}/{orgId}")
+    public ResponseEntity<FlickzzDeskResponse> getTicketEffortSummary(@PathVariable Long ticketId,
+                                                                      @PathVariable Long orgId) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        TicketEffortSummaryVO response = effortLogService.getTicketEffortSummary(ticketId, orgId);
+        log.info(generateLog(EXIT, this.getClass().getName()));
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "ticket effort summary"), response);
     }
 
     @DeleteMapping("/delete/effort")
