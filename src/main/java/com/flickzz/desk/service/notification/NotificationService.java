@@ -2,6 +2,7 @@ package com.flickzz.desk.service.notification;
 
 import com.flickzz.desk.mapper.CommonMapper;
 import com.flickzz.desk.model.*;
+import com.flickzz.desk.repo.AgentMasterRepository;
 import com.flickzz.desk.repo.ApprovalRepository;
 import com.flickzz.desk.repo.CompanyApproverRepository;
 import com.flickzz.desk.repo.NotificationRepository;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.PENDING;
@@ -33,6 +35,8 @@ public class NotificationService {
     NotificationRepository notificationRepository;
     @Autowired
     ApprovalRepository approvalRepository;
+    @Autowired
+    AgentMasterRepository agentMasterRepository;
     @Autowired
     CompanyApproverRepository companyApproverRepository;
     @Autowired
@@ -111,6 +115,46 @@ public class NotificationService {
         saveRitmNotification(ritm, recipient, actorId, actorName, "RITM updated",
                 "RITM " + ritm.getTicketNumber() + " has been updated and requires your attention.",
                 "UPDATE", false);
+    }
+
+    @Transactional
+    public void notifyRitmSubtaskStatusUpdated(TicketMaster parentRitm, TicketMaster subtask,
+                                               Long actorId, Boolean isActorAdmin) {
+        if (parentRitm == null || subtask == null || actorId == null
+                || parentRitm.getAssignedTo() == null) {
+            return;
+        }
+        String actorName = Boolean.TRUE.equals(isActorAdmin)
+                ? commonService.loadUserNameByUserId(actorId, true)
+                : agentMasterRepository.findById(actorId)
+                .map(AgentMaster::getAgentName)
+                .orElseThrow(() -> new IllegalStateException("Subtask status updater agent was not found"));
+        String parentNumber = parentRitm.getTicketNumber();
+        String subtaskNumber = subtask.getTicketNumber();
+        String statusCode = subtask.getStatus().getStatusCode();
+        saveRitmNotification(parentRitm, parentRitm.getAssignedTo(), actorId, actorName,
+                "Subtask status updated",
+                "Subtask " + subtaskNumber + " under RITM " + parentNumber
+                        + " changed to " + statusCode + " and requires your attention.",
+                "UPDATE", true);
+    }
+
+    @Transactional
+    public void notifyRitmSubtaskApprovalClarification(TicketMaster subtask, Long actorId,
+                                                       Boolean isActorAdmin, String remarks) {
+        if (subtask == null || actorId == null || subtask.getRequestedBy() == null
+                || subtask.getRequestedBy().getUser() == null
+                || Objects.equals(subtask.getRequestedBy().getUser().getUserId(), actorId)) {
+            return;
+        }
+        String actorName = commonService.loadUserNameByUserId(actorId, isActorAdmin);
+        String message = actorName + " requested clarification for subtask "
+                + subtask.getTicketNumber() + ".";
+        if (remarks != null && !remarks.isBlank()) {
+            message += " Remarks: " + remarks;
+        }
+        saveRitmNotification(subtask, subtask.getRequestedBy(), actorId, actorName,
+                "Subtask approval clarification", message, "CLARIFY", true);
     }
 
     @Transactional

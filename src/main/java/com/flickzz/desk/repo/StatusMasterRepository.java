@@ -21,6 +21,9 @@ public interface StatusMasterRepository extends JpaRepository<StatusMaster, Long
     List<StatusMaster> findByCompany_CompanyIdAndWorkItem_ItemIdAndStatusCodeIn(
             Long companyId, Long workItemId, List<String> statusCodes);
 
+    Optional<StatusMaster> findByCompany_CompanyIdAndWorkItem_ItemIdAndStatusCodeIgnoreCaseAndIsActiveTrue(
+            Long companyId, Long workItemId, String statusCode);
+
     List<StatusMaster> findByCompanyCompanyIdAndIsActiveTrue(Long orgId);
 
     Optional<StatusMaster> findFirstByCompanyCompanyIdAndIsActiveTrueOrderBySequenceNoAsc(Long companyId);

@@ -131,6 +131,12 @@ public class TicketMaster {
     @Column(name = "ACTION_REASON", columnDefinition = "TEXT")
     private String actionReason;
 
+    @Column(name = "PLANNED_HOURS")
+    private Integer plannedHours;
+
+    @Column(name = "PLANNED_MINUTES")
+    private Integer plannedMinutes;
+
     @Builder.Default
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive = true;
