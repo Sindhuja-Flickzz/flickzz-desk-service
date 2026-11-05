@@ -17,6 +17,8 @@ public class PlannedHoursRequestVO implements Serializable {
 
     private Long ticketId;
     private Long orgId;
+    private Long agentId;
+    private Long workItemId;
     private Integer hoursPlanned;
     private Integer minutesPlanned;
     private Long updatedBy;

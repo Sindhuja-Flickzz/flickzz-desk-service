@@ -346,10 +346,10 @@ public class TicketController {
                 getDescription(UPDATE_SUCCESS.getDescription(), "planned hours"), response);
     }
 
-    @GetMapping("/list/hours/planned/{orgId}")
-    public ResponseEntity<FlickzzDeskResponse> getPlannedHours(@PathVariable Long orgId) {
+    @GetMapping("/list/hours/planned/{orgId}/{agentId}")
+    public ResponseEntity<FlickzzDeskResponse> getPlannedHours(@PathVariable Long orgId, @PathVariable Long agentId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        List<PlannedHoursVO> response = ticketService.getPlannedHours(orgId);
+        List<PlannedHoursVO> response = ticketService.getPlannedHours(orgId, agentId);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS,
                 getDescription(FETCH_SUCCESS.getDescription(), "planned hours"), response);

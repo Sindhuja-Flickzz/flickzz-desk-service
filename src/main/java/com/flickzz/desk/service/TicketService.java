@@ -43,6 +43,8 @@ public class TicketService {
     @Autowired
     private TicketMasterRepository ticketMasterRepository;
     @Autowired
+    private TicketAgentAllocationRepository ticketAgentAllocationRepository;
+    @Autowired
     private TicketClosureApprovalConfigService ticketClosureApprovalConfigService;
     @Autowired
     private TicketApproverRepository ticketApproverRepository;
@@ -1755,9 +1757,16 @@ public class TicketService {
     @Transactional
     public PlannedHoursVO updatePlannedHours(PlannedHoursRequestVO request) {
         if (request == null || request.getTicketId() == null || request.getTicketId() <= 0
-                || request.getOrgId() == null || request.getOrgId() <= 0) {
+                || request.getOrgId() == null || request.getOrgId() <= 0
+                || request.getAgentId() == null || request.getAgentId() <= 0
+                || request.getWorkItemId() == null || request.getWorkItemId() <= 0
+                || request.getHoursPlanned() == null || request.getHoursPlanned() < 0
+                || request.getMinutesPlanned() == null
+                || request.getMinutesPlanned() < 0 || request.getMinutesPlanned() > 59
+                || request.getUpdatedBy() == null || request.getUpdatedBy() <= 0) {
             throw new FlickzzDeskException(INVALID_REQUEST,
-                    getDescription(INVALID_REQUEST.getDescription(), "Valid ticket, organization, planned hours, and updater data are required"));
+                    getDescription(INVALID_REQUEST.getDescription(),
+                            "Valid ticket, organization, agent, work item, planned effort, and updater are required"));
         }
 
         TicketMaster ticket = ticketMasterRepository.findById(request.getTicketId())
@@ -1769,30 +1778,71 @@ public class TicketService {
                     getDescription(INVALID_REQUEST.getDescription(), "Ticket does not belong to the provided organization"));
         }
 
-        ticket.setPlannedHours(request.getHoursPlanned());
-        ticket.setPlannedMinutes(request.getMinutesPlanned());
-        ticket.setUpdatedBy(request.getUpdatedBy());
-        ticket.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
-        TicketMaster savedTicket = ticketMasterRepository.save(ticket);
-        return toPlannedHoursVO(savedTicket);
+        AgentMaster agent = agentMasterRepository.findById(request.getAgentId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Agent with ID " + request.getAgentId())));
+        if (agent.getOrganization() == null
+                || !Objects.equals(agent.getOrganization().getCompanyId(), request.getOrgId())) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Agent does not belong to the provided organization"));
+        }
+
+        WorkItem workItem = workItemRepository.findById(request.getWorkItemId())
+                .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                        getDescription(DOES_NOT_EXIST.getDescription(), "Work item with ID " + request.getWorkItemId())));
+        if (workItem.getCompany() == null
+                || !Objects.equals(workItem.getCompany().getCompanyId(), request.getOrgId())) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Work item does not belong to the provided organization"));
+        }
+
+        Optional<TicketAgentAllocation> existingAllocation = ticketAgentAllocationRepository
+                .findByTicket_TicketIdAndAgent_AgentIdAndWorkItem_ItemId(
+                        request.getTicketId(), request.getAgentId(), request.getWorkItemId());
+        TicketAgentAllocation allocation;
+        if (existingAllocation.isPresent()) {
+            allocation = existingAllocation.get();
+            allocation.setUpdatedBy(request.getUpdatedBy());
+            if (request.getIsUpdatedByAdmin() != null) {
+                allocation.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+            }
+        } else {
+            allocation = TicketAgentAllocation.builder()
+                    .ticket(ticket)
+                    .agent(agent)
+                    .workItem(workItem)
+                    .createdBy(request.getUpdatedBy())
+                    .isCreatorAdmin(Boolean.TRUE.equals(request.getIsUpdatedByAdmin()))
+                    .build();
+        }
+        allocation.setPlannedHours(request.getHoursPlanned());
+        allocation.setPlannedMinutes(request.getMinutesPlanned());
+        return toPlannedHoursVO(ticketAgentAllocationRepository.save(allocation));
     }
 
-    private PlannedHoursVO toPlannedHoursVO(TicketMaster ticket) {
+    private PlannedHoursVO toPlannedHoursVO(TicketAgentAllocation allocation) {
         return PlannedHoursVO.builder()
-                .ticketId(ticket.getTicketId())
-                .orgId(ticket.getCompany().getCompanyId())
-                .hoursPlanned(ticket.getPlannedHours())
-                .minutesPlanned(ticket.getPlannedMinutes())
+                .ticketId(allocation.getTicket().getTicketId())
+                .orgId(allocation.getTicket().getCompany().getCompanyId())
+                .allocationId(allocation.getAllocationId())
+                .agentId(allocation.getAgent().getAgentId())
+                .workItemId(allocation.getWorkItem().getItemId())
+                .hoursPlanned(allocation.getPlannedHours())
+                .minutesPlanned(allocation.getPlannedMinutes())
                 .build();
     }
 
-    public List<PlannedHoursVO> getPlannedHours(Long orgId) {
+    public List<PlannedHoursVO> getPlannedHours(Long orgId, Long agentId) {
         if (orgId == null || orgId <= 0) {
             throw new FlickzzDeskException(INVALID_REQUEST,
                     getDescription(INVALID_REQUEST.getDescription(), "Organization ID is required and must be valid"));
         }
+        if (agentId == null || agentId <= 0) {
+            throw new FlickzzDeskException(INVALID_REQUEST,
+                    getDescription(INVALID_REQUEST.getDescription(), "Agent ID is required and must be valid"));
+        }
         try {
-            return ticketMasterRepository.findByCompanyCompanyIdAndPlannedHoursIsNotNull(orgId).stream()
+            return ticketAgentAllocationRepository.findByTicket_Company_CompanyIdAndAgent_AgentId(orgId, agentId).stream()
                     .map(this::toPlannedHoursVO)
                     .toList();
         } catch (Exception e) {

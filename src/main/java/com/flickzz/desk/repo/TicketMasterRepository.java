@@ -12,8 +12,6 @@ public interface TicketMasterRepository extends JpaRepository<TicketMaster, Long
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
     List<TicketMaster> findByCompanyCompanyId(Long orgId);
 
-    List<TicketMaster> findByCompanyCompanyIdAndPlannedHoursIsNotNull(Long orgId);
-
     @EntityGraph(attributePaths = {"fieldValues", "fieldValues.templateField"})
     List<TicketMaster> findByTicketReferenceTicketId(Long ticketReferenceId);
 

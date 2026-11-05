@@ -23,8 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.flickzz.desk.config.FlickzzDeskConstants.CREATE;
-import static com.flickzz.desk.config.FlickzzDeskConstants.SUCCESS;
+import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.getDescription;
 import static com.flickzz.desk.exception.FlickzzDeskErrorCodes.*;
 
@@ -70,39 +69,36 @@ public class TicketClosureApprovalConfigService {
                 throw invalidField("Work item does not belong to the provided company");
             }
 
-            StatusMaster pendingStatus = request.getApprovalPendingStatusId() == null ? null
-                    : statusMasterRepository.findById(request.getApprovalPendingStatusId())
-                    .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
-                    .orElseThrow(() -> notFound("Active approval pending status with ID "
-                            + request.getApprovalPendingStatusId()));
-            if (pendingStatus != null) {
-                validateStatusScope(pendingStatus, company.getCompanyId(), workItem.getItemId(),
-                        "Approval pending status");
-            }
+            StatusMaster pendingStatus = findStatus(request.getApprovalPendingStatusId(),
+                    company.getCompanyId(), workItem.getItemId(), "Approval pending status");
+            StatusMaster statusOnApproval = findStatus(request.getStatusOnApproval(),
+                    company.getCompanyId(), workItem.getItemId(), "Approval status");
+            StatusMaster statusOnDecline = findStatus(request.getStatusOnDecline(),
+                    company.getCompanyId(), workItem.getItemId(), "Decline status");
+            StatusMaster statusOnClarify = findStatus(request.getStatusOnClarify(),
+                    company.getCompanyId(), workItem.getItemId(), "Clarification status");
 
             boolean autoActionEnabled = request.getAutoActionTimeline() != null;
             String autoActionUnit = null;
-            StatusMaster autoApproveStatus = null;
+            StatusMaster autoActionStatus = null;
             if (autoActionEnabled) {
                 autoActionUnit = request.getAutoActionTimeUnit().trim().toUpperCase(Locale.ROOT);
-                autoApproveStatus = statusMasterRepository.findById(request.getStatusAfterAutoAction())
-                        .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
-                        .orElseThrow(() -> notFound("Active status with ID "
-                                + request.getStatusAfterAutoAction()));
-                validateStatusScope(autoApproveStatus, company.getCompanyId(), workItem.getItemId(),
-                        "Post-action status");
+                autoActionStatus = findStatus(request.getStatusAfterAutoAction(),
+                        company.getCompanyId(), workItem.getItemId(), "Post-action status");
             }
 
             TicketClosureApprovalConfig config = TicketClosureApprovalConfig.builder()
                     .company(company)
                     .workItem(workItem)
-                    .isApprovalRequired(request.getIsApprovalRequired())
+                    .isApprovalRequired(ACTIVE)
                     .approvalPendingStatus(pendingStatus)
                     .autoActionEnabled(autoActionEnabled)
                     .autoActionAfter(request.getAutoActionTimeline())
                     .autoActionUnit(autoActionUnit)
-                    .autoAction(autoActionEnabled ? "APPROVE" : null)
-                    .autoApproveStatus(autoApproveStatus)
+                    .autoActionStatus(autoActionStatus)
+                    .statusOnApproval(statusOnApproval)
+                    .statusOnDecline(statusOnDecline)
+                    .statusOnClarify(statusOnClarify)
                     .isActive(true)
                     .createdBy(request.getCreatedBy())
                     .isCreatorAdmin(request.getIsCreatedByAdmin())
@@ -132,11 +128,10 @@ public class TicketClosureApprovalConfigService {
                 || (updating && (request.getConfigId() == null || request.getConfigId() <= 0))
                 || request.getCompanyId() == null || request.getCompanyId() <= 0
                 || request.getWorkItemId() == null || request.getWorkItemId() <= 0
-                || request.getIsApprovalRequired() == null
-                || (Boolean.TRUE.equals(request.getIsApprovalRequired())
-                && (request.getApprovalPendingStatusId() == null || request.getApprovalPendingStatusId() <= 0))
-                || (request.getApprovalPendingStatusId() != null && request.getApprovalPendingStatusId() <= 0)
-                || (request.getStatusAfterAutoAction() != null && request.getStatusAfterAutoAction() <= 0)
+                || request.getApprovalPendingStatusId() == null || request.getApprovalPendingStatusId() <= 0
+                || request.getStatusOnApproval() == null || request.getStatusOnApproval() <= 0
+                || request.getStatusOnDecline() == null || request.getStatusOnDecline() <= 0
+                || request.getStatusOnClarify() == null || request.getStatusOnClarify() <= 0
                 || (updating && (request.getUpdatedBy() == null || request.getUpdatedBy() <= 0
                 || request.getIsUpdatedByAdmin() == null))
                 || (!updating && (request.getCreatedBy() == null || request.getCreatedBy() <= 0
@@ -153,6 +148,9 @@ public class TicketClosureApprovalConfigService {
             throw new FlickzzDeskException(INVALID_REQUEST,
                     getDescription(INVALID_REQUEST.getDescription(),
                             "Timeline, time unit, and post-action status must be provided together"));
+        }
+        if (request.getStatusAfterAutoAction() != null && request.getStatusAfterAutoAction() <= 0) {
+            throw invalidField("Post-action status must be greater than zero");
         }
         if (hasTimeline && request.getAutoActionTimeline() <= 0) {
             throw invalidField("Auto action timeline must be greater than zero");
@@ -181,6 +179,15 @@ public class TicketClosureApprovalConfigService {
         }
     }
 
+    private StatusMaster findStatus(Long statusId, Long companyId, Long workItemId, String fieldName) {
+        StatusMaster status = statusMasterRepository.findById(statusId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active " + fieldName.toLowerCase(Locale.ROOT)
+                        + " with ID " + statusId));
+        validateStatusScope(status, companyId, workItemId, fieldName);
+        return status;
+    }
+
     private TicketClosureApprovalConfigVO toVO(TicketClosureApprovalConfig config) {
         return TicketClosureApprovalConfigVO.builder()
                 .configId(config.getConfigId())
@@ -194,10 +201,16 @@ public class TicketClosureApprovalConfigService {
                 .autoActionEnabled(config.getAutoActionEnabled())
                 .autoActionTimeline(config.getAutoActionAfter())
                 .autoActionTimeUnit(config.getAutoActionUnit())
-                .statusAfterAutoAction(config.getAutoApproveStatus() == null
-                        ? null : config.getAutoApproveStatus().getStatusId())
-                .statusAfterAutoActionCode(config.getAutoApproveStatus() == null
-                        ? null : config.getAutoApproveStatus().getStatusCode())
+                .statusAfterAutoAction(config.getAutoActionStatus() == null
+                        ? null : config.getAutoActionStatus().getStatusId())
+                .statusAfterAutoActionCode(config.getAutoActionStatus() == null
+                        ? null : config.getAutoActionStatus().getStatusCode())
+                .statusOnApproval(config.getStatusOnApproval().getStatusId())
+                .statusOnApprovalCode(config.getStatusOnApproval().getStatusCode())
+                .statusOnDecline(config.getStatusOnDecline().getStatusId())
+                .statusOnDeclineCode(config.getStatusOnDecline().getStatusCode())
+                .statusOnClarify(config.getStatusOnClarify().getStatusId())
+                .statusOnClarifyCode(config.getStatusOnClarify().getStatusCode())
                 .isActive(config.getIsActive())
                 .createdBy(config.getCreatedBy())
                 .isCreatedByAdmin(config.getIsCreatorAdmin())
@@ -280,39 +293,36 @@ public class TicketClosureApprovalConfigService {
                 throw invalidField("Work item does not belong to the provided company");
             }
 
-            StatusMaster pendingStatus = request.getApprovalPendingStatusId() == null ? null
-                    : statusMasterRepository.findById(request.getApprovalPendingStatusId())
-                    .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
-                    .orElseThrow(() -> notFound("Active approval pending status with ID "
-                            + request.getApprovalPendingStatusId()));
-            if (pendingStatus != null) {
-                validateStatusScope(pendingStatus, company.getCompanyId(), workItem.getItemId(),
-                        "Approval pending status");
-            }
+            StatusMaster pendingStatus = findStatus(request.getApprovalPendingStatusId(),
+                    company.getCompanyId(), workItem.getItemId(), "Approval pending status");
+            StatusMaster statusOnApproval = findStatus(request.getStatusOnApproval(),
+                    company.getCompanyId(), workItem.getItemId(), "Approval status");
+            StatusMaster statusOnDecline = findStatus(request.getStatusOnDecline(),
+                    company.getCompanyId(), workItem.getItemId(), "Decline status");
+            StatusMaster statusOnClarify = findStatus(request.getStatusOnClarify(),
+                    company.getCompanyId(), workItem.getItemId(), "Clarification status");
 
             boolean autoActionEnabled = request.getAutoActionTimeline() != null;
             String autoActionUnit = null;
-            StatusMaster autoApproveStatus = null;
+            StatusMaster autoActionStatus = null;
             if (autoActionEnabled) {
                 autoActionUnit = request.getAutoActionTimeUnit().trim().toUpperCase(Locale.ROOT);
-                autoApproveStatus = statusMasterRepository.findById(request.getStatusAfterAutoAction())
-                        .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
-                        .orElseThrow(() -> notFound("Active status with ID "
-                                + request.getStatusAfterAutoAction()));
-                validateStatusScope(autoApproveStatus, company.getCompanyId(), workItem.getItemId(),
-                        "Post-action status");
+                autoActionStatus = findStatus(request.getStatusAfterAutoAction(),
+                        company.getCompanyId(), workItem.getItemId(), "Post-action status");
             }
 
             String oldValue = serializeSnapshot(config);
             config.setCompany(company);
             config.setWorkItem(workItem);
-            config.setIsApprovalRequired(request.getIsApprovalRequired());
+            config.setIsApprovalRequired(ACTIVE);
             config.setApprovalPendingStatus(pendingStatus);
             config.setAutoActionEnabled(autoActionEnabled);
             config.setAutoActionAfter(request.getAutoActionTimeline());
             config.setAutoActionUnit(autoActionUnit);
-            config.setAutoAction(autoActionEnabled ? "APPROVE" : null);
-            config.setAutoApproveStatus(autoApproveStatus);
+            config.setAutoActionStatus(autoActionStatus);
+            config.setStatusOnApproval(statusOnApproval);
+            config.setStatusOnDecline(statusOnDecline);
+            config.setStatusOnClarify(statusOnClarify);
             config.setUpdatedBy(request.getUpdatedBy());
             config.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
             config.setUpdatedAt(LocalDateTime.now());
@@ -324,7 +334,8 @@ public class TicketClosureApprovalConfigService {
                     saved.getConfigId(), "UPDATE", serializeSnapshot(saved), oldValue,
                     "[\"companyId\",\"workItemId\",\"isApprovalRequired\",\"approvalPendingStatusId\","
                             + "\"autoActionEnabled\",\"autoActionTimeline\",\"autoActionTimeUnit\","
-                            + "\"statusAfterAutoAction\",\"updatedBy\",\"isUpdatedByAdmin\"]",
+                            + "\"statusAfterAutoAction\",\"statusOnApproval\",\"statusOnDecline\","
+                            + "\"statusOnClarify\",\"updatedBy\",\"isUpdatedByAdmin\"]",
                     request.getUpdatedBy(), null, company.getCompanyId(), SUCCESS, null));
             return response;
         } catch (FlickzzDeskException e) {
@@ -348,9 +359,11 @@ public class TicketClosureApprovalConfigService {
         snapshot.put("autoActionEnabled", config.getAutoActionEnabled());
         snapshot.put("autoActionTimeline", config.getAutoActionAfter());
         snapshot.put("autoActionTimeUnit", config.getAutoActionUnit());
-        snapshot.put("autoAction", config.getAutoAction());
-        snapshot.put("statusAfterAutoAction", config.getAutoApproveStatus() == null
-                ? null : config.getAutoApproveStatus().getStatusCode());
+        snapshot.put("statusAfterAutoAction", config.getAutoActionStatus() == null
+                ? null : config.getAutoActionStatus().getStatusCode());
+        snapshot.put("statusOnApproval", config.getStatusOnApproval().getStatusId());
+        snapshot.put("statusOnDecline", config.getStatusOnDecline().getStatusId());
+        snapshot.put("statusOnClarify", config.getStatusOnClarify().getStatusId());
         snapshot.put("isActive", config.getIsActive());
         snapshot.put("createdBy", config.getCreatedBy());
         snapshot.put("isCreatorAdmin", config.getIsCreatorAdmin());
