@@ -21,6 +21,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.flickzz.desk.config.FlickzzDeskConstants.*;
 import static com.flickzz.desk.config.FlickzzDeskUtility.generateLog;
@@ -87,7 +89,7 @@ public class TicketService {
     @Autowired
     private RequestConfigRepository requestConfigRepository;
     @Autowired
-    private RequestTypeMasterRepository requestTypeMasterRepository;
+    private RequestTypeMasterRepository requestTypeRepository;
     @Autowired
     private TicketFieldValueRepository ticketFieldValueRepository;
     @Autowired
@@ -95,7 +97,7 @@ public class TicketService {
     @Autowired
     private StatusMasterRepository statusMasterRepository;
     @Autowired
-    private StatusVisibilityRepository statusVisibilityRepository;
+    private WorkItemRequestTypeMappingRepository workItemRequestTypeMappingRepository;
     @Autowired
     private WorkItemRepository workItemRepository;
     @Autowired
@@ -651,7 +653,7 @@ public class TicketService {
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(), "Company with ID " + request.getCompanyId())));
 
-                RequestTypeMaster requestType = requestTypeMasterRepository
+                RequestTypeMaster requestType = requestTypeRepository
                         .findByRequestTypeNameAndCompany_CompanyId(request.getRequestTypeName().trim(), request.getCompanyId())
                         .orElse(null);
                 if (requestType != null && Boolean.TRUE.equals(requestType.getIsActive())) {
@@ -670,7 +672,7 @@ public class TicketService {
                     requestType.setUpdatedAt(LocalDateTime.now());
                 }
                 requestType.setCreatedAt(requestType.getCreatedAt() == null ? LocalDateTime.now() : requestType.getCreatedAt());
-                RequestTypeMaster saved = requestTypeMasterRepository.saveAndFlush(requestType);
+                RequestTypeMaster saved = requestTypeRepository.saveAndFlush(requestType);
                 recordRequestTypeAudit(saved, CREATE, null, request.getCreatedBy(), request.getIsCreatedByAdmin(), SUCCESS, null);
                 response.add(mapper.toRequestTypeMasterVO(saved));
             } catch (FlickzzDeskException e) {
@@ -709,19 +711,19 @@ public class TicketService {
 
     @Transactional
     public void deleteRitmRequestType(Long requestTypeId, Long deletedBy, Boolean isDeletedByAdmin) {
-        RequestTypeMaster requestType = requestTypeMasterRepository.findById(requestTypeId)
+        RequestTypeMaster requestType = requestTypeRepository.findById(requestTypeId)
                 .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                         getDescription(DOES_NOT_EXIST.getDescription(), "RITM request type with ID " + requestTypeId)));
         String oldValue = "{\"requestType\":\"" + requestType.getRequestTypeName() + "\",\"isActive\":"
                 + requestType.getIsActive() + "}";
-        requestTypeMasterRepository.delete(requestType);
+        requestTypeRepository.delete(requestType);
         recordRequestTypeAudit(requestType, DELETE, oldValue, deletedBy, isDeletedByAdmin, SUCCESS, null);
     }
 
     @Transactional(readOnly = true)
     public List<RequestTypeMasterVO> getRitmRequestTypes(Long companyId) {
         return mapper.toRequestTypeMasterVOList(
-                requestTypeMasterRepository.findByCompany_CompanyIdAndIsActiveTrueOrderByRequestTypeNameAsc(companyId));
+                requestTypeRepository.findByCompany_CompanyIdAndIsActiveTrueOrderByRequestTypeNameAsc(companyId));
     }
 
     @Transactional
@@ -818,7 +820,7 @@ public class TicketService {
                         getDescription(INVALID_REQUEST.getDescription(), "Request type is required"));
             }
 
-            RequestTypeMaster requestType = requestTypeMasterRepository.findById(ritmVO.getRequestTypeId())
+            RequestTypeMaster requestType = requestTypeRepository.findById(ritmVO.getRequestTypeId())
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Request type " + ritmVO.getRequestType() + " for org " + ritmVO.getOrgId())));
 
@@ -1161,7 +1163,7 @@ public class TicketService {
             List<TicketAuditDetail> details = new ArrayList<>();
 
             if (request.getRequestTypeId() != null) {
-                RequestTypeMaster requestType = requestTypeMasterRepository.findById(request.getRequestTypeId())
+                RequestTypeMaster requestType = requestTypeRepository.findById(request.getRequestTypeId())
                         .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                                 getDescription(DOES_NOT_EXIST.getDescription(),
                                         "Request type with ID " + request.getRequestTypeId())));
@@ -2076,5 +2078,229 @@ public class TicketService {
         } catch (Exception e) {
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
+    }
+
+    @Transactional
+    public List<WorkItemRequestTypeMappingVO> createRequestTypeWorkItemMapping(WorkItemRequestTypeMappingRequestVO request) {
+        validateRequest(request, false);
+        TicketService.AssignmentContext context = loadContext(request);
+        List<RequestTypeMaster> requestTypes = loadRequestTypes(request, context.company().getCompanyId());
+        List<WorkItemRequestTypeMapping> existing = workItemRequestTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdOrderByMappingIdAsc(
+                        context.company().getCompanyId(), context.workItem().getItemId());
+        Map<Long, WorkItemRequestTypeMapping> byRequestType = existing.stream()
+                .collect(Collectors.toMap(mapping -> mapping.getRequestType().getRequestTypeId(),
+                        Function.identity(), (first, ignored) -> first));
+
+        List<WorkItemRequestTypeMapping> alreadyActive = requestTypes.stream()
+                .map(type -> byRequestType.get(type.getRequestTypeId()))
+                .filter(Objects::nonNull)
+                .filter(mapping -> Boolean.TRUE.equals(mapping.getIsActive()))
+                .toList();
+        if (!alreadyActive.isEmpty()) {
+            throw new FlickzzDeskException(ALREADY_EXISTS,
+                    getDescription(ALREADY_EXISTS.getDescription(), "work item request type assignment"));
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<WorkItemRequestTypeMapping> mappings = requestTypes.stream()
+                .map(type -> {
+                    WorkItemRequestTypeMapping mapping = byRequestType.get(type.getRequestTypeId());
+                    if (mapping == null) {
+                        mapping = WorkItemRequestTypeMapping.builder()
+                                .company(context.company())
+                                .workItem(context.workItem())
+                                .requestType(type)
+                                .createdBy(request.getCreatedBy())
+                                .isCreatorAdmin(request.getIsCreatedByAdmin())
+                                .createdAt(now)
+                                .build();
+                    }
+                    mapping.setIsActive(true);
+                    mapping.setUpdatedBy(request.getUpdatedBy());
+                    mapping.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+                    mapping.setUpdatedAt(request.getUpdatedBy() == null ? null : now);
+                    return mapping;
+                })
+                .toList();
+
+        return workItemRequestTypeMappingRepository.saveAllAndFlush(mappings).stream().map(this::toVO).toList();
+    }
+
+    private void validateRequest(WorkItemRequestTypeMappingRequestVO request, boolean updating) {
+        if (request == null || request.getCompanyId() == null || request.getCompanyId() <= 0
+                || request.getWorkItemId() == null || request.getWorkItemId() <= 0
+                || request.getRequestTypeIds() == null
+                || (!updating && request.getRequestTypeIds().isEmpty())
+                || request.getRequestTypeIds().stream().anyMatch(id -> id == null || id <= 0)
+                || new HashSet<>(request.getRequestTypeIds()).size() != request.getRequestTypeIds().size()
+                || request.getCreatedBy() == null || request.getCreatedBy() <= 0
+                || request.getIsCreatedByAdmin() == null
+                || (updating && (request.getUpdatedBy() == null || request.getUpdatedBy() <= 0
+                || request.getIsUpdatedByAdmin() == null))) {
+            throw invalidRequest("Invalid work item request type assignment data");
+        }
+    }
+
+    private TicketService.AssignmentContext loadContext(WorkItemRequestTypeMappingRequestVO request) {
+        return loadContext(request.getCompanyId(), request.getWorkItemId());
+    }
+
+    private List<RequestTypeMaster> loadRequestTypes(WorkItemRequestTypeMappingRequestVO request, Long companyId) {
+        List<RequestTypeMaster> requestTypes = requestTypeRepository.findAllById(request.getRequestTypeIds());
+        Map<Long, RequestTypeMaster> byId = requestTypes.stream()
+                .collect(Collectors.toMap(RequestTypeMaster::getRequestTypeId, Function.identity()));
+        for (Long requestTypeId : request.getRequestTypeIds()) {
+            RequestTypeMaster requestType = byId.get(requestTypeId);
+            if (requestType == null || !Boolean.TRUE.equals(requestType.getIsActive())
+                    || requestType.getCompany() == null
+                    || !companyId.equals(requestType.getCompany().getCompanyId())) {
+                throw invalidField("Request type ID " + requestTypeId + " is not active for the provided company");
+            }
+        }
+        return request.getRequestTypeIds().stream().map(byId::get).toList();
+    }
+
+    private WorkItemRequestTypeMappingVO toVO(WorkItemRequestTypeMapping mapping) {
+        return WorkItemRequestTypeMappingVO.builder()
+                .mappingId(mapping.getMappingId())
+                .companyId(mapping.getCompany().getCompanyId())
+                .workItemId(mapping.getWorkItem().getItemId())
+                .workItemCode(mapping.getWorkItem().getCode())
+                .workItemLabel(mapping.getWorkItem().getLabel())
+                .requestTypeId(mapping.getRequestType().getRequestTypeId())
+                .requestTypeName(mapping.getRequestType().getRequestTypeName())
+                .isActive(mapping.getIsActive())
+                .createdBy(mapping.getCreatedBy())
+                .isCreatedByAdmin(mapping.getIsCreatorAdmin())
+                .createdAt(mapping.getCreatedAt())
+                .updatedBy(mapping.getUpdatedBy())
+                .isUpdatedByAdmin(mapping.getIsUpdaterAdmin())
+                .updatedAt(mapping.getUpdatedAt())
+                .build();
+    }
+
+    private FlickzzDeskException invalidRequest(String message) {
+        return new FlickzzDeskException(INVALID_REQUEST,
+                getDescription(INVALID_REQUEST.getDescription(), message));
+    }
+
+    private TicketService.AssignmentContext loadContext(Long companyId, Long workItemId) {
+        CompanyMaster company = companyMasterRepository.findById(companyId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active company with ID " + companyId));
+        WorkItem workItem = workItemRepository.findById(workItemId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active work item with ID " + workItemId));
+        ensureWorkItemCompany(workItem, company);
+        return new TicketService.AssignmentContext(company, workItem);
+    }
+
+    private FlickzzDeskException invalidField(String message) {
+        return new FlickzzDeskException(INVALID_FIELD,
+                getDescription(INVALID_FIELD.getDescription(), message));
+    }
+
+    private FlickzzDeskException notFound(String message) {
+        return new FlickzzDeskException(DOES_NOT_EXIST,
+                getDescription(DOES_NOT_EXIST.getDescription(), message));
+    }
+
+    private void ensureWorkItemCompany(WorkItem workItem, CompanyMaster company) {
+        if (workItem.getCompany() == null
+                || !company.getCompanyId().equals(workItem.getCompany().getCompanyId())) {
+            throw invalidField("Work item does not belong to the provided company");
+        }
+    }
+
+    @Transactional
+    public List<WorkItemRequestTypeMappingVO> updateRequestTypeWorkItemMapping(WorkItemRequestTypeMappingRequestVO request) {
+        validateRequest(request, true);
+        TicketService.AssignmentContext context = loadContext(request);
+        List<RequestTypeMaster> requestTypes = loadRequestTypes(request, context.company().getCompanyId());
+        List<WorkItemRequestTypeMapping> existing = workItemRequestTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdOrderByMappingIdAsc(
+                        context.company().getCompanyId(), context.workItem().getItemId());
+        Map<Long, WorkItemRequestTypeMapping> byRequestType = existing.stream()
+                .collect(Collectors.toMap(mapping -> mapping.getRequestType().getRequestTypeId(),
+                        Function.identity(), (first, ignored) -> first));
+        Set<Long> selectedIds = request.getRequestTypeIds().stream().collect(Collectors.toSet());
+        LocalDateTime now = LocalDateTime.now();
+
+        for (WorkItemRequestTypeMapping mapping : existing) {
+            if (Boolean.TRUE.equals(mapping.getIsActive())
+                    && !selectedIds.contains(mapping.getRequestType().getRequestTypeId())) {
+                mapping.setIsActive(false);
+                setUpdater(mapping, request.getUpdatedBy(), request.getIsUpdatedByAdmin(), now);
+            }
+        }
+
+        List<WorkItemRequestTypeMapping> mappings = requestTypes.stream()
+                .map(type -> {
+                    WorkItemRequestTypeMapping mapping = byRequestType.get(type.getRequestTypeId());
+                    if (mapping == null) {
+                        mapping = WorkItemRequestTypeMapping.builder()
+                                .company(context.company())
+                                .workItem(context.workItem())
+                                .requestType(type)
+                                .createdBy(request.getCreatedBy())
+                                .isCreatorAdmin(request.getIsCreatedByAdmin())
+                                .createdAt(now)
+                                .build();
+                    }
+                    mapping.setIsActive(true);
+                    setUpdater(mapping, request.getUpdatedBy(), request.getIsUpdatedByAdmin(), now);
+                    return mapping;
+                })
+                .toList();
+
+        workItemRequestTypeMappingRepository.saveAll(existing);
+        return workItemRequestTypeMappingRepository.saveAllAndFlush(mappings).stream().map(this::toVO).toList();
+    }
+
+    private void setUpdater(WorkItemRequestTypeMapping mapping, Long updatedBy,
+                            Boolean isUpdatedByAdmin, LocalDateTime updatedAt) {
+        mapping.setUpdatedBy(updatedBy);
+        mapping.setIsUpdaterAdmin(isUpdatedByAdmin);
+        mapping.setUpdatedAt(updatedAt);
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkItemRequestTypeMappingVO> listRequestTypeWorkItemMappings(Long companyId, Long workItemId) {
+        if (companyId == null || companyId <= 0 || (workItemId != null && workItemId <= 0)) {
+            throw invalidRequest("Company ID and a valid optional work item ID are required");
+        }
+        CompanyMaster company = companyMasterRepository.findById(companyId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active company with ID " + companyId));
+        if (workItemId != null) {
+            WorkItem workItem = workItemRepository.findById(workItemId)
+                    .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                    .orElseThrow(() -> notFound("Active work item with ID " + workItemId));
+            ensureWorkItemCompany(workItem, company);
+        }
+
+        List<WorkItemRequestTypeMapping> mappings = workItemId == null
+                ? workItemRequestTypeMappingRepository.findByCompany_CompanyIdAndIsActiveTrueOrderByMappingIdAsc(companyId)
+                : workItemRequestTypeMappingRepository.findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueOrderByMappingIdAsc(
+                companyId, workItemId);
+        return mappings.stream().map(this::toVO).toList();
+    }
+
+    @Transactional
+    public void deleteRequestTypeWorkItemMapping(WorkItemRequestTypeMappingRequestVO request) {
+        if (request.getCompanyId() == null || request.getCompanyId() <= 0 || request.getMappingid() == null || request.getMappingid() <= 0
+                || request.getDeletedBy() == null || request.getDeletedBy() <= 0 || request.getIsDeletedByAdmin() == null) {
+            throw invalidRequest("Company, work item, and delete audit data are required");
+        }
+        Optional<WorkItemRequestTypeMapping> mappings = workItemRequestTypeMappingRepository
+                .findByCompany_CompanyIdAndMappingIdAndIsActiveTrue(request.getCompanyId(), request.getMappingid());
+        if (mappings.isEmpty()) {
+            throw notFound("Active work item request type assignment for work item ID " + request.getMappingid());
+        }
+        workItemRequestTypeMappingRepository.delete(mappings.get());
+    }
+
+    private record AssignmentContext(CompanyMaster company, WorkItem workItem) {
     }
 }

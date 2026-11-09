@@ -509,4 +509,35 @@ public class TicketController {
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM resolution date"), response);
     }
+
+    @PostMapping("/request/type/assignment/create")
+    public ResponseEntity<FlickzzDeskResponse> createRequestTypeWorkItemMapping(
+            @RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.createRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @PutMapping("/request/type/assignment/update")
+    public ResponseEntity<FlickzzDeskResponse> updateRequestTypeWorkItemMapping(
+            @RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.updateRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @GetMapping("/request/type/assignment/list/{companyId}")
+    public ResponseEntity<FlickzzDeskResponse> listRequestTypeWorkItemMappings(@PathVariable Long companyId,
+                                                                               @RequestParam(required = false) Long workItemId) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.listRequestTypeWorkItemMappings(companyId, workItemId);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @DeleteMapping("/request/type/assignment/delete")
+    public ResponseEntity<FlickzzDeskResponse> deleteRequestTypeWorkItemMapping(@RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        ticketService.deleteRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "work item request type assignment"));
+    }
 }
