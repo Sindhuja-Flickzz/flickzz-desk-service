@@ -25,8 +25,8 @@ public class WorkItem {
     @Column(name = "CODE", nullable = false, unique = true, length = 20)
     private String code;
 
-    @Column(name = "LABEL", nullable = false, length = 100)
-    private String label;
+    @Column(name = "DESCRIPTION", nullable = false, length = 100)
+    private String description;
 
     @Builder.Default
     @Column(name = "IS_ACTIVE")
