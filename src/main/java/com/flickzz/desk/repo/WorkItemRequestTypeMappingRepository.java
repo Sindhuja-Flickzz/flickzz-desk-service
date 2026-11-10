@@ -18,4 +18,7 @@ public interface WorkItemRequestTypeMappingRepository
             Long companyId, Long workItemId);
 
     List<WorkItemRequestTypeMapping> findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueOrderByMappingIdAsc(Long companyId, Long workItemId);
+
+    List<WorkItemRequestTypeMapping> findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueAndRequestType_IsActiveTrueOrderByRequestType_RequestTypeNameAsc(
+            Long companyId, Long workItemId);
 }

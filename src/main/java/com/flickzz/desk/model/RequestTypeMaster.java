@@ -63,7 +63,7 @@ public class RequestTypeMaster {
 
     @Column(name = "UPDATED_AT")
     private LocalDateTime updatedAt;
-    
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

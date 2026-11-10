@@ -11,4 +11,5 @@ public interface RequestTypeMasterRepository extends JpaRepository<RequestTypeMa
     Optional<RequestTypeMaster> findByRequestTypeNameAndCompany_CompanyId(String requestTypeName, Long companyId);
 
     List<RequestTypeMaster> findByCompany_CompanyIdAndIsActiveTrueOrderByRequestTypeNameAsc(Long companyId);
+
 }

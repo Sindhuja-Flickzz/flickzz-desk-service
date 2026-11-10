@@ -99,6 +99,10 @@ public class TicketService {
     @Autowired
     private WorkItemRequestTypeMappingRepository workItemRequestTypeMappingRepository;
     @Autowired
+    private WorkItemEffortTypeMappingRepository workItemEffortTypeMappingRepository;
+    @Autowired
+    private EffortTypeRepository effortTypeRepository;
+    @Autowired
     private WorkItemRepository workItemRepository;
     @Autowired
     private AuditService auditService;
@@ -724,6 +728,33 @@ public class TicketService {
     public List<RequestTypeMasterVO> getRitmRequestTypes(Long companyId) {
         return mapper.toRequestTypeMasterVOList(
                 requestTypeRepository.findByCompany_CompanyIdAndIsActiveTrueOrderByRequestTypeNameAsc(companyId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<RequestTypeMasterVO> getWorkItemRequestTypes(String workItemCode) {
+        if (workItemCode == null || workItemCode.isBlank()) {
+            throw invalidRequest("Work item code is required");
+        }
+
+        WorkItem workItem = workItemRepository.findByCodeAndIsActiveTrue(workItemCode.trim())
+                .orElseThrow(() -> notFound("Active work item with code " + workItemCode));
+        List<RequestTypeMaster> requestTypes = workItemRequestTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueAndRequestType_IsActiveTrueOrderByRequestType_RequestTypeNameAsc(
+                        workItem.getCompany().getCompanyId(), workItem.getItemId())
+                .stream()
+                .map(WorkItemRequestTypeMapping::getRequestType)
+                .toList();
+        return mapper.toRequestTypeMasterVOList(requestTypes);
+    }
+
+    private FlickzzDeskException invalidRequest(String message) {
+        return new FlickzzDeskException(INVALID_REQUEST,
+                getDescription(INVALID_REQUEST.getDescription(), message));
+    }
+
+    private FlickzzDeskException notFound(String message) {
+        return new FlickzzDeskException(DOES_NOT_EXIST,
+                getDescription(DOES_NOT_EXIST.getDescription(), message));
     }
 
     @Transactional
@@ -2180,11 +2211,6 @@ public class TicketService {
                 .build();
     }
 
-    private FlickzzDeskException invalidRequest(String message) {
-        return new FlickzzDeskException(INVALID_REQUEST,
-                getDescription(INVALID_REQUEST.getDescription(), message));
-    }
-
     private TicketService.AssignmentContext loadContext(Long companyId, Long workItemId) {
         CompanyMaster company = companyMasterRepository.findById(companyId)
                 .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
@@ -2199,11 +2225,6 @@ public class TicketService {
     private FlickzzDeskException invalidField(String message) {
         return new FlickzzDeskException(INVALID_FIELD,
                 getDescription(INVALID_FIELD.getDescription(), message));
-    }
-
-    private FlickzzDeskException notFound(String message) {
-        return new FlickzzDeskException(DOES_NOT_EXIST,
-                getDescription(DOES_NOT_EXIST.getDescription(), message));
     }
 
     private void ensureWorkItemCompany(WorkItem workItem, CompanyMaster company) {
@@ -2299,6 +2320,210 @@ public class TicketService {
             throw notFound("Active work item request type assignment for work item ID " + request.getMappingid());
         }
         workItemRequestTypeMappingRepository.delete(mappings.get());
+    }
+
+    @Transactional
+    public List<WorkItemEffortTypeMappingVO> createEffortTypeWorkItemMappings(
+            WorkItemEffortTypeMappingRequestVO request) {
+        validateEffortTypeMappingsRequest(request);
+        AssignmentContext context = loadContext(request.getCompanyId(), request.getWorkItemId());
+        List<EffortType> effortTypes = loadEffortTypes(request, request.getCompanyId());
+        List<WorkItemEffortTypeMapping> existing = workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdOrderByMappingIdAsc(
+                        request.getCompanyId(), request.getWorkItemId());
+        Map<Long, WorkItemEffortTypeMapping> byEffortType = existing.stream()
+                .collect(Collectors.toMap(mapping -> mapping.getEffortType().getEffortTypeId(),
+                        Function.identity(), (first, ignored) -> first));
+        if (effortTypes.stream()
+                .map(type -> byEffortType.get(type.getEffortTypeId()))
+                .filter(Objects::nonNull)
+                .anyMatch(mapping -> Boolean.TRUE.equals(mapping.getIsActive()))) {
+            throw new FlickzzDeskException(ALREADY_EXISTS,
+                    getDescription(ALREADY_EXISTS.getDescription(), "work item effort type assignment"));
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        List<WorkItemEffortTypeMapping> mappings = effortTypes.stream()
+                .map(type -> {
+                    WorkItemEffortTypeMapping mapping = byEffortType.get(type.getEffortTypeId());
+                    if (mapping == null) {
+                        mapping = WorkItemEffortTypeMapping.builder()
+                                .company(context.company())
+                                .workItem(context.workItem())
+                                .effortType(type)
+                                .createdBy(request.getCreatedBy())
+                                .isCreatorAdmin(request.getIsCreatedByAdmin())
+                                .createdAt(now)
+                                .build();
+                    }
+                    mapping.setIsActive(true);
+                    mapping.setUpdatedBy(request.getUpdatedBy());
+                    mapping.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+                    mapping.setUpdatedAt(request.getUpdatedBy() == null ? null : now);
+                    return mapping;
+                })
+                .toList();
+        return workItemEffortTypeMappingRepository.saveAllAndFlush(mappings)
+                .stream().map(this::toEffortTypeMappingVO).toList();
+    }
+
+    private void validateEffortTypeMappingsRequest(WorkItemEffortTypeMappingRequestVO request) {
+        if (request == null || request.getCompanyId() == null || request.getCompanyId() <= 0
+                || request.getWorkItemId() == null || request.getWorkItemId() <= 0
+                || request.getEffortTypeIds() == null || request.getEffortTypeIds().isEmpty()
+                || request.getEffortTypeIds().stream().anyMatch(id -> id == null || id <= 0)
+                || new HashSet<>(request.getEffortTypeIds()).size() != request.getEffortTypeIds().size()
+                || request.getCreatedBy() == null || request.getCreatedBy() <= 0
+                || request.getIsCreatedByAdmin() == null) {
+            throw invalidRequest("Invalid work item effort type assignment data");
+        }
+    }
+
+    private List<EffortType> loadEffortTypes(WorkItemEffortTypeMappingRequestVO request, Long companyId) {
+        List<EffortType> effortTypes = effortTypeRepository.findAllById(request.getEffortTypeIds());
+        Map<Long, EffortType> byId = effortTypes.stream()
+                .collect(Collectors.toMap(EffortType::getEffortTypeId, Function.identity()));
+        for (Long effortTypeId : request.getEffortTypeIds()) {
+            EffortType effortType = byId.get(effortTypeId);
+            if (effortType == null || !Boolean.TRUE.equals(effortType.getIsActive())
+                    || effortType.getCompany() == null
+                    || !companyId.equals(effortType.getCompany().getCompanyId())) {
+                throw invalidField("Effort type ID " + effortTypeId + " is not active for the provided company");
+            }
+        }
+        return request.getEffortTypeIds().stream().map(byId::get).toList();
+    }
+
+    private WorkItemEffortTypeMappingVO toEffortTypeMappingVO(WorkItemEffortTypeMapping mapping) {
+        return WorkItemEffortTypeMappingVO.builder()
+                .mappingId(mapping.getMappingId())
+                .companyId(mapping.getCompany().getCompanyId())
+                .workItemId(mapping.getWorkItem().getItemId())
+                .workItemCode(mapping.getWorkItem().getCode())
+                .workItemLabel(mapping.getWorkItem().getLabel())
+                .effortTypeId(mapping.getEffortType().getEffortTypeId())
+                .isActive(mapping.getIsActive())
+                .createdBy(mapping.getCreatedBy())
+                .isCreatedByAdmin(mapping.getIsCreatorAdmin())
+                .createdAt(mapping.getCreatedAt())
+                .updatedBy(mapping.getUpdatedBy())
+                .isUpdatedByAdmin(mapping.getIsUpdaterAdmin())
+                .updatedAt(mapping.getUpdatedAt())
+                .build();
+    }
+
+    @Transactional
+    public WorkItemEffortTypeMappingVO updateEffortTypeWorkItemMapping(
+            WorkItemEffortTypeMappingRequestVO request) {
+        validateEffortTypeMappingRequest(request, true);
+        AssignmentContext context = loadContext(request.getCompanyId(), request.getWorkItemId());
+        EffortType effortType = loadEffortType(request.getEffortTypeId(), request.getCompanyId());
+        WorkItemEffortTypeMapping mapping = workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndMappingIdAndIsActiveTrue(
+                        request.getCompanyId(), request.getMappingId())
+                .orElseThrow(() -> notFound(
+                        "Active work item effort type assignment with ID " + request.getMappingId()));
+
+        boolean duplicate = workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdOrderByMappingIdAsc(
+                        request.getCompanyId(), request.getWorkItemId())
+                .stream()
+                .anyMatch(existing -> !existing.getMappingId().equals(mapping.getMappingId())
+                        && Boolean.TRUE.equals(existing.getIsActive())
+                        && request.getEffortTypeId().equals(existing.getEffortType().getEffortTypeId()));
+        if (duplicate) {
+            throw new FlickzzDeskException(ALREADY_EXISTS,
+                    getDescription(ALREADY_EXISTS.getDescription(), "work item effort type assignment"));
+        }
+
+        mapping.setWorkItem(context.workItem());
+        mapping.setEffortType(effortType);
+        mapping.setUpdatedBy(request.getUpdatedBy());
+        mapping.setIsUpdaterAdmin(request.getIsUpdatedByAdmin());
+        mapping.setUpdatedAt(LocalDateTime.now());
+        return toEffortTypeMappingVO(workItemEffortTypeMappingRepository.saveAndFlush(mapping));
+    }
+
+    private void validateEffortTypeMappingRequest(WorkItemEffortTypeMappingRequestVO request, boolean updating) {
+        if (request == null || request.getCompanyId() == null || request.getCompanyId() <= 0
+                || request.getWorkItemId() == null || request.getWorkItemId() <= 0
+                || request.getEffortTypeId() == null || request.getEffortTypeId() <= 0) {
+            throw invalidRequest("Invalid work item effort type assignment data");
+        }
+        if (updating && (request.getUpdatedBy() == null || request.getUpdatedBy() <= 0
+                || request.getIsUpdatedByAdmin() == null)) {
+            throw invalidRequest("Invalid work item effort type assignment data");
+        }
+        if (!updating && (request.getCreatedBy() == null || request.getCreatedBy() <= 0
+                || request.getIsCreatedByAdmin() == null)) {
+            throw invalidRequest("Invalid work item effort type assignment data");
+        }
+    }
+
+    private EffortType loadEffortType(Long effortTypeId, Long companyId) {
+        EffortType effortType = effortTypeRepository.findByEffortTypeIdAndCompany_CompanyId(effortTypeId, companyId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> invalidField(
+                        "Effort type ID " + effortTypeId + " is not active for the provided company"));
+        return effortType;
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkItemEffortTypeMappingVO> listEffortTypeWorkItemMappings(Long companyId, Long workItemId) {
+        if (companyId == null || companyId <= 0 || (workItemId != null && workItemId <= 0)) {
+            throw invalidRequest("Company ID and a valid optional work item ID are required");
+        }
+        CompanyMaster company = companyMasterRepository.findById(companyId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active company with ID " + companyId));
+        if (workItemId != null) {
+            WorkItem workItem = workItemRepository.findById(workItemId)
+                    .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                    .orElseThrow(() -> notFound("Active work item with ID " + workItemId));
+            ensureWorkItemCompany(workItem, company);
+        }
+
+        List<WorkItemEffortTypeMapping> mappings = workItemId == null
+                ? workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndIsActiveTrueOrderByMappingIdAsc(companyId)
+                : workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueOrderByMappingIdAsc(
+                        companyId, workItemId);
+        return mappings.stream().map(this::toEffortTypeMappingVO).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<EffortTypeVO> listActiveEffortTypeWorkItemMappings(Long workItemId) {
+        if (workItemId == null || workItemId <= 0) {
+            throw invalidRequest("Work item ID is required");
+        }
+
+        WorkItem workItem = workItemRepository.findById(workItemId)
+                .filter(value -> Boolean.TRUE.equals(value.getIsActive()))
+                .orElseThrow(() -> notFound("Active work item with ID " + workItemId));
+        List<EffortType> effortTypes = workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndWorkItem_ItemIdAndIsActiveTrueAndEffortType_IsActiveTrueOrderByEffortType_SequenceAscEffortType_EffortTypeIdAsc(
+                        workItem.getCompany().getCompanyId(), workItem.getItemId())
+                .stream()
+                .map(WorkItemEffortTypeMapping::getEffortType)
+                .toList();
+        return mapper.toEffortTypeVOList(effortTypes);
+    }
+
+    @Transactional
+    public void deleteEffortTypeWorkItemMapping(WorkItemEffortTypeMappingRequestVO request) {
+        if (request == null || request.getCompanyId() == null || request.getCompanyId() <= 0
+                || request.getMappingId() == null || request.getMappingId() <= 0
+                || request.getDeletedBy() == null || request.getDeletedBy() <= 0
+                || request.getIsDeletedByAdmin() == null) {
+            throw invalidRequest("Company, mapping ID, and delete audit data are required");
+        }
+        WorkItemEffortTypeMapping mapping = workItemEffortTypeMappingRepository
+                .findByCompany_CompanyIdAndMappingIdAndIsActiveTrue(
+                        request.getCompanyId(), request.getMappingId())
+                .orElseThrow(() -> notFound(
+                        "Active work item effort type assignment with ID " + request.getMappingId()));
+        workItemEffortTypeMappingRepository.delete(mapping);
     }
 
     private record AssignmentContext(CompanyMaster company, WorkItem workItem) {
