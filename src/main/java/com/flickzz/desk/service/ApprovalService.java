@@ -332,9 +332,11 @@ public class ApprovalService {
         String oldTicketStatus = subtask.getStatus().getStatusCode();
         StatusMaster targetStatus = null;
         if (APPROVE.equalsIgnoreCase(request.getAction())) {
-            targetStatus = config.getAutoApproveStatus();
+            targetStatus = config.getStatusOnApproval();
         } else if (DECLINE.equalsIgnoreCase(request.getAction())) {
-            targetStatus = config.getAutoDeclineStatus();
+            targetStatus = config.getStatusOnDecline();
+        } else if (REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction())) {
+            targetStatus = config.getStatusOnClarify();
         }
         if (targetStatus != null) {
             if (!Boolean.TRUE.equals(targetStatus.getIsActive())
@@ -345,11 +347,14 @@ public class ApprovalService {
                         "Configured subtask approval status does not belong to the subtask");
             }
         } else if (APPROVE.equalsIgnoreCase(request.getAction())
-                || DECLINE.equalsIgnoreCase(request.getAction())) {
+                || DECLINE.equalsIgnoreCase(request.getAction())
+                || REQUEST_CLARIFICATION.equalsIgnoreCase(request.getAction())) {
             throw new FlickzzDeskException(DOES_NOT_EXIST,
                     getDescription(DOES_NOT_EXIST.getDescription(),
                             APPROVE.equalsIgnoreCase(request.getAction())
-                                    ? "Configured auto-approve status" : "Configured auto-decline status"));
+                                    ? "Configured approval status"
+                                    : DECLINE.equalsIgnoreCase(request.getAction())
+                                    ? "Configured decline status" : "Configured clarification status"));
         }
         TicketMaster parentRitm = null;
         if (targetStatus != null) {
@@ -361,6 +366,7 @@ public class ApprovalService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), "Parent RITM")));
             subtask.setStatus(targetStatus);
+            subtask.setIsActive(INACTIVE);
         }
 
         String oldApprovalStatus = approval.getStatus();

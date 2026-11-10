@@ -18,11 +18,13 @@ public class TicketClosureApprovalConfigRequestVO implements Serializable {
     private Long configId;
     private Long companyId;
     private Long workItemId;
-    private Boolean isApprovalRequired;
     private Long approvalPendingStatusId;
     private Integer autoActionTimeline;
     private String autoActionTimeUnit;
     private Long statusAfterAutoAction;
+    private Long statusOnApproval;
+    private Long statusOnDecline;
+    private Long statusOnClarify;
     private Long createdBy;
     private Long updatedBy;
     private Long deletedBy;

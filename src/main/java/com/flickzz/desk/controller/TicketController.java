@@ -314,6 +314,14 @@ public class TicketController {
                 getDescription(FETCH_SUCCESS.getDescription(), "RITM request type"), response);
     }
 
+    @GetMapping("/work/item/request/type/list/{workItem}")
+    public ResponseEntity<FlickzzDeskResponse> getWorkItemRequestTypes(@PathVariable String workItem) {
+        log.info(generateLog(ENTRY, this.getClass().getName()));
+        List<RequestTypeMasterVO> response = ticketService.getWorkItemRequestTypes(workItem);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "Work Item request type"), response);
+    }
+
     @PostMapping("/create")
     public ResponseEntity<FlickzzDeskResponse> createRitm(@RequestPart("ritm") RitmRequestVO ritmVO,
                                                           @RequestPart(value = "files", required = false)
@@ -346,10 +354,10 @@ public class TicketController {
                 getDescription(UPDATE_SUCCESS.getDescription(), "planned hours"), response);
     }
 
-    @GetMapping("/list/hours/planned/{orgId}")
-    public ResponseEntity<FlickzzDeskResponse> getPlannedHours(@PathVariable Long orgId) {
+    @GetMapping("/list/hours/planned/{orgId}/{agentId}")
+    public ResponseEntity<FlickzzDeskResponse> getPlannedHours(@PathVariable Long orgId, @PathVariable Long agentId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
-        List<PlannedHoursVO> response = ticketService.getPlannedHours(orgId);
+        List<PlannedHoursVO> response = ticketService.getPlannedHours(orgId, agentId);
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS,
                 getDescription(FETCH_SUCCESS.getDescription(), "planned hours"), response);
@@ -508,5 +516,77 @@ public class TicketController {
 
         log.info(generateLog(EXIT, this.getClass().getName()));
         return handleSuccessResponse(FETCH_SUCCESS, getDescription(FETCH_SUCCESS.getDescription(), "RITM resolution date"), response);
+    }
+
+    @PostMapping("/request/type/assignment/create")
+    public ResponseEntity<FlickzzDeskResponse> createRequestTypeWorkItemMapping(
+            @RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.createRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @PutMapping("/request/type/assignment/update")
+    public ResponseEntity<FlickzzDeskResponse> updateRequestTypeWorkItemMapping(
+            @RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.updateRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @GetMapping("/request/type/assignment/list/{companyId}")
+    public ResponseEntity<FlickzzDeskResponse> listRequestTypeWorkItemMappings(@PathVariable Long companyId,
+                                                                               @RequestParam(required = false) Long workItemId) {
+        List<WorkItemRequestTypeMappingVO> response = ticketService.listRequestTypeWorkItemMappings(companyId, workItemId);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "work item request type assignment"), response);
+    }
+
+    @DeleteMapping("/request/type/assignment/delete")
+    public ResponseEntity<FlickzzDeskResponse> deleteRequestTypeWorkItemMapping(@RequestBody WorkItemRequestTypeMappingRequestVO request) {
+        ticketService.deleteRequestTypeWorkItemMapping(request);
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "work item request type assignment"));
+    }
+
+    @PostMapping("/effort/type/assignment/create")
+    public ResponseEntity<FlickzzDeskResponse> createEffortTypeWorkItemMappings(
+            @RequestBody WorkItemEffortTypeMappingRequestVO request) {
+        List<WorkItemEffortTypeMappingVO> response = ticketService.createEffortTypeWorkItemMappings(request);
+        return handleSuccessResponse(CREATE_SUCCESS,
+                getDescription(CREATE_SUCCESS.getDescription(), "work item effort type assignment"), response);
+    }
+
+    @PutMapping("/effort/type/assignment/update")
+    public ResponseEntity<FlickzzDeskResponse> updateEffortTypeWorkItemMapping(
+            @RequestBody WorkItemEffortTypeMappingRequestVO request) {
+        WorkItemEffortTypeMappingVO response = ticketService.updateEffortTypeWorkItemMapping(request);
+        return handleSuccessResponse(UPDATE_SUCCESS,
+                getDescription(UPDATE_SUCCESS.getDescription(), "work item effort type assignment"), response);
+    }
+
+    @GetMapping("/effort/type/assignment/list/{companyId}")
+    public ResponseEntity<FlickzzDeskResponse> listEffortTypeWorkItemMappings(
+            @PathVariable Long companyId, @RequestParam(required = false) Long workItemId) {
+        List<WorkItemEffortTypeMappingVO> response =
+                ticketService.listEffortTypeWorkItemMappings(companyId, workItemId);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "work item effort type assignment"), response);
+    }
+
+    @DeleteMapping("/effort/type/assignment/delete")
+    public ResponseEntity<FlickzzDeskResponse> deleteEffortTypeWorkItemMapping(
+            @RequestBody WorkItemEffortTypeMappingRequestVO request) {
+        ticketService.deleteEffortTypeWorkItemMapping(request);
+        return handleSuccessResponse(DELETE_SUCCESS,
+                getDescription(DELETE_SUCCESS.getDescription(), "work item effort type assignment"));
+    }
+
+    @GetMapping("/work/item/effort/type/active/list/{workItem}")
+    public ResponseEntity<FlickzzDeskResponse> listActiveEffortTypeWorkItemMappings(
+            @PathVariable Long workItem) {
+        List<EffortTypeVO> response = ticketService.listActiveEffortTypeWorkItemMappings(workItem);
+        return handleSuccessResponse(FETCH_SUCCESS,
+                getDescription(FETCH_SUCCESS.getDescription(), "active work item effort type assignment"), response);
     }
 }

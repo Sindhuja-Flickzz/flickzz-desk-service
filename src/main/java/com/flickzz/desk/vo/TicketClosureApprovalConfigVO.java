@@ -24,6 +24,12 @@ public class TicketClosureApprovalConfigVO {
     private String autoActionTimeUnit;
     private Long statusAfterAutoAction;
     private String statusAfterAutoActionCode;
+    private Long statusOnApproval;
+    private String statusOnApprovalCode;
+    private Long statusOnDecline;
+    private String statusOnDeclineCode;
+    private Long statusOnClarify;
+    private String statusOnClarifyCode;
     private Boolean isActive;
     private Long createdBy;
     private Boolean isCreatedByAdmin;

@@ -1425,16 +1425,6 @@ public class CommonMapper {
                 .build();
     }
 
-    private TicketMasterVO toRitmTicketReferenceVO(TicketMaster ticketReference) {
-        if (ticketReference == null) {
-            return null;
-        }
-        return TicketMasterVO.builder()
-                .ticketId(ticketReference.getTicketId())
-                .ticketNumber(ticketReference.getTicketNumber())
-                .build();
-    }
-
     public AgentMasterVO toRitmAgentMasterVO(AgentMaster requestedBy) {
         if (requestedBy == null) {
             return null;
@@ -1493,6 +1483,16 @@ public class CommonMapper {
                 .build();
     }
 
+    private TicketMasterVO toRitmTicketReferenceVO(TicketMaster ticketReference) {
+        if (ticketReference == null) {
+            return null;
+        }
+        return TicketMasterVO.builder()
+                .ticketId(ticketReference.getTicketId())
+                .ticketNumber(ticketReference.getTicketNumber())
+                .build();
+    }
+
     private TicketWatchlistVO toRitmWatchlistVOForRitm(TicketWatchlist ticketWatchlist) {
         if (ticketWatchlist == null) {
             return null;
@@ -1527,7 +1527,16 @@ public class CommonMapper {
         if (workItem == null) {
             return null;
         }
-        return WorkItemVO.builder().itemId(workItem.getItemId()).code(workItem.getCode()).label(workItem.getLabel()).build();
+        return WorkItemVO.builder()
+                .itemId(workItem.getItemId())
+                .code(workItem.getCode())
+                .label(workItem.getDescription())
+                .isActive(workItem.getIsActive())
+                .createdBy(workItem.getCreatedBy())
+                .updatedBy(workItem.getUpdatedBy())
+                .isCreatedByAdmin(workItem.getIsCreatorAdmin())
+                .isUpdatedByAdmin(workItem.getIsUpdaterAdmin())
+                .build();
     }
 
     private StatusMasterVO toRitmStatusVO(StatusMaster status) {

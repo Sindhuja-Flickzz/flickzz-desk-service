@@ -47,16 +47,21 @@ public class TicketClosureApprovalConfig {
     @Column(name = "AUTO_ACTION_UNIT", length = 10)
     private String autoActionUnit;
 
-    @Column(name = "AUTO_ACTION", length = 10)
-    private String autoAction;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "AUTO_ACTION_STATUS_ID")
+    private StatusMaster autoActionStatus;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AUTO_APPROVE_STATUS_ID")
-    private StatusMaster autoApproveStatus;
+    @JoinColumn(name = "ON_APPROVE_STATUS_ID", nullable = false)
+    private StatusMaster statusOnApproval;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AUTO_DECLINE_STATUS_ID")
-    private StatusMaster autoDeclineStatus;
+    @JoinColumn(name = "ON_DECLINE_STATUS_ID", nullable = false)
+    private StatusMaster statusOnDecline;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ON_CLARIFY_STATUS_ID", nullable = false)
+    private StatusMaster statusOnClarify;
 
     @Column(name = "IS_ACTIVE", nullable = false)
     private Boolean isActive;

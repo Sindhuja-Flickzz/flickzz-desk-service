@@ -6,10 +6,7 @@ import com.flickzz.desk.model.AgentEffortLog;
 import com.flickzz.desk.model.AgentMaster;
 import com.flickzz.desk.model.EffortType;
 import com.flickzz.desk.model.TicketMaster;
-import com.flickzz.desk.repo.AgentEffortLogRepository;
-import com.flickzz.desk.repo.AgentMasterRepository;
-import com.flickzz.desk.repo.EffortTypeRepository;
-import com.flickzz.desk.repo.TicketMasterRepository;
+import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.*;
 import com.flickzz.desk.vo.request.EffortLogRequestVO;
 import org.springframework.stereotype.Service;
@@ -30,17 +27,20 @@ public class EffortLogService {
     private final AgentEffortLogRepository effortLogRepository;
     private final AgentMasterRepository agentMasterRepository;
     private final EffortTypeRepository effortTypeRepository;
+    private final TicketAgentAllocationRepository ticketAgentAllocationRepository;
     private final TicketMasterRepository ticketMasterRepository;
     private final CommonMapper mapper;
 
     public EffortLogService(AgentEffortLogRepository effortLogRepository,
                             AgentMasterRepository agentMasterRepository,
                             EffortTypeRepository effortTypeRepository,
+                            TicketAgentAllocationRepository ticketAgentAllocationRepository,
                             TicketMasterRepository ticketMasterRepository,
                             CommonMapper mapper) {
         this.effortLogRepository = effortLogRepository;
         this.agentMasterRepository = agentMasterRepository;
         this.effortTypeRepository = effortTypeRepository;
+        this.ticketAgentAllocationRepository = ticketAgentAllocationRepository;
         this.ticketMasterRepository = ticketMasterRepository;
         this.mapper = mapper;
     }
@@ -156,10 +156,6 @@ public class EffortLogService {
     public TicketEffortSummaryVO getTicketEffortSummary(Long ticketId, Long orgId) {
         validateIds(ticketId, orgId);
         TicketMaster ticket = findTicket(ticketId, orgId);
-//        if (ticket.getWorkItem() == null || !"RITM".equalsIgnoreCase(ticket.getWorkItem().getCode())) {
-//            throw new FlickzzDeskException(INVALID_REQUEST,
-//                    getDescription(INVALID_REQUEST.getDescription(), "Ticket is not a RITM"));
-//        }
 
         List<TicketMaster> subtasks = ticketMasterRepository
                 .findByTicketReferenceTicketIdAndCompanyCompanyIdOrderByTicketIdAsc(ticketId, orgId);
@@ -201,10 +197,18 @@ public class EffortLogService {
         totalEffort.add(ticketEffort.totalMinutes);
         totalEffort.add(subtasksEffort.totalMinutes);
 
+        EffortAccumulator plannedEffort = new EffortAccumulator();
+        ticketAgentAllocationRepository.findByTicket_TicketId(ticketId)
+                .forEach(allocation -> plannedEffort.add(
+                        allocation.getPlannedHours(), allocation.getPlannedMinutes()));
+        subtasks.forEach(subtask -> ticketAgentAllocationRepository.findByTicket_TicketId(subtask.getTicketId())
+                .forEach(allocation -> plannedEffort.add(
+                        allocation.getPlannedHours(), allocation.getPlannedMinutes())));
+
         return TicketEffortSummaryVO.builder()
                 .ticketId(ticketId)
                 .ticketNumber(ticket.getTicketNumber())
-                .plannedEffort(EffortAccumulator.from(ticket.getPlannedHours(), ticket.getPlannedMinutes()).toDurationVO())
+                .plannedEffort(plannedEffort.toDurationVO())
                 .ticketLoggedEffort(ticketEffort.toDurationVO())
                 .subtasksLoggedEffort(subtasksEffort.toDurationVO())
                 .totalLoggedEffort(totalEffort.toDurationVO())
@@ -262,12 +266,6 @@ public class EffortLogService {
 
     private static class EffortAccumulator {
         protected long totalMinutes;
-
-        private static EffortAccumulator from(Integer hours, Integer minutes) {
-            EffortAccumulator effort = new EffortAccumulator();
-            effort.add(hours, minutes);
-            return effort;
-        }
 
         protected void add(Integer hours, Integer minutes) {
             add((hours == null ? 0L : hours.longValue()) * 60L + (minutes == null ? 0L : minutes));
