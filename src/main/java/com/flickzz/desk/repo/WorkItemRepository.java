@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface WorkItemRepository extends JpaRepository<WorkItem, Long> {
 
-    List<WorkItem> findByIsActive(Boolean active);
+    List<WorkItem> findByCompany_CompanyIdAndIsActiveTrue(Long companyId);
 
     Optional<WorkItem> findByCode(String code);
 
