@@ -55,17 +55,9 @@ public class RequestService {
                 }
             } else {
                 if (requestConfig.getCalculateBackward()) {
-                    if (requestConfig.getRangeTo() > requestConfig.getRangeFrom()) {
-                        nextRange = requestConfig.getCurrentRange() - 1;
-                    } else {
-                        nextRange = requestConfig.getCurrentRange() + 1;
-                    }
+                    nextRange = requestConfig.getCurrentRange() - 1;
                 } else {
-                    if (requestConfig.getRangeFrom() > requestConfig.getRangeTo()) {
-                        nextRange = requestConfig.getCurrentRange() + 1;
-                    } else {
-                        nextRange = requestConfig.getCurrentRange() - 1;
-                    }
+                    nextRange = requestConfig.getCurrentRange() + 1;
                 }
             }
             requestNumber = requestConfig.getRequestPrefix() + nextRange;

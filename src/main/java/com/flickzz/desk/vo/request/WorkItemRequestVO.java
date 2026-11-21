@@ -20,4 +20,7 @@ public class WorkItemRequestVO implements Serializable {
     private Long companyId;
     private Long createdBy;
     private Boolean isCreatedByAdmin;
+    private Boolean isParent;
+    private Boolean isSR;
+    private Long parentWorkItemId;
 }

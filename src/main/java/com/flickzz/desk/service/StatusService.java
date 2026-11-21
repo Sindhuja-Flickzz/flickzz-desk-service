@@ -9,6 +9,7 @@ import com.flickzz.desk.model.WorkItem;
 import com.flickzz.desk.repo.*;
 import com.flickzz.desk.vo.StatusMasterVO;
 import com.flickzz.desk.vo.StatusVisibilityVO;
+import com.flickzz.desk.vo.request.StatusCreateRequestVO;
 import com.flickzz.desk.vo.request.StatusVisibilityUpdateRequestVO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class StatusService {
     private AuditService auditService;
 
     @Transactional
-    public List<StatusMasterVO> createStatus(List<StatusMasterVO> statusVOS) {
+    public List<StatusMasterVO> createStatus(List<StatusCreateRequestVO> statusVOS) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
             if (statusVOS == null || statusVOS.isEmpty()) {
@@ -53,7 +54,7 @@ public class StatusService {
                         getDescription(INVALID_REQUEST.getDescription(), "RITM status data is required"));
             }
 
-            StatusMasterVO firstStatus = statusVOS.get(0);
+            StatusCreateRequestVO firstStatus = statusVOS.get(0);
             if (firstStatus == null || firstStatus.getCompanyId() == null || firstStatus.getCompanyId() <= 0) {
                 throw new FlickzzDeskException(INVALID_REQUEST,
                         getDescription(INVALID_REQUEST.getDescription(), "Company ID is required and must be valid"));
@@ -70,7 +71,7 @@ public class StatusService {
             Set<Integer> sequenceNumbers = new HashSet<>();
             Set<String> visibleStatusCodes = new HashSet<>();
             List<StatusMaster> statusesToSave = new ArrayList<>();
-            for (StatusMasterVO statusVO : statusVOS) {
+            for (StatusCreateRequestVO statusVO : statusVOS) {
                 if (statusVO == null) {
                     throw new FlickzzDeskException(INVALID_REQUEST,
                             getDescription(INVALID_REQUEST.getDescription(), "RITM status data is required"));
@@ -80,7 +81,7 @@ public class StatusService {
                             getDescription(INVALID_REQUEST.getDescription(), "All RITM statuses must use the same company"));
                 }
                 if (statusVO.getStatusCode() == null || statusVO.getStatusCode().isBlank()
-                        || statusVO.getStatusCode().length() > 50) {
+                        || statusVO.getStatusCode().trim().length() > 50) {
                     throw new FlickzzDeskException(INVALID_REQUEST,
                             getDescription(INVALID_REQUEST.getDescription(), "Status code is required and must not exceed 50 characters"));
                 }
@@ -97,7 +98,7 @@ public class StatusService {
                             getDescription(INVALID_REQUEST.getDescription(), "Visible statuses are required"));
                 }
 
-                String statusCode = statusVO.getStatusCode();
+                String statusCode = statusVO.getStatusCode().trim();
                 Integer sequenceNo = statusVO.getSequenceNo();
                 if (!statusCodes.add(statusCode)
                         || statusMasterRepository.existsByCompany_CompanyIdAndWorkItem_ItemIdAndStatusCode(
@@ -113,11 +114,13 @@ public class StatusService {
                 }
 
                 Set<String> currentVisibleStatusCodes = new HashSet<>();
-                for (String visibleStatusCode : getVisibleStatusCodes(statusVO.getVisibleStatuses())) {
-                    if (visibleStatusCode == null || visibleStatusCode.isBlank() || visibleStatusCode.length() > 50) {
+                for (String visibleStatusCode : statusVO.getVisibleStatuses()) {
+                    if (visibleStatusCode == null || visibleStatusCode.isBlank()
+                            || visibleStatusCode.trim().length() > 50) {
                         throw new FlickzzDeskException(INVALID_REQUEST,
                                 getDescription(INVALID_REQUEST.getDescription(), "Visible status codes must be non-empty and not exceed 50 characters"));
                     }
+                    visibleStatusCode = visibleStatusCode.trim();
                     if (!currentVisibleStatusCodes.add(visibleStatusCode)) {
                         throw new FlickzzDeskException(INVALID_REQUEST,
                                 getDescription(INVALID_REQUEST.getDescription(), "Duplicate visible status code"));
@@ -159,9 +162,12 @@ public class StatusService {
 
                 List<StatusVisibility> visibilityRows = new ArrayList<>();
                 for (int index = 0; index < statusVOS.size(); index++) {
-                    StatusMasterVO statusVO = statusVOS.get(index);
+                    StatusCreateRequestVO statusVO = statusVOS.get(index);
                     StatusMaster currentStatus = savedStatuses.get(index);
-                    for (String visibleStatusCode : getVisibleStatusCodes(statusVO.getVisibleStatuses())) {
+                    for (String visibleStatusCode : statusVO.getVisibleStatuses()) {
+                        if (visibleStatusCode != null) {
+                            visibleStatusCode = visibleStatusCode.trim();
+                        }
                         StatusMaster visibleStatus = statusesByCode.get(visibleStatusCode);
                         visibilityRows.add(new StatusVisibility(null, companyMaster, workItem, currentStatus,
                                 visibleStatus, true, statusVO.getCreatedBy(), null,
@@ -185,7 +191,7 @@ public class StatusService {
                     .isCreatorAdmin(savedStatus.getIsCreatorAdmin())
                     .build()).toList();
         } catch (FlickzzDeskException e) {
-            StatusMasterVO firstStatus = statusVOS != null
+            StatusCreateRequestVO firstStatus = statusVOS != null
                     ? statusVOS.stream().filter(Objects::nonNull).findFirst().orElse(null)
                     : null;
             recordSystemAudit("RitmStatus", null, CREATE, null,
@@ -194,7 +200,7 @@ public class StatusService {
                     firstStatus != null ? firstStatus.getCompanyId() : null, FAILED, e.getDescription());
             throw e;
         } catch (Exception e) {
-            StatusMasterVO firstStatus = statusVOS != null
+            StatusCreateRequestVO firstStatus = statusVOS != null
                     ? statusVOS.stream().filter(Objects::nonNull).findFirst().orElse(null)
                     : null;
             recordSystemAudit("RitmStatus", null, CREATE, null,

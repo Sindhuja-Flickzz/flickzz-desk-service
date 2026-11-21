@@ -206,6 +206,18 @@ public class SettingsService {
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), COMPANY)));
 
+            WorkItem parentWorkItem = null;
+            if (request.getParentWorkItemId() != null) {
+                if (request.getParentWorkItemId() <= 0) {
+                    throw new FlickzzDeskException(INVALID_FIELD,
+                            getDescription(INVALID_FIELD.getDescription(), "Parent work item"));
+                }
+                parentWorkItem = workItemRepository
+                        .findByItemIdAndCompany_CompanyId(request.getParentWorkItemId(), request.getCompanyId())
+                        .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
+                                getDescription(DOES_NOT_EXIST.getDescription(), "Parent work item")));
+            }
+
             String code = request.getCode().trim();
             workItemRepository.findByCode(code).ifPresent(existing -> {
                 throw new FlickzzDeskException(ALREADY_EXISTS,
@@ -218,10 +230,14 @@ public class SettingsService {
                     .company(company)
                     .createdBy(request.getCreatedBy())
                     .isCreatorAdmin(Boolean.TRUE.equals(request.getIsCreatedByAdmin()))
+                    .isParent(Boolean.TRUE.equals(request.getIsParent()))
+                    .isServiceRequest(Boolean.TRUE.equals(request.getIsSR()))
+                    .parentItem(parentWorkItem)
                     .build();
 
             WorkItem saved = workItemRepository.save(workItem);
-            recordWorkItemAudit(saved, "CREATE", null, "[\"code\",\"description\",\"companyId\"]",
+            recordWorkItemAudit(saved, "CREATE", null,
+                    "[\"code\",\"description\",\"companyId\",\"isParent\",\"isServiceRequest\",\"parentWorkItemId\"]",
                     saved.getCreatedBy());
             return mapper.toWorkItemVO(saved);
         } catch (FlickzzDeskException e) {
@@ -255,6 +271,11 @@ public class SettingsService {
         snapshot.put("itemId", workItem.getItemId());
         snapshot.put("code", workItem.getCode());
         snapshot.put("description", workItem.getDescription());
+        snapshot.put("isParent", workItem.getIsParent());
+        snapshot.put("isServiceRequest", workItem.getIsServiceRequest());
+        snapshot.put("parentWorkItemId", workItem.getParentItem() != null
+                ? workItem.getParentItem().getItemId()
+                : null);
         snapshot.put("companyId", workItem.getCompany().getCompanyId());
         snapshot.put("isActive", workItem.getIsActive());
         snapshot.put("createdBy", workItem.getCreatedBy());
@@ -310,7 +331,7 @@ public class SettingsService {
     public List<WorkItemVO> listWorkItems(String orgId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
-            return workItemRepository.findByIsActive(ACTIVE).stream().map(mapper::toWorkItemVO).toList();
+            return workItemRepository.findByCompany_CompanyIdAndIsActiveTrue(Long.valueOf(orgId)).stream().map(mapper::toWorkItemVO).toList();
         } catch (FlickzzDeskException e) {
             throw e;
         } catch (Exception e) {
@@ -322,7 +343,7 @@ public class SettingsService {
     public List<FieldTypeVO> listFieldTypes(String orgId) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
         try {
-            return fieldTypeRepository.findByIsActive(ACTIVE).stream().map(mapper::toFieldTypeVO).toList();
+            return fieldTypeRepository.findByIsActiveTrue().stream().map(mapper::toFieldTypeVO).toList();
         } catch (FlickzzDeskException e) {
             throw e;
         } catch (Exception e) {

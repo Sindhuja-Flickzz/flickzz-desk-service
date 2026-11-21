@@ -29,6 +29,18 @@ public class WorkItem {
     private String description;
 
     @Builder.Default
+    @Column(name = "IS_PARENT", nullable = false)
+    private Boolean isParent = false;
+
+    @Builder.Default
+    @Column(name = "IS_SERVICE_REQUEST", nullable = false)
+    private Boolean isServiceRequest = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "PARENT_ITEM_ID")
+    private WorkItem parentItem;
+
+    @Builder.Default
     @Column(name = "IS_ACTIVE")
     private Boolean isActive = true;
 

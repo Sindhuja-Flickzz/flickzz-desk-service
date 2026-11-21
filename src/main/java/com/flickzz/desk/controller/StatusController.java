@@ -3,6 +3,7 @@ package com.flickzz.desk.controller;
 import com.flickzz.desk.config.FlickzzDeskResponse;
 import com.flickzz.desk.service.StatusService;
 import com.flickzz.desk.vo.StatusMasterVO;
+import com.flickzz.desk.vo.request.StatusCreateRequestVO;
 import com.flickzz.desk.vo.request.StatusVisibilityUpdateRequestVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class StatusController {
     private StatusService statusService;
 
     @PostMapping("/create")
-    public ResponseEntity<FlickzzDeskResponse> createStatus(@RequestBody List<StatusMasterVO> statusVOS) {
+    public ResponseEntity<FlickzzDeskResponse> createStatus(@RequestBody List<StatusCreateRequestVO> statusVOS) {
         log.info(generateLog(ENTRY, this.getClass().getName()));
 
         statusService.createStatus(statusVOS);

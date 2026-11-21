@@ -70,8 +70,10 @@ public class FlickzzDeskService {
 
     public RegisterLoginResponseVO verifyCode(VerificationRequestVO verificationRequestVO) {
         log.info(generateLog("verifyCode", this.getClass().getName()));
+        User user = null;
+        AgentMaster agent = null;
         try {
-            User user = userRepository.findByUserNameAndIsActiveTrue(verificationRequestVO.getEmail())
+            user = userRepository.findByUserNameAndIsActiveTrue(verificationRequestVO.getEmail())
                     .orElseThrow(() -> new FlickzzDeskException(DOES_NOT_EXIST,
                             getDescription(DOES_NOT_EXIST.getDescription(), FD_USER)));
 
@@ -82,7 +84,7 @@ public class FlickzzDeskService {
             var refreshToken = refreshTokenService.createRefreshToken(user, false).getToken();
             user.setMfaEnabled(true);
 
-            AgentMaster agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
+            agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
             userRepository.save(user);
 
             // Audit: successful TFA verification / login
@@ -101,19 +103,53 @@ public class FlickzzDeskService {
                     changedStr,
                     user.getUserId(),
                     user.getUserName(),
-                    null,
+                    agent != null && agent.getOrganization() != null ? agent.getOrganization().getCompanyId() : null,
                     "SUCCESS",
                     null));
 
             return generateLoginResponse(jwtToken, refreshToken, Boolean.FALSE, user.isMfaEnabled(),
                     agent != null ? agent.getOrganization() : null, user.getRole(), null, user.getUserId());
         } catch (FlickzzDeskException e) {
+            if (user != null && agent == null) {
+                try {
+                    agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
+                } catch (Exception auditContextException) {
+                    log.warn("Unable to load agent details for TFA audit", auditContextException);
+                }
+            }
             auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "TFA", "User",
-                    null, "VERIFY_CODE", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
-            throw new FlickzzDeskException(e.getErrorCode(), e.getMessage());
+                    user != null ? user.getUserId() : null,
+                    "VERIFY_CODE",
+                    null,
+                    null,
+                    null,
+                    user != null ? user.getUserId() : null,
+                    user != null ? user.getUserName()
+                            : verificationRequestVO != null ? verificationRequestVO.getEmail() : null,
+                    agent != null && agent.getOrganization() != null ? agent.getOrganization().getCompanyId() : null,
+                    "FAILED",
+                    e.getMessage()), e);
+            throw new FlickzzDeskException(e.getErrorCode(), e.getDescription());
         } catch (Exception e) {
+            if (user != null && agent == null) {
+                try {
+                    agent = agentMasterRepository.findByUserAndIsActiveTrue(user);
+                } catch (Exception auditContextException) {
+                    log.warn("Unable to load agent details for TFA audit", auditContextException);
+                }
+            }
             auditService.recordExceptionAudit(mapper.toSystemAuditRequest("Auth", "TFA", "User",
-                    null, "VERIFY_CODE", null, null, null, null, null, null, "FAILED", e.getMessage()), e);
+                    user != null ? user.getUserId() : null,
+                    "VERIFY_CODE",
+                    null,
+                    null,
+                    null,
+                    user != null ? user.getUserId() : null,
+                    user != null ? user.getUserName()
+                            : verificationRequestVO != null ? verificationRequestVO.getEmail() : null,
+                    agent != null && agent.getOrganization() != null ? agent.getOrganization().getCompanyId() : null,
+                    "FAILED",
+                    e.getMessage()), e);
             log.error("Exception in register method in FlickzzDeskService");
             throw new FlickzzDeskException(DEFAULT_ERROR_CODE);
         }
